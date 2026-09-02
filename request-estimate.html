@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Request a Free Painting Estimate | R Painters LLC</title>
+  <meta name="description" content="Request a free painting estimate from insured Charleston-area painters at R Painters LLC. Tell us about your residential or commercial project.">
+  <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#184d70">
+  <link rel="canonical" href="https://rpaintersllc.com/request-estimate.html">
+  <link rel="icon" href="/logo/logo.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/assets/site.css">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-W2RCFRQ3H2"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-W2RCFRQ3H2');gtag('config','AW-16484428857');</script>
+</head>
+<body>
+  <div class="top-strip"><div class="container"><p>Insured painting professionals serving Charleston &amp; the Lowcountry</p><p><a href="tel:+18434759927">Call 843-475-9927</a> · Free estimates</p></div></div>
+  <header class="site-header"><div class="container nav-wrap">
+    <a class="brand" href="/" aria-label="R Painters LLC home"><img src="/logo/logo.png" alt="R Painters LLC logo" width="66" height="58"><span class="brand-copy"><strong>R Painters LLC</strong><span>Charleston, South Carolina</span></span></a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-menu" aria-label="Open navigation">☰</button>
+    <nav class="nav-menu" id="main-menu" aria-label="Main navigation"><a href="/#services">Services</a><a href="/portfolio.html">Projects</a><a href="/#reviews">Reviews</a><a href="/blog.html">Blog</a><a class="btn btn-primary" href="tel:+18434759927">Call Now</a></nav>
+  </div></header>
+
+  <main class="estimate-page">
+    <section class="estimate-hero"><div class="container">
+      <p class="eyebrow">Free on-site estimate</p>
+      <h1>Tell us about your painting project.</h1>
+      <p>Share a few details and R Painters LLC will contact you to confirm an estimate appointment.</p>
+      <ul class="estimate-proof"><li>Insured</li><li>No-obligation estimate</li><li>Residential &amp; commercial</li></ul>
+    </div></section>
+
+    <section class="estimate-section"><div class="container estimate-layout">
+      <div class="estimate-card">
+        <div class="form-progress" aria-label="Form progress">
+          <div class="progress-bar"><span id="progress-fill"></span></div>
+          <p><strong id="step-label">Step 1 of 4</strong><span id="step-name">Contact information</span></p>
+        </div>
+
+        <div id="form-setup-notice" class="form-notice" hidden role="status">
+          The new form is being connected. For immediate service, use the secure backup form below.
+        </div>
+        <div id="form-error" class="form-error" hidden role="alert"></div>
+
+        <form id="estimate-form" method="post" enctype="application/x-www-form-urlencoded" novalidate data-endpoint="">
+          <input type="text" name="company_website" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <input type="hidden" name="landing_page">
+          <input type="hidden" name="referrer">
+          <input type="hidden" name="utm_source">
+          <input type="hidden" name="utm_medium">
+          <input type="hidden" name="utm_campaign">
+          <input type="hidden" name="utm_term">
+          <input type="hidden" name="utm_content">
+          <input type="hidden" name="gclid">
+          <input type="hidden" name="submitted_at">
+          <input type="hidden" name="photo_data">
+          <input type="hidden" name="photo_name">
+          <input type="hidden" name="photo_type">
+
+          <fieldset class="form-step active" data-step="1">
+            <legend>Contact information</legend>
+            <p class="step-intro">How should we reach you about your free estimate?</p>
+            <div class="form-grid two">
+              <label>First name <span>*</span><input name="first_name" autocomplete="given-name" required maxlength="60"></label>
+              <label>Last name <span>*</span><input name="last_name" autocomplete="family-name" required maxlength="60"></label>
+              <label>Email address <span>*</span><input type="email" name="email" autocomplete="email" required maxlength="120" placeholder="name@example.com"></label>
+              <label>Phone number <span>*</span><input type="tel" name="phone" autocomplete="tel" required inputmode="tel" maxlength="20" placeholder="843-555-0123" pattern="[0-9()+.\-\s]{10,20}"></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-step" data-step="2">
+            <legend>Project address</legend>
+            <p class="step-intro">Tell us where the work will take place.</p>
+            <div class="form-grid">
+              <label>Street address <span>*</span><input name="address" autocomplete="street-address" required maxlength="140"></label>
+            </div>
+            <div class="form-grid three">
+              <label>City <span>*</span><input name="city" autocomplete="address-level2" required maxlength="60"></label>
+              <label>State <span>*</span><input name="state" autocomplete="address-level1" required maxlength="30" value="SC"></label>
+              <label>ZIP code <span>*</span><input name="postal_code" autocomplete="postal-code" required inputmode="numeric" pattern="[0-9]{5}(-[0-9]{4})?" maxlength="10"></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-step" data-step="3">
+            <legend>Service details</legend>
+            <p class="step-intro">These two quick choices help us send the right estimator.</p>
+            <div class="form-grid two">
+              <label>Project type <span>*</span><select name="project_type" required><option value="">Select one</option><option>Residential</option><option>Commercial</option><option>Rental / property management</option></select></label>
+              <label>Service needed <span>*</span><select name="service_type" id="service-type" required><option value="">Select a service</option><option>Interior painting</option><option>Exterior painting</option><option>Cabinet painting or refinishing</option><option>Drywall repair</option><option>Commercial painting</option><option>Rental turnover painting</option><option>Deck or fence staining</option><option>Accent wall or specialty work</option><option>Other</option></select></label>
+            </div>
+            <label class="full-label">Tell us about your project <span>*</span><textarea name="project_details" required minlength="10" maxlength="2000" rows="6" placeholder="Which rooms or surfaces need work? Include repairs, approximate size, colors, timing, or anything else that may help."></textarea><small>Minimum 10 characters.</small></label>
+            <label class="full-label">Project photo <small>(optional, one JPG, PNG, HEIC or WebP up to 5 MB)</small><input type="file" id="project-photo" accept="image/jpeg,image/png,image/heic,image/heif,image/webp"></label>
+          </fieldset>
+
+          <fieldset class="form-step" data-step="4">
+            <legend>Scheduling preferences</legend>
+            <p class="step-intro">Choose your preferred date and we will contact you to confirm availability.</p>
+            <div class="form-grid two">
+              <label>How did you hear about us? <span>*</span><select name="referral_source" required><option value="">Select one</option><option>Google</option><option>Facebook</option><option>Word of Mouth</option><option>Angi</option><option>Yard Sign</option><option>Repeat Customer</option><option>Website</option><option>Instagram</option><option>Phone Call</option><option>Mail</option><option>Yelp</option><option>Other</option></select></label>
+              <label>Preferred date <span>*</span><input type="date" name="preferred_date" required></label>
+              <label>Alternate date <small>(optional)</small><input type="date" name="alternate_date"></label>
+            </div>
+            <div class="choice-group"><span>What time of day works best? <b>*</b></span><div class="choice-row">
+              <label><input type="checkbox" name="preferred_time" value="Anytime"> Anytime</label>
+              <label><input type="checkbox" name="preferred_time" value="Morning"> Morning</label>
+              <label><input type="checkbox" name="preferred_time" value="Afternoon"> Afternoon</label>
+              <label><input type="checkbox" name="preferred_time" value="Evening"> Evening</label>
+            </div></div>
+            <label class="consent"><input type="checkbox" name="sms_consent" value="Yes"> <span>I agree to receive project-related text messages and appointment reminders from R Painters LLC. Message and data rates may apply. Reply STOP to opt out.</span></label>
+            <label class="consent"><input type="checkbox" name="terms_accepted" value="Yes" required> <span>I accept the <a href="/terms.html" target="_blank">Terms and Conditions</a> and <a href="/privacy-policy.html" target="_blank">Privacy Policy</a>. *</span></label>
+          </fieldset>
+
+          <div class="form-actions">
+            <button class="btn btn-outline" type="button" id="back-button" hidden>Back</button>
+            <button class="btn btn-primary" type="button" id="next-button">Continue</button>
+            <button class="btn btn-primary" type="submit" id="submit-button" hidden>Request My Free Estimate</button>
+          </div>
+          <p class="form-privacy">Your information is used only to respond to your estimate request. We do not sell customer information.</p>
+        </form>
+      </div>
+
+      <aside class="estimate-aside">
+        <div><h2>Prefer to talk?</h2><p>Call R Painters LLC and tell us about your project.</p><a class="btn btn-primary" href="tel:+18434759927">Call 843-475-9927</a></div>
+        <div><h3>What happens next</h3><ol><li>We review your request.</li><li>We contact you to confirm a time.</li><li>We inspect the project and prepare a clear estimate.</li></ol></div>
+        <div class="backup-box"><h3>Backup request form</h3><p>If this form is unavailable, you can still use our existing secure request page.</p><a href="https://rpaintersllc.dripjobs.com/" target="_blank" rel="noopener">Open DripJobs form</a></div>
+      </aside>
+    </div></section>
+  </main>
+
+  <footer class="site-footer"><div class="container"><div class="footer-bottom"><span>© <span data-year></span> R Painters LLC. All rights reserved.</span><span>Insured · Serving Charleston and surrounding communities</span></div></div></footer>
+  <script src="/assets/site.js" defer></script>
+  <script src="/assets/estimate-form.js" defer></script>
+</body>
+</html>
