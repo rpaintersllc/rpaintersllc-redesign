@@ -1,7 +1,6 @@
 const CONFIG = {
   notificationEmail: 'rpaintersinsc@gmail.com',
   websiteUrl: 'https://rpaintersllc.com',
-  photoFolderName: 'R Painters Website Estimate Photos',
   maxPhotoBytes: 5 * 1024 * 1024,
   maxPhotos: 3,
   allowedPhotoTypes: ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp'],
@@ -41,7 +40,7 @@ function doPost(e) {
     if (cache.get(duplicateKey)) return responsePage(false, 'This request was already received. Please wait before submitting again.');
     cache.put(duplicateKey, '1', 300);
 
-    const photoUrls = savePhotos(clean(p.photo_manifest));
+    const photoAttachments = parsePhotos(clean(p.photo_manifest));
     const serverSubmittedAt = new Date().toISOString();
     const fields = [
       ['Name', clean(p.first_name) + ' ' + clean(p.last_name)],
@@ -53,7 +52,7 @@ function doPost(e) {
       ['Cabinet count', clean(p.cabinet_count) || 'Not applicable'], ['Cabinet finish', clean(p.cabinet_condition) || 'Not applicable'],
       ['Drywall details', clean(p.drywall_details) || 'Not applicable'], ['Property/business details', clean(p.property_details) || 'Not applicable'],
       ['Deck/fence details', clean(p.deck_fence_details) || 'Not applicable'], ['Specialty/other details', clean(p.specialty_details) || 'Not applicable'],
-      ['Project details', clean(p.project_details)], ['Project photos', photoUrls.length ? photoUrls.join('\n') : 'None'],
+      ['Project details', clean(p.project_details)], ['Project photos', photoAttachments.length ? photoAttachments.map(blob => blob.getName()).join('\n') + ' (attached)' : 'None'],
       ['Referral source', clean(p.referral_source)], ['Preferred date', clean(p.preferred_date)], ['Alternate date', clean(p.alternate_date) || 'None'],
       ['Preferred time', preferredTimes.join(', ')], ['SMS consent', clean(p.sms_consent) || 'No'], ['Contact consent', clean(p.contact_consent)],
       ['Terms accepted', clean(p.terms_accepted)], ['Landing page', clean(p.landing_page)], ['Referrer', clean(p.referrer)],
@@ -66,7 +65,7 @@ function doPost(e) {
     const htmlBody = '<h2 style="color:#184D70">New R Painters estimate request</h2><table cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:760px">' +
       fields.map(row => '<tr><th align="left" valign="top" style="border-bottom:1px solid #dce5ea;color:#184D70;width:180px">' + escapeHtml(row[0]) + '</th><td style="border-bottom:1px solid #dce5ea;white-space:pre-wrap">' + linkify(row[1]) + '</td></tr>').join('') + '</table>';
 
-    MailApp.sendEmail({ to: CONFIG.notificationEmail, subject: subject, body: textBody, htmlBody: htmlBody, replyTo: clean(p.email), name: 'R Painters Website' });
+    MailApp.sendEmail({ to: CONFIG.notificationEmail, subject: subject, body: textBody, htmlBody: htmlBody, replyTo: clean(p.email), name: 'R Painters Website', attachments: photoAttachments });
     return responsePage(true);
   } catch (error) {
     console.error(error);
@@ -85,26 +84,24 @@ function validateConditionalDetails(services, p) {
   return '';
 }
 
-function savePhotos(manifestText) {
+function parsePhotos(manifestText) {
   if (!manifestText) return [];
   let photos;
   try { photos = JSON.parse(manifestText); } catch (error) { throw new Error('Invalid photo data.'); }
   if (!Array.isArray(photos) || photos.length > CONFIG.maxPhotos) throw new Error('Too many photos.');
   if (!photos.length) return [];
-  const folder = getOrCreateFolder(CONFIG.photoFolderName);
   return photos.map(photo => {
     const type = clean(photo.type);
     if (!CONFIG.allowedPhotoTypes.includes(type) || typeof photo.data !== 'string') throw new Error('Unsupported photo.');
     const bytes = Utilities.base64Decode(photo.data);
     if (bytes.length > CONFIG.maxPhotoBytes) throw new Error('Photo too large.');
     const safeName = clean(photo.name || 'project-photo').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
-    return folder.createFile(Utilities.newBlob(bytes, type, Date.now() + '-' + safeName)).getUrl();
+    return Utilities.newBlob(bytes, type, Date.now() + '-' + safeName);
   });
 }
 
 function clean(value) { return String(value || '').trim().slice(0, 5000); }
 function hash(value) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, value, Utilities.Charset.UTF_8).map(byte => ('0' + (byte & 255).toString(16)).slice(-2)).join(''); }
-function getOrCreateFolder(name) { const folders = DriveApp.getFoldersByName(name); return folders.hasNext() ? folders.next() : DriveApp.createFolder(name); }
 function escapeHtml(value) { return String(value || '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])); }
 function linkify(value) { const safe = escapeHtml(value); return /^https:\/\/drive\.google\.com\//.test(String(value || '')) ? '<a href="' + safe + '">' + safe + '</a>' : safe; }
 
