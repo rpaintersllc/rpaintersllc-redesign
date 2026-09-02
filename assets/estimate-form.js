@@ -93,6 +93,9 @@
     }
     if (!(await preparePhoto())) return;
     setAttribution();
+    sessionStorage.setItem('rp_estimate_pending', '1');
+    sessionStorage.setItem('rp_service_type', form.elements.service_type.value);
+    sessionStorage.setItem('rp_project_type', form.elements.project_type.value);
     submitting = true;
     submitButton.disabled = true;
     submitButton.textContent = 'Sending…';
@@ -104,6 +107,8 @@
   today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
   const minDate = today.toISOString().slice(0, 10);
   form.querySelectorAll('input[type="date"]').forEach(input => input.min = minDate);
+  const returnedError = new URLSearchParams(window.location.search).get('form_error');
+  if (returnedError) showError(returnedError);
   setAttribution();
   render();
 })();
