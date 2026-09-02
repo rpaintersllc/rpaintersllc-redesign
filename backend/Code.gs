@@ -64,7 +64,7 @@ function doPost(e) {
       fields.map(row => '<tr><th align="left" valign="top" style="border-bottom:1px solid #dce5ea;color:#184D70;width:170px">' + escapeHtml(row[0]) + '</th><td style="border-bottom:1px solid #dce5ea;white-space:pre-wrap">' + escapeHtml(String(row[1] || '')) + '</td></tr>').join('') +
       '</table>';
 
-    MailApp.sendEmail({ to: CONFIG.notificationEmail, subject, body: textBody, htmlBody, replyTo:: String(p.email) });
+    MailApp.sendEmail({ to: CONFIG.notificationEmail, subject, body: textBody, htmlBody, replyTo: String(p.email) });
     return responsePage(true);
   } catch (error) {
     console.error(error);
