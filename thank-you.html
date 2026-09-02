@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Estimate Request Received | R Painters LLC</title>
+  <meta name="robots" content="noindex,follow">
+  <meta name="theme-color" content="#184d70">
+  <link rel="icon" href="/logo/logo.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/assets/site.css">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-W2RCFRQ3H2"></script>
+  <script>
+    window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
+    gtag('js',new Date());gtag('config','G-W2RCFRQ3H2');gtag('config','AW-16484428857');
+    const p=new URLSearchParams(location.search);
+    if(p.get('submitted')==='1' && sessionStorage.getItem('rp_estimate_pending')==='1'){
+      gtag('event','generate_lead',{
+        service_type:sessionStorage.getItem('rp_service_type')||'not_set',
+        project_type:sessionStorage.getItem('rp_project_type')||'not_set',
+        form_location:'request_estimate_page',
+        transport_type:'beacon'
+      });
+      sessionStorage.removeItem('rp_estimate_pending');
+      sessionStorage.removeItem('rp_service_type');
+      sessionStorage.removeItem('rp_project_type');
+    }
+  </script>
+</head>
+<body>
+  <header class="site-header"><div class="container nav-wrap"><a class="brand" href="/" aria-label="R Painters LLC home"><img src="/logo/logo.png" alt="R Painters LLC logo" width="66" height="58"><span class="brand-copy"><strong>R Painters LLC</strong><span>Charleston, South Carolina</span></span></a></div></header>
+  <main class="thank-you-page"><section class="section"><div class="container"><div class="thank-you-card">
+    <div class="success-mark" aria-hidden="true">✓</div>
+    <p class="eyebrow">Request received</p>
+    <h1>Thank you for contacting R Painters LLC.</h1>
+    <p>Your estimate request was sent successfully. We will review the project information and contact you to confirm an appointment.</p>
+    <div class="thank-you-actions"><a class="btn btn-primary" href="/">Return to Home</a><a class="btn btn-outline" href="tel:+18434759927">Call 843-475-9927</a></div>
+  </div></div></section></main>
+  <footer class="site-footer"><div class="container"><div class="footer-bottom"><span>© <span data-year></span> R Painters LLC.</span><span>Insured · Charleston, South Carolina</span></div></div></footer>
+  <script src="/assets/site.js" defer></script>
+</body>
+</html>
