@@ -52,9 +52,7 @@
           <input type="hidden" name="utm_content">
           <input type="hidden" name="gclid">
           <input type="hidden" name="submitted_at">
-          <input type="hidden" name="photo_data">
-          <input type="hidden" name="photo_name">
-          <input type="hidden" name="photo_type">
+          <input type="hidden" name="photo_manifest">
 
           <fieldset class="form-step active" data-step="1">
             <legend>Contact information</legend>
@@ -82,13 +80,21 @@
 
           <fieldset class="form-step" data-step="3">
             <legend>Service details</legend>
-            <p class="step-intro">These two quick choices help us send the right estimator.</p>
-            <div class="form-grid two">
-              <label>Project type <span>*</span><select name="project_type" required><option value="">Select one</option><option>Residential</option><option>Commercial</option><option>Rental / property management</option></select></label>
-              <label>Service needed <span>*</span><select name="service_type" id="service-type" required><option value="">Select a service</option><option>Interior painting</option><option>Exterior painting</option><option>Cabinet painting or refinishing</option><option>Drywall repair</option><option>Commercial painting</option><option>Rental turnover painting</option><option>Deck or fence staining</option><option>Accent wall or specialty work</option><option>Other</option></select></label>
-            </div>
-            <label class="full-label">Tell us about your project <span>*</span><textarea name="project_details" required minlength="10" maxlength="2000" rows="6" placeholder="Which rooms or surfaces need work? Include repairs, approximate size, colors, timing, or anything else that may help."></textarea><small>Minimum 10 characters.</small></label>
-            <label class="full-label">Project photo <small>(optional, one JPG, PNG, HEIC or WebP up to 5 MB)</small><input type="file" id="project-photo" accept="image/jpeg,image/png,image/heic,image/heif,image/webp"></label>
+            <p class="step-intro">Tell us what needs attention so we can prepare for the walkthrough.</p>
+            <div class="form-grid two"><label>Project type <span>*</span><select name="project_type" required><option value="">Select one</option><option>Residential</option><option>Commercial</option><option>Rental / property management</option></select></label><label>Approximate project size <span>*</span><select name="project_size" required><option value="">Select one</option><option>One room or small area</option><option>2–4 rooms</option><option>5+ rooms</option><option>Whole interior</option><option>Whole exterior</option><option>Under 1,500 sq. ft.</option><option>1,500–3,000 sq. ft.</option><option>Over 3,000 sq. ft.</option><option>Not sure</option></select></label></div>
+            <div class="choice-group services-choice"><span>Service requested <b>*</b> <small>Select all that apply.</small></span><div class="choice-grid">
+              <label><input type="checkbox" name="service_type" value="Interior painting" data-service="interior"> Interior painting</label><label><input type="checkbox" name="service_type" value="Exterior painting" data-service="exterior"> Exterior painting</label><label><input type="checkbox" name="service_type" value="Cabinet painting or refinishing" data-service="cabinets"> Cabinet painting or refinishing</label><label><input type="checkbox" name="service_type" value="Drywall repair" data-service="drywall"> Drywall repair</label><label><input type="checkbox" name="service_type" value="Commercial painting" data-service="commercial"> Commercial painting</label><label><input type="checkbox" name="service_type" value="Rental turnover painting" data-service="rental"> Rental turnover painting</label><label><input type="checkbox" name="service_type" value="Deck or fence staining" data-service="deck-fence"> Deck or fence staining</label><label><input type="checkbox" name="service_type" value="Accent wall or specialty work" data-service="specialty"> Accent wall or specialty work</label><label><input type="checkbox" name="service_type" value="Other" data-service="other"> Other service</label>
+            </div></div>
+            <div class="conditional-field" data-conditional="interior" hidden><label class="full-label">Interior areas or rooms <span>*</span><textarea name="interior_areas" rows="3" maxlength="800" placeholder="Example: living room walls and ceiling, primary bedroom, trim and doors"></textarea></label></div>
+            <div class="conditional-field" data-conditional="exterior" hidden><label class="full-label">Exterior surfaces <span>*</span><textarea name="exterior_surfaces" rows="3" maxlength="800" placeholder="Example: siding, brick, trim, shutters, porch or garage doors"></textarea></label></div>
+            <div class="conditional-field" data-conditional="cabinets" hidden><div class="form-grid two"><label>Approximate cabinet doors/drawers <span>*</span><input name="cabinet_count" inputmode="numeric" maxlength="30" placeholder="Example: 28 doors and 12 drawers"></label><label>Current cabinet finish <select name="cabinet_condition"><option value="">Select if known</option><option>Painted</option><option>Stained wood</option><option>Factory finish</option><option>Not sure</option></select></label></div></div>
+            <div class="conditional-field" data-conditional="drywall" hidden><label class="full-label">Drywall repair needed <span>*</span><textarea name="drywall_details" rows="3" maxlength="800" placeholder="Describe holes, cracks, water stains, texture or popcorn ceiling"></textarea></label></div>
+            <div class="conditional-field" data-conditional="commercial rental" hidden><label class="full-label">Property or business details <span>*</span><textarea name="property_details" rows="3" maxlength="800" placeholder="Property type, occupied or vacant, unit count, access requirements"></textarea></label></div>
+            <div class="conditional-field" data-conditional="deck-fence" hidden><label class="full-label">Deck or fence details <span>*</span><textarea name="deck_fence_details" rows="3" maxlength="800" placeholder="Approximate dimensions, wood condition and whether it is currently stained or painted"></textarea></label></div>
+            <div class="conditional-field" data-conditional="specialty other" hidden><label class="full-label">Specialty or other work <span>*</span><textarea name="specialty_details" rows="3" maxlength="800" placeholder="Describe the finish, feature wall or other service you need"></textarea></label></div>
+            <div class="form-grid two"><label>Current project condition <span>*</span><select name="project_condition" required><option value="">Select one</option><option>Good — mostly a color change</option><option>Minor repairs or prep needed</option><option>Significant peeling, damage or repairs</option><option>New construction / unpainted</option><option>Not sure</option></select></label><label>Have colors been selected? <span>*</span><select name="colors_selected" required><option value="">Select one</option><option>Yes</option><option>I have a few options</option><option>No — I would like guidance</option></select></label><label>Desired project timeline <span>*</span><select name="project_timeline" required><option value="">Select one</option><option>As soon as possible</option><option>Within 2–4 weeks</option><option>Within 1–3 months</option><option>More than 3 months</option><option>Flexible / planning ahead</option></select></label></div>
+            <label class="full-label">Project details or additional comments <span>*</span><textarea name="project_details" required minlength="10" maxlength="2000" rows="5" placeholder="Share any repairs, access details, deadlines, finish preferences or other information that may help."></textarea><small>Minimum 10 characters.</small></label>
+            <label class="full-label">Project photos <small>(optional, up to 3 JPG, PNG, HEIC or WebP files; 5 MB each)</small><input type="file" id="project-photo" accept="image/jpeg,image/png,image/heic,image/heif,image/webp" multiple></label><div id="photo-list" class="file-help" aria-live="polite"></div>
           </fieldset>
 
           <fieldset class="form-step" data-step="4">
@@ -97,7 +103,7 @@
             <div class="form-grid two">
               <label>How did you hear about us? <span>*</span><select name="referral_source" required><option value="">Select one</option><option>Google</option><option>Facebook</option><option>Word of Mouth</option><option>Angi</option><option>Yard Sign</option><option>Repeat Customer</option><option>Website</option><option>Instagram</option><option>Phone Call</option><option>Mail</option><option>Yelp</option><option>Other</option></select></label>
               <label>Preferred date <span>*</span><input type="date" name="preferred_date" required></label>
-              <label>Alternate date <small>(optional)</small><input type="date" name="alternate_date"></label>
+              <label>Alternate date <small>(optional)</small><input type="date" name="alternate_date"></label><label>Preferred contact method <span>*</span><select name="contact_method" required><option value="">Select one</option><option>Phone call</option><option>Text message</option><option>Email</option><option>No preference</option></select></label>
             </div>
             <div class="choice-group"><span>What time of day works best? <b>*</b></span><div class="choice-row">
               <label><input type="checkbox" name="preferred_time" value="Anytime"> Anytime</label>
@@ -106,6 +112,7 @@
               <label><input type="checkbox" name="preferred_time" value="Evening"> Evening</label>
             </div></div>
             <label class="consent"><input type="checkbox" name="sms_consent" value="Yes"> <span>I agree to receive project-related text messages and appointment reminders from R Painters LLC. Message and data rates may apply. Reply STOP to opt out.</span></label>
+            <label class="consent"><input type="checkbox" name="contact_consent" value="Yes" required> <span>I agree that R Painters LLC may contact me about this estimate request. *</span></label>
             <label class="consent"><input type="checkbox" name="terms_accepted" value="Yes" required> <span>I accept the <a href="/terms.html" target="_blank">Terms and Conditions</a> and <a href="/privacy-policy.html" target="_blank">Privacy Policy</a>. *</span></label>
           </fieldset>
 
@@ -121,7 +128,7 @@
       <aside class="estimate-aside">
         <div><h2>Prefer to talk?</h2><p>Call R Painters LLC and tell us about your project.</p><a class="btn btn-primary" href="tel:+18434759927">Call 843-475-9927</a></div>
         <div><h3>What happens next</h3><ol><li>We review your request.</li><li>We contact you to confirm a time.</li><li>We inspect the project and prepare a clear estimate.</li></ol></div>
-        <div class="backup-box"><h3>Backup request form</h3><p>If this form is unavailable, you can still use our existing secure request page.</p><a href="https://rpaintersllc.dripjobs.com/" target="_blank" rel="noopener">Open DripJobs form</a></div>
+        <div class="backup-box"><h3>Backup request form</h3><p>If this form is unavailable, you can still use our existing secure request page.</p><a href="https://rpaintersllc.dripjobs.com/" target="_blank" rel="noopener" data-estimate-backup>Open DripJobs form</a></div>
       </aside>
     </div></section>
   </main>
