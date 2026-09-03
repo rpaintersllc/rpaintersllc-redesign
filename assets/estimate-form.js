@@ -18,6 +18,20 @@
   let formStarted = false;
   let submitting = false;
 
+  window.addEventListener('message', event => {
+    const trustedGoogleResponse = event.origin === 'https://script.google.com' || /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(event.origin);
+    if (!trustedGoogleResponse || !event.data || event.data.source !== 'rp_estimate_form' || !submitting) return;
+    if (event.data.success === true) {
+      window.location.assign('/thank-you.html?submitted=1');
+      return;
+    }
+    submitting = false;
+    submitButton.disabled = false;
+    submitButton.textContent = 'Request My Free Estimate';
+    sessionStorage.removeItem('rp_estimate_pending');
+    showError(event.data.message || 'We could not send your request. Please call 843-475-9927 or use the backup form.');
+  });
+
   const track = (name, params = {}) => {
     if (typeof window.gtag === 'function') window.gtag('event', name, { ...params, form_location: 'request_estimate_page', transport_type: 'beacon' });
   };
@@ -136,7 +150,7 @@
     submitButton.disabled = true;
     submitButton.textContent = 'Sending…';
     form.action = endpoint;
-    form.target = '_self';
+    form.target = 'estimate-submit-frame';
     form.submit();
   });
 
