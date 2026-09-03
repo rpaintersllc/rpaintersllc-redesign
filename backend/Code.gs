@@ -12,9 +12,9 @@ function doPost(e) {
   try {
     const p = e && e.parameter ? e.parameter : {};
     const multi = e && e.parameters ? e.parameters : {};
-    // The public form clears _honey before a legitimate browser submission.
+    // The public form clears company_website before a legitimate browser submission.
     // Direct spam posts that populate it are rejected.
-    if (clean(p._honey)) return responsePage(false, 'Submission rejected.');
+    if (clean(p.company_website)) return responsePage(false, 'Submission rejected.');
 
     const services = (multi.service_type || []).map(clean).filter(Boolean);
     const preferredTimes = (multi.preferred_time || []).map(clean).filter(Boolean);
