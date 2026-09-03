@@ -68,10 +68,50 @@ function doPost(e) {
       fields.map(row => '<tr><th align="left" valign="top" style="border-bottom:1px solid #dce5ea;color:#184D70;width:180px">' + escapeHtml(row[0]) + '</th><td style="border-bottom:1px solid #dce5ea;white-space:pre-wrap">' + linkify(row[1]) + '</td></tr>').join('') + '</table>';
 
     MailApp.sendEmail({ to: CONFIG.notificationEmail, subject: subject, body: textBody, htmlBody: htmlBody, replyTo: clean(p.email), name: 'R Painters Website', attachments: photoAttachments });
+    try {
+      sendPushoverNotification(p, services);
+    } catch (pushError) {
+      // Email delivery is the primary notification. A temporary Pushover
+      // failure must never reject or duplicate a valid customer request.
+      console.error('Pushover notification failed: ' + pushError);
+    }
     return responsePage(true);
   } catch (error) {
     console.error(error);
     return responsePage(false, 'We could not send your request. Please call 843-475-9927 or use the backup form.');
+  }
+}
+
+function sendPushoverNotification(p, services) {
+  const properties = PropertiesService.getScriptProperties();
+  const token = clean(properties.getProperty('PUSHOVER_APP_TOKEN'));
+  const user = clean(properties.getProperty('PUSHOVER_USER_KEY'));
+  if (!token || !user) return;
+
+  const customerName = [p.first_name, p.last_name].map(clean).filter(Boolean).join(' ');
+  const message = [
+    customerName,
+    services.join(', '),
+    clean(p.city) + ', ' + clean(p.state),
+    'Contact by: ' + clean(p.contact_method)
+  ].filter(Boolean).join('\n');
+
+  const response = UrlFetchApp.fetch('https://api.pushover.net/1/messages.json', {
+    method: 'post',
+    payload: {
+      token: token,
+      user: user,
+      title: 'New R Painters Estimate',
+      message: message,
+      sound: 'cashregister',
+      url: CONFIG.websiteUrl + '/request-estimate.html',
+      url_title: 'Open estimate form'
+    },
+    muteHttpExceptions: true
+  });
+  const result = JSON.parse(response.getContentText() || '{}');
+  if (response.getResponseCode() !== 200 || result.status !== 1) {
+    throw new Error('Pushover API returned status ' + response.getResponseCode());
   }
 }
 
