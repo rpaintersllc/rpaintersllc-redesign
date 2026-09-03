@@ -64,11 +64,6 @@
     for (const field of steps[currentStep].querySelectorAll('input,select,textarea')) {
       if (!field.disabled && !field.checkValidity()) { field.reportValidity(); return false; }
     }
-    if (currentStep === 3 && !form.querySelector('input[name="preferred_time"]:checked')) {
-      showError('Please select at least one preferred time of day.');
-      form.querySelector('input[name="preferred_time"]')?.focus();
-      return false;
-    }
     return true;
   };
 
