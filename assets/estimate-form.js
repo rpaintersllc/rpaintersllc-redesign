@@ -155,6 +155,8 @@
     }
     if (!(await preparePhotos())) return;
     setAttribution();
+    // Prevent browser/password-manager autofill from tripping the honeypot.
+    if (form.elements._honey) form.elements._honey.value = '';
     sessionStorage.setItem('rp_estimate_pending', '1');
     sessionStorage.setItem('rp_service_type', selectedServices().join(', '));
     sessionStorage.setItem('rp_project_type', form.elements.project_type.value);
