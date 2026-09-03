@@ -106,6 +106,7 @@ function escapeHtml(value) { return String(value || '').replace(/[&<>"']/g, char
 function linkify(value) { const safe = escapeHtml(value); return /^https:\/\/drive\.google\.com\//.test(String(value || '')) ? '<a href="' + safe + '">' + safe + '</a>' : safe; }
 
 function responsePage(success, message) {
-  const destination = success ? CONFIG.websiteUrl + '/thank-you.html?submitted=1' : CONFIG.websiteUrl + '/request-estimate.html?form_error=' + encodeURIComponent(message || 'Please try again.');
-  return HtmlService.createHtmlOutput('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>R Painters LLC</title><body style="font-family:Arial,sans-serif;padding:40px;color:#184D70"><p>Redirecting…</p><script>window.top.location.replace(' + JSON.stringify(destination) + ');<\/script></body>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  const payload = { source: 'rp_estimate_form', success: Boolean(success), message: message || '' };
+  return HtmlService.createHtmlOutput('<!doctype html><meta charset="utf-8"><title>R Painters LLC</title><p>Processing request…</p><script>window.top.postMessage(' + JSON.stringify(payload) + ',"https://rpaintersllc.com");<\/script>')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
