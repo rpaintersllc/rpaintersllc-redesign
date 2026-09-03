@@ -41,7 +41,8 @@
         </div>
         <div id="form-error" class="form-error" hidden role="alert"></div>
 
-        <form id="estimate-form" method="post" enctype="application/x-www-form-urlencoded" novalidate data-endpoint="https://script.google.com/macros/s/AKfycby8uHNYQFoyHrjJAhu6x-1O5OaOQh3_T2jpOx8PN5naMlmf1VccIJ4_T9COaRRkLdo52g/exec">
+        <iframe name="estimate-submit-frame" id="estimate-submit-frame" title="Estimate submission response" hidden></iframe>
+        <form id="estimate-form" method="post" target="estimate-submit-frame" enctype="application/x-www-form-urlencoded" novalidate data-endpoint="https://script.google.com/macros/s/AKfycby8uHNYQFoyHrjJAhu6x-1O5OaOQh3_T2jpOx8PN5naMlmf1VccIJ4_T9COaRRkLdo52g/exec">
           <input type="text" name="company_website" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
           <input type="hidden" name="landing_page">
           <input type="hidden" name="referrer">
@@ -133,6 +134,6 @@
 
   <footer class="site-footer"><div class="container"><div class="footer-bottom"><span>© <span data-year></span> R Painters LLC. All rights reserved.</span><span>Insured · Serving Charleston and surrounding communities</span></div></div></footer>
   <script src="/assets/site.js" defer></script>
-  <script src="/assets/estimate-form.js?v=20260903-2" defer></script>
+  <script src="/assets/estimate-form.js?v=20260903-3" defer></script>
 </body>
 </html>
