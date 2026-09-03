@@ -31,6 +31,7 @@
   const selectedServices = () => [...form.querySelectorAll('input[name="service_type"]:checked')].map(input => input.value);
 
   const render = () => {
+    currentStep = Math.min(Math.max(currentStep, 0), steps.length - 1);
     steps.forEach((step, index) => step.classList.toggle('active', index === currentStep));
     stepLabel.textContent = `Step ${currentStep + 1} of ${steps.length}`;
     stepName.textContent = stepNames[currentStep];
@@ -56,6 +57,11 @@
 
   const validateStep = () => {
     clearError();
+    if (!steps[currentStep]) {
+      currentStep = steps.length - 1;
+      render();
+      return false;
+    }
     if (currentStep === 2 && selectedServices().length === 0) {
       showError('Please select at least one service requested.');
       form.querySelector('input[name="service_type"]')?.focus();
@@ -108,12 +114,13 @@
   form.addEventListener('change', event => { if (event.target.matches('[data-service]')) updateConditionals(); });
   form.addEventListener('input', () => { if (!formStarted) { formStarted = true; track('form_start'); } }, { once: true });
   nextButton.addEventListener('click', () => {
+    if (currentStep >= steps.length - 1) return;
     if (!validateStep()) return;
     track('form_step', { step_number: currentStep + 1, step_name: stepNames[currentStep] });
     currentStep += 1;
     render();
   });
-  backButton.addEventListener('click', () => { currentStep = Math.max(0, currentStep - 1); render(); });
+  backButton.addEventListener('click', () => { currentStep = Math.max(0, Math.min(currentStep, steps.length - 1) - 1); render(); });
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (submitting || !validateStep()) return;
