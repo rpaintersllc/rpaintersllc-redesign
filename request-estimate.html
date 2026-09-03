@@ -41,9 +41,12 @@
         </div>
         <div id="form-error" class="form-error" hidden role="alert"></div>
 
-        <iframe name="estimate-submit-frame" id="estimate-submit-frame" title="Estimate submission response" hidden></iframe>
-        <form id="estimate-form" method="post" target="estimate-submit-frame" enctype="application/x-www-form-urlencoded" novalidate data-endpoint="https://script.google.com/macros/s/AKfycby8uHNYQFoyHrjJAhu6x-1O5OaOQh3_T2jpOx8PN5naMlmf1VccIJ4_T9COaRRkLdo52g/exec">
-          <input type="text" name="company_website" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <form id="estimate-form" method="post" enctype="multipart/form-data" novalidate data-endpoint="https://formsubmit.co/rpaintersinsc@gmail.com">
+          <input type="text" name="_honey" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <input type="hidden" name="_next" value="https://rpaintersllc.com/thank-you.html?submitted=1">
+          <input type="hidden" name="_subject" value="New Estimate Request — R Painters Website">
+          <input type="hidden" name="_template" value="table">
+          <input type="hidden" name="_captcha" value="false">
           <input type="hidden" name="landing_page">
           <input type="hidden" name="referrer">
           <input type="hidden" name="utm_source">
@@ -53,7 +56,6 @@
           <input type="hidden" name="utm_content">
           <input type="hidden" name="gclid">
           <input type="hidden" name="submitted_at">
-          <input type="hidden" name="photo_manifest">
           <input type="hidden" name="state" value="SC">
           <input type="hidden" name="project_size" value="Not sure">
           <input type="hidden" name="project_condition" value="Not sure">
@@ -99,7 +101,7 @@
             <div class="conditional-field" data-conditional="specialty other" hidden><label class="full-label">Specialty or other work <span>*</span><textarea name="specialty_details" rows="3" maxlength="800" placeholder="Describe the finish, feature wall or other service you need"></textarea></label></div>
             <div class="form-grid"><label>When would you like the work completed? <span>*</span><select name="project_timeline" required><option value="">Select one</option><option>As soon as possible</option><option>Within 2–4 weeks</option><option>Within 1–3 months</option><option>More than 3 months</option><option>Flexible / planning ahead</option></select></label></div>
             <label class="full-label">Project details or additional comments <span>*</span><textarea name="project_details" required minlength="10" maxlength="2000" rows="5" placeholder="Share any repairs, access details, deadlines, finish preferences or other information that may help."></textarea><small>Minimum 10 characters.</small></label>
-            <label class="full-label">Project photos <small>(optional, up to 3 JPG, PNG, HEIC or WebP files; 5 MB each)</small><input type="file" id="project-photo" accept="image/jpeg,image/png,image/heic,image/heif,image/webp" multiple></label><div id="photo-list" class="file-help" aria-live="polite"></div>
+            <label class="full-label">Project photos <small>(optional, up to 3 JPG, PNG, HEIC or WebP files; 10 MB total)</small><input type="file" id="project-photo" name="attachment" accept="image/jpeg,image/png,image/heic,image/heif,image/webp" multiple></label><div id="photo-list" class="file-help" aria-live="polite"></div>
           </fieldset>
 
           <fieldset class="form-step" data-step="4">
@@ -134,6 +136,6 @@
 
   <footer class="site-footer"><div class="container"><div class="footer-bottom"><span>© <span data-year></span> R Painters LLC. All rights reserved.</span><span>Insured · Serving Charleston and surrounding communities</span></div></div></footer>
   <script src="/assets/site.js" defer></script>
-  <script src="/assets/estimate-form.js?v=20260903-3" defer></script>
+  <script src="/assets/estimate-form.js?v=20260903-4" defer></script>
 </body>
 </html>
