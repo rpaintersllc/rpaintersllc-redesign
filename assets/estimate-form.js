@@ -12,11 +12,13 @@
   const setupNotice = document.getElementById('form-setup-notice');
   const photoInput = document.getElementById('project-photo');
   const photoList = document.getElementById('photo-list');
+  const submitFrame = document.getElementById('estimate-submit-frame');
   const endpoint = form.dataset.endpoint.trim();
   const stepNames = ['Contact information', 'Project address', 'Project details', 'Scheduling preferences'];
   let currentStep = 0;
   let formStarted = false;
   let submitting = false;
+  let responseHandled = false;
 
   const track = (name, params = {}) => {
     if (typeof window.gtag === 'function') window.gtag('event', name, { ...params, form_location: 'request_estimate_page', transport_type: 'beacon' });
@@ -29,6 +31,18 @@
   };
   const clearError = () => { errorBox.hidden = true; errorBox.textContent = ''; };
   const selectedServices = () => [...form.querySelectorAll('input[name="service_type"]:checked')].map(input => input.value);
+  const completeSubmission = () => {
+    if (responseHandled) return;
+    responseHandled = true;
+    window.location.assign('/thank-you.html?submitted=1');
+  };
+  const restoreSubmission = message => {
+    responseHandled = true;
+    submitting = false;
+    submitButton.disabled = false;
+    submitButton.textContent = 'Request My Free Estimate';
+    showError(message || 'We could not send your request. Please call 843-475-9927 or use the backup form.');
+  };
 
   const render = () => {
     currentStep = Math.min(Math.max(currentStep, 0), steps.length - 1);
@@ -113,6 +127,16 @@
   });
   form.addEventListener('change', event => { if (event.target.matches('[data-service]')) updateConditionals(); });
   form.addEventListener('input', () => { if (!formStarted) { formStarted = true; track('form_start'); } }, { once: true });
+  window.addEventListener('message', event => {
+    if (!submitting || !event.data || event.data.source !== 'rp_estimate_form') return;
+    if (!/^https:\/\/(script\.google\.com|[^/]+\.googleusercontent\.com)$/.test(event.origin)) return;
+    if (event.data.success) completeSubmission();
+    else restoreSubmission(event.data.message);
+  });
+  submitFrame.addEventListener('load', () => {
+    if (!submitting || responseHandled) return;
+    window.setTimeout(completeSubmission, 400);
+  });
   nextButton.addEventListener('click', () => {
     if (currentStep >= steps.length - 1) return;
     if (!validateStep()) return;
@@ -135,10 +159,11 @@
     sessionStorage.setItem('rp_service_type', selectedServices().join(', '));
     sessionStorage.setItem('rp_project_type', form.elements.project_type.value);
     submitting = true;
+    responseHandled = false;
     submitButton.disabled = true;
     submitButton.textContent = 'Sending…';
     form.action = endpoint;
-    form.target = '_self';
+    form.target = 'estimate-submit-frame';
     form.submit();
   });
 
