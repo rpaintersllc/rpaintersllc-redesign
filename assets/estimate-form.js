@@ -12,11 +12,13 @@
   const setupNotice = document.getElementById('form-setup-notice');
   const photoInput = document.getElementById('project-photo');
   const photoList = document.getElementById('photo-list');
+  const submitFrame = document.getElementById('estimate-submit-frame');
   const endpoint = form.dataset.endpoint.trim();
   const stepNames = ['Contact information', 'Project address', 'Project details', 'Scheduling preferences'];
   let currentStep = 0;
   let formStarted = false;
   let submitting = false;
+  let responseHandled = false;
 
   const track = (name, params = {}) => {
     if (typeof window.gtag === 'function') window.gtag('event', name, { ...params, form_location: 'request_estimate_page', transport_type: 'beacon' });
@@ -29,6 +31,18 @@
   };
   const clearError = () => { errorBox.hidden = true; errorBox.textContent = ''; };
   const selectedServices = () => [...form.querySelectorAll('input[name="service_type"]:checked')].map(input => input.value);
+  const completeSubmission = () => {
+    if (responseHandled) return;
+    responseHandled = true;
+    window.location.assign('/thank-you.html?submitted=1');
+  };
+  const restoreSubmission = message => {
+    responseHandled = true;
+    submitting = false;
+    submitButton.disabled = false;
+    submitButton.textContent = 'Request My Free Estimate';
+    showError(message || 'We could not send your request. Please call 843-475-9927 or use the backup form.');
+  };
 
   const render = () => {
     currentStep = Math.min(Math.max(currentStep, 0), steps.length - 1);
@@ -87,19 +101,23 @@
     });
   };
 
-  const validatePhotos = () => {
+  const preparePhotos = async () => {
     const files = [...photoInput.files];
     const allowed = ['image/jpeg','image/png','image/heic','image/heif','image/webp'];
     if (files.length > 3) { showError('Please choose no more than three project photos.'); return false; }
-    let totalBytes = 0;
     for (const file of files) {
-      totalBytes += file.size;
-      if (!allowed.includes(file.type)) {
-        showError('Each photo must be a JPG, PNG, HEIC or WebP image.');
+      if (!allowed.includes(file.type) || file.size > 5 * 1024 * 1024) {
+        showError('Each photo must be a JPG, PNG, HEIC or WebP image no larger than 5 MB.');
         return false;
       }
     }
-    if (totalBytes > 10 * 1024 * 1024) { showError('Project photos must be no larger than 10 MB total.'); return false; }
+    const manifest = await Promise.all(files.map(file => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ name: file.name.slice(0, 120), type: file.type, data: String(reader.result).split(',')[1] || '' });
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    })));
+    form.elements.photo_manifest.value = JSON.stringify(manifest);
     return true;
   };
 
@@ -109,6 +127,16 @@
   });
   form.addEventListener('change', event => { if (event.target.matches('[data-service]')) updateConditionals(); });
   form.addEventListener('input', () => { if (!formStarted) { formStarted = true; track('form_start'); } }, { once: true });
+  window.addEventListener('message', event => {
+    if (!submitting || !event.data || event.data.source !== 'rp_estimate_form') return;
+    if (!/^https:\/\/(script\.google\.com|[^/]+\.googleusercontent\.com)$/.test(event.origin)) return;
+    if (event.data.success) completeSubmission();
+    else restoreSubmission(event.data.message);
+  });
+  submitFrame.addEventListener('load', () => {
+    if (!submitting || responseHandled) return;
+    window.setTimeout(completeSubmission, 400);
+  });
   nextButton.addEventListener('click', () => {
     if (currentStep >= steps.length - 1) return;
     if (!validateStep()) return;
@@ -125,17 +153,17 @@
       showError('The new form is not connected yet. Please call us or use the secure backup form.');
       return;
     }
-    if (!validatePhotos()) return;
+    if (!(await preparePhotos())) return;
     setAttribution();
     sessionStorage.setItem('rp_estimate_pending', '1');
     sessionStorage.setItem('rp_service_type', selectedServices().join(', '));
     sessionStorage.setItem('rp_project_type', form.elements.project_type.value);
     submitting = true;
+    responseHandled = false;
     submitButton.disabled = true;
     submitButton.textContent = 'Sending…';
-    form.elements._subject.value = `New Estimate Request — ${form.elements.first_name.value.trim()} ${form.elements.last_name.value.trim()} — ${selectedServices()[0]} — ${form.elements.city.value.trim()}`;
     form.action = endpoint;
-    form.target = '_self';
+    form.target = 'estimate-submit-frame';
     form.submit();
   });
 
