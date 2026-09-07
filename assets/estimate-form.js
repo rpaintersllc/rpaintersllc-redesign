@@ -12,13 +12,17 @@
   const setupNotice = document.getElementById('form-setup-notice');
   const photoInput = document.getElementById('project-photo');
   const photoList = document.getElementById('photo-list');
-  const submitFrame = document.getElementById('estimate-submit-frame');
   const endpoint = form.dataset.endpoint.trim();
   const stepNames = ['Contact information', 'Project address', 'Project details', 'Scheduling preferences'];
   let currentStep = 0;
   let formStarted = false;
   let submitting = false;
   let responseHandled = false;
+  let responseTimeout;
+  const storage = {
+    getItem(key) { try { return sessionStorage.getItem(key); } catch (_) { return null; } },
+    setItem(key, value) { try { sessionStorage.setItem(key, value); } catch (_) {} }
+  };
 
   const track = (name, params = {}) => {
     if (typeof window.gtag === 'function') window.gtag('event', name, { ...params, form_location: 'request_estimate_page', transport_type: 'beacon' });
@@ -34,10 +38,25 @@
   const completeSubmission = () => {
     if (responseHandled) return;
     responseHandled = true;
-    window.location.assign('/thank-you.html?submitted=1');
+    window.clearTimeout(responseTimeout);
+    let redirected = false;
+    const redirect = () => {
+      if (redirected) return;
+      redirected = true;
+      window.location.assign('/thank-you.html?submitted=1');
+    };
+    window.setTimeout(redirect, 1500);
+    track('generate_lead', { service_type: selectedServices().join(', '), project_type: form.elements.project_type.value });
+    track('conversion', {
+      send_to: 'AW-16484428857/xJsICK_A0aYcELnYsbQ9',
+      transaction_id: window.crypto.randomUUID(),
+      event_callback: redirect,
+      event_timeout: 1200
+    });
   };
   const restoreSubmission = message => {
     responseHandled = true;
+    window.clearTimeout(responseTimeout);
     submitting = false;
     submitButton.disabled = false;
     submitButton.textContent = 'Request My Free Estimate';
@@ -89,15 +108,15 @@
 
   const setAttribution = () => {
     const params = new URLSearchParams(window.location.search);
-    form.elements.landing_page.value = sessionStorage.getItem('rp_landing_page') || window.location.href;
-    form.elements.referrer.value = sessionStorage.getItem('rp_referrer') || document.referrer;
+    form.elements.landing_page.value = storage.getItem('rp_landing_page') || window.location.href;
+    form.elements.referrer.value = storage.getItem('rp_referrer') || document.referrer;
     form.elements.submitted_at.value = new Date().toISOString();
-    if (!sessionStorage.getItem('rp_landing_page')) sessionStorage.setItem('rp_landing_page', window.location.href);
-    if (!sessionStorage.getItem('rp_referrer') && document.referrer) sessionStorage.setItem('rp_referrer', document.referrer);
+    if (!storage.getItem('rp_landing_page')) storage.setItem('rp_landing_page', window.location.href);
+    if (!storage.getItem('rp_referrer') && document.referrer) storage.setItem('rp_referrer', document.referrer);
     ['utm_source','utm_medium','utm_campaign','utm_term','utm_content','gclid'].forEach(key => {
-      const value = params.get(key) || sessionStorage.getItem(`rp_${key}`) || '';
+      const value = params.get(key) || storage.getItem(`rp_${key}`) || '';
       form.elements[key].value = value;
-      if (params.get(key)) sessionStorage.setItem(`rp_${key}`, params.get(key));
+      if (params.get(key)) storage.setItem(`rp_${key}`, params.get(key));
     });
   };
 
@@ -130,12 +149,9 @@
   window.addEventListener('message', event => {
     if (!submitting || !event.data || event.data.source !== 'rp_estimate_form') return;
     if (!/^https:\/\/(script\.google\.com|[^/]+\.googleusercontent\.com)$/.test(event.origin)) return;
-    if (event.data.success) completeSubmission();
+    if (responseHandled) return;
+    if (event.data.success === true) completeSubmission();
     else restoreSubmission(event.data.message);
-  });
-  submitFrame.addEventListener('load', () => {
-    if (!submitting || responseHandled) return;
-    window.setTimeout(completeSubmission, 400);
   });
   nextButton.addEventListener('click', () => {
     if (currentStep >= steps.length - 1) return;
@@ -153,20 +169,27 @@
       showError('The new form is not connected yet. Please call us or use the secure backup form.');
       return;
     }
-    if (!(await preparePhotos())) return;
+    submitting = true;
+    submitButton.disabled = true;
+    submitButton.textContent = 'Sending…';
+    try {
+      if (!(await preparePhotos())) {
+        submitting = false;
+        submitButton.disabled = false;
+        submitButton.textContent = 'Request My Free Estimate';
+        return;
+      }
     setAttribution();
     // Prevent browser/password-manager autofill from tripping the honeypot.
     if (form.elements.company_website) form.elements.company_website.value = '';
-    sessionStorage.setItem('rp_estimate_pending', '1');
-    sessionStorage.setItem('rp_service_type', selectedServices().join(', '));
-    sessionStorage.setItem('rp_project_type', form.elements.project_type.value);
-    submitting = true;
     responseHandled = false;
-    submitButton.disabled = true;
-    submitButton.textContent = 'Sending…';
+    responseTimeout = window.setTimeout(() => restoreSubmission('We could not confirm receipt of your request. Please call 843-475-9927 before resubmitting so we can check it.'), 60000);
     form.action = endpoint;
     form.target = 'estimate-submit-frame';
     form.submit();
+    } catch (_) {
+      restoreSubmission('We could not send your request. Please try again or call 843-475-9927.');
+    }
   });
 
   const today = new Date();
@@ -178,3 +201,5 @@
   setAttribution();
   render();
 })();
+
+
