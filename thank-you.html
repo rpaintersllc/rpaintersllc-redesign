@@ -12,18 +12,7 @@
   <script>
     window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
     gtag('js',new Date());gtag('config','G-W2RCFRQ3H2');gtag('config','AW-16484428857');
-    const p=new URLSearchParams(location.search);
-    if(p.get('submitted')==='1' && sessionStorage.getItem('rp_estimate_pending')==='1'){
-      gtag('event','generate_lead',{
-        service_type:sessionStorage.getItem('rp_service_type')||'not_set',
-        project_type:sessionStorage.getItem('rp_project_type')||'not_set',
-        form_location:'request_estimate_page',
-        transport_type:'beacon'
-      });
-      sessionStorage.removeItem('rp_estimate_pending');
-      sessionStorage.removeItem('rp_service_type');
-      sessionStorage.removeItem('rp_project_type');
-    }
+    // Lead events fire only after the estimate form receives a successful server response.
   </script>
 </head>
 <body>
@@ -39,3 +28,4 @@
   <script src="/assets/site.js" defer></script>
 </body>
 </html>
+
