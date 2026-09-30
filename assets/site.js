@@ -77,3 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }, {once:true});
   }
 });
+
+if (!document.body.classList.contains('estimate-page')) {
+  const leadBar=document.createElement('div');
+  leadBar.className='mobile-lead-bar';
+  leadBar.setAttribute('aria-label','Contact R Painters');
+  leadBar.innerHTML='<a class="mobile-lead-call" href="tel:+18434759927">Call Now</a><a class="mobile-lead-estimate" href="/request-estimate.html">Free Estimate</a>';
+  document.body.appendChild(leadBar);
+}
