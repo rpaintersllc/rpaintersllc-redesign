@@ -1,11 +1,15 @@
 # robots.txt for https://rpaintersllc.com/
 
-# Allow all crawlers full access
+# Public search crawlers
 User-agent: *
 Allow: /
-Allow: /services/   # optional: keep services images indexed
-Allow: /images/   # optional: keep images indexed
-Allow: /logo/   # optional: keep logos indexed
 
-# Sitemap location
+# OpenAI crawler used to surface websites in ChatGPT Search
+User-agent: OAI-SearchBot
+Allow: /
+
+# OpenAI user-requested page retrieval
+User-agent: ChatGPT-User
+Allow: /
+
 Sitemap: https://rpaintersllc.com/sitemap.xml
