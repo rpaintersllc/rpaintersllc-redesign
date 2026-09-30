@@ -57,3 +57,23 @@ document.addEventListener('click', event => {
     trackLeadIntent('whatsapp_click', link, 'whatsapp');
   }
 });
+
+
+// Conversion measurement: record useful lead actions without personal information.
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', 'lead_page_view', {
+      page_type: document.body.classList.contains('estimate-page') ? 'estimate' : 'marketing',
+      page_path: window.location.pathname
+    });
+  }
+  const estimateForm = document.getElementById('estimate-form');
+  if (estimateForm) {
+    let started = false;
+    estimateForm.addEventListener('input', () => {
+      if (started) return;
+      started = true;
+      if (typeof window.gtag === 'function') window.gtag('event','estimate_form_start',{page_path:window.location.pathname});
+    }, {once:true});
+  }
+});
