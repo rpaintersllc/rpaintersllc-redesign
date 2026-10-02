@@ -9,7 +9,6 @@
   const stepName = document.getElementById('step-name');
   const progressFill = document.getElementById('progress-fill');
   const errorBox = document.getElementById('form-error');
-  const setupNotice = document.getElementById('form-setup-notice');
   const photoInput = document.getElementById('project-photo');
   const photoList = document.getElementById('photo-list');
   const endpoint = form.dataset.endpoint.trim();
@@ -60,7 +59,7 @@
     submitting = false;
     submitButton.disabled = false;
     submitButton.textContent = 'Request My Free Estimate';
-    showError(message || 'We could not send your request. Please call 843-475-9927 or use the backup form.');
+    showError(message || 'We could not send your request. Please call 843-475-9927 and we will help you directly.');
   };
 
   const render = () => {
@@ -165,8 +164,7 @@
     event.preventDefault();
     if (submitting || !validateStep()) return;
     if (!endpoint) {
-      setupNotice.hidden = false;
-      showError('The new form is not connected yet. Please call us or use the secure backup form.');
+      showError('The estimate form is temporarily unavailable. Please call 843-475-9927 and we will help you directly.');
       return;
     }
     submitting = true;
