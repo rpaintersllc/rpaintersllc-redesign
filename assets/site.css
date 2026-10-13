@@ -37,3 +37,7 @@
   .mobile-lead-estimate{color:var(--blue-950);background:var(--gold)}
   .site-footer{padding-bottom:110px}
 }
+
+/* Clear, accessible reassurance alongside the primary homepage estimate CTA. */
+.hero-fast-contact{margin:16px 0 12px;line-height:1.6}
+.hero-contact-note{font-size:.92rem;line-height:1.55;margin:12px 0;color:var(--muted)}
