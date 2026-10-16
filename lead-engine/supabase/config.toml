@@ -1,0 +1,5 @@
+[functions.submit-lead]
+verify_jwt = false
+[functions.admin-leads]
+# The function verifies the JWT through Auth and checks ADMIN_USER_IDS itself.
+verify_jwt = false

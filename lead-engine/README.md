@@ -1,26 +1,25 @@
-# R Painters Lead Engine — MVP (development only)
+# R Painters Lead Engine — isolated MVP
 
-This directory is isolated from the existing production website. Do not merge until deployment credentials, RLS policies, spam controls, email delivery, and end-to-end tests are verified.
+Development is confined to `lead-engine/` on `feature/lead-engine-mvp`. Production HTML, estimate form, hosting and main remain unchanged.
 
-## Two connected engines
-- **Inbound:** first-party homeowner requests, stored in PostgreSQL.
-- **Discovery:** curated public bid/opportunity URLs; these are NOT customer inquiries and are never counted as inbound leads.
+## Implemented
+- English estimate form with required contact consent, service selection, attribution, honeypot and Turnstile.
+- Supabase submission API: bounded streaming body, strict validation, CORS preflight, CAPTCHA verification, normalized phone/email, transactional idempotency and database throttles.
+- Spanish private dashboard: Supabase Auth password login, server-verified JWT, explicit user-ID allowlist, recent leads, status updates, separate public opportunities view. Tokens remain in memory only.
+- `002-intake.sql`: atomic intake RPC, accessible only to service_role. Existing tables retain RLS with no client policies.
+- Tests: `node --test lead-engine/tests/api.test.mjs` (Node 24 supports these JavaScript-compatible .ts files).
 
-## Free-first architecture
-- Existing static site stays unchanged.
-- Supabase free-tier project: Postgres + Auth + Edge Functions.
-- Public request submission via Edge Function with server-side validation and rate limiting (to be implemented).
-- Admin access only through Supabase Auth; never expose service-role key in a browser.
-- Email notifications through a provider with a free allowance, configured later. No fake success messages.
-- Discovery begins with manually reviewed, public sources; automated ingestion only after source terms and permissions are reviewed.
+## Configuration still required before real traffic
+1. Apply `schema.sql`, then `002-intake.sql` to the isolated Supabase project.
+2. Deploy functions from `supabase/functions/`. Supabase supplies server URL/service key automatically; do not copy these into a browser.
+3. Create the owner's application Auth user (dashboard login and Supabase account login are separate). Set ADMIN_USER_IDS to that verified Auth UUID. Never authorize by user-editable metadata or open signup.
+4. Configure a free Cloudflare Turnstile widget for the preview hostname, action `lead`. Set TURNSTILE_SECRET_KEY on the server and the public site key in `web/config.js`. Existing credentials must never go in GitHub.
+5. Add the project publishable key to `web/config.js`. This key alone grants no table access. Add only the exact preview origin to ALLOWED_ORIGINS.
+6. Enable public-function gateway access using config.toml when ready. The admin API independently verifies JWT through Supabase Auth. Submission remains disabled until LEAD_ENGINE_PUBLIC_SUBMISSIONS_ENABLED=true and CAPTCHA is configured.
+7. Serve `web/` on a separate HTTPS preview origin (or `python -m http.server 5173 --directory lead-engine/web` for local review). These files are not wired into the production site.
+8. Test a real form submission, retry without duplication, reject invalid submissions, confirm unauthorized access denied, log into the owner dashboard, change status, and inspect both screen sizes.
 
-## Release gates
-1. Deploy database migration to isolated Supabase project.
-2. Configure authentication and RLS; prove anonymous SELECT/UPDATE is denied.
-3. Deploy API, test valid/invalid/duplicate requests and spam throttling.
-4. Verify photo upload permissions, consent and retention.
-5. Verify email delivery and attribution events without sending PII to analytics.
-6. Run mobile/desktop tests and back up old estimate form.
-7. Switch traffic only after a confirmed end-to-end test.
+## Not implemented / release gates
+Email/SMS/push notifications, photo uploads, automatic opportunity discovery, retention automation and pagination beyond 200 records are not enabled. The UI confirms only database storage; it never claims an email was sent. A verified notification provider and retry/outbox workflow are required before production launch. Turnstile or Auth account setup may require the owner to accept provider terms or set their own password.
 
-No production deployment has occurred.
+Do not merge or route production traffic before a successful live end-to-end test. Automated API tests use stubbed external services and do not prove deployed authentication, CAPTCHA or delivery.
