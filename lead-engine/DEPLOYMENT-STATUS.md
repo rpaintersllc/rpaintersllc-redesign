@@ -3,16 +3,12 @@
 Private preview: https://rpainters-lead-engine.jessicuriel27.chatgpt.site
 Admin panel: https://rpainters-lead-engine.jessicuriel27.chatgpt.site/admin
 
-- Supabase schema and atomic intake migration applied to isolated project.
-- submit-lead and admin-leads deployed.
-- Administrator account created by owner; ADMIN_USER_IDS saved and digest matched to the verified user ID.
-- ALLOWED_ORIGINS is restricted to the private preview origin.
-- admin-leads verifies user JWT through Supabase Auth and enforces the administrator UUID allowlist before database access; obsolete legacy gateway verification is disabled.
-- Owner completed both sign-ins. Live authenticated customer-request and public-opportunity reads succeeded in the browser; both collections are currently empty.
-- Entire dashboard and customer form are in English.
-- Public submissions remain disabled. Turnstile keys are not configured.
-- Notification provider is not configured. No email/SMS delivery is claimed.
-- Automated handler tests passed (10); transactional database integration test passed and rolled back all test inserts.
-- Real form submission, owner status update, CAPTCHA, notification delivery and mobile end-to-end tests remain release gates.
-
-Production website and main branch have not been modified. Do not switch customer traffic to this preview.
+- Schema, atomic intake RPC, submit-lead and admin-leads deployed to isolated Supabase project.
+- Owner administrator ID configured and verified; live authenticated reads succeeded for both empty collections.
+- Dashboard and estimate form use English. Production website and main are unchanged.
+- Managed Turnstile widget created, restricted to the private preview hostname, with no pre-clearance. Public site key deployed to the preview; secret stored only in Supabase Edge Function settings.
+- Submission enable flag is true for private-preview testing, but submit-lead's legacy JWT gateway is still enabled. An unsaved gateway configuration change is prepared in the dashboard, awaiting owner confirmation.
+- Turnstile script and widget container loaded in browser; no success callback observed and the submit button remains disabled. CAPTCHA completion and live end-to-end submission have NOT been verified.
+- Notification provider remains unconfigured. No email/SMS delivery is claimed.
+- Ten handler tests and rollback-only database integration test passed previously.
+- Remaining release gates: CAPTCHA success, live submission and dashboard status change, notification delivery, mobile test and customer-traffic release approval.
