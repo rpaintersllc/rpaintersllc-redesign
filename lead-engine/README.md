@@ -2,6 +2,16 @@
 
 Branch: feature/lead-engine-mvp. Production and main remain unchanged until an explicitly approved release.
 
+## Discovery engine — current development focus
+The intake form is not a lead-discovery engine. New discovery code is in
+`discovery/scanner.py`; see `discovery/README.md` for actual coverage and activation
+requirements. It parses public bid listings and configured RSS/Atom homeowner
+request feeds, filters candidates, preserves original links, deduplicates and can
+save to Supabase after migration 005. A live Charleston scan parsed eight current
+notices and returned zero painting matches. Homeowner feeds, unattended operation,
+discovery alerts and new dashboard deployment are not activated yet. Existing
+website-request alerts do not automatically cover discovered opportunities.
+
 ## Available in the private preview
 - English, mobile-friendly estimate form with contact consent, strict server validation, hostname-bound Turnstile, honeypot, transactional duplicate prevention and database throttles.
 - Owner dashboard: customer details, source attribution, status updates, alert queue state and an authenticated retry action. Supabase Auth user IDs are explicitly allowlisted; tokens stay in memory.

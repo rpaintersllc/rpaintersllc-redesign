@@ -1,0 +1,20 @@
+name: Lead discovery dry run
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test discovery qualification
+        run: python -m unittest discover -s lead-engine/tests -p 'test_*.py'
+      - name: Check public source availability
+        run: python lead-engine/discovery/scanner.py --output /tmp/discovery-report.json
+      # Deliberately does not upload prospect data, grant write access, use secrets,
+      # modify production or claim that unattended monitoring is active.

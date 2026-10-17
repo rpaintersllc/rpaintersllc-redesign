@@ -32,6 +32,13 @@ export function makeAdminHandler(env, fetcher=fetch) {
    }
    const dbheaders={apikey:key,authorization:'Bearer '+key,'content-type':'application/json'};
    if(request.method==='GET'){
+    if(new URL(request.url).searchParams.get('action')==='discovery-status'){
+     const res=await fetcher(base+'/rest/v1/discovery_scans?select=source_id,source_name,checked_at,status,items_seen,matches,rejected&order=checked_at.desc&limit=100',{headers:dbheaders});
+     if(!res.ok)return json({error:'Discovery has not been activated yet'},503);
+     const scans=await res.json(),latest=[];const seen=new Set();
+     for(const scan of scans){if(!seen.has(scan.source_id)){seen.add(scan.source_id);latest.push(scan)}}
+     return json({sources:latest});
+    }
     const kind=new URL(request.url).searchParams.get('kind')==='opportunities'?'opportunities':'leads';
     const selection=kind==='leads'?'*,lead_notifications(status,attempts,last_error,accepted_at)':'*';
     const res=await fetcher(base+'/rest/v1/'+kind+'?select='+selection+'&order=created_at.desc&limit=200',{headers:dbheaders});

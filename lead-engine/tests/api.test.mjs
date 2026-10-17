@@ -15,3 +15,10 @@ const adminReq=(token='Bearer token',method='GET',body)=>new Request('https://ex
 test('admin rejects missing token and ordinary authenticated users',async()=>{const h=makeAdminHandler(env,async()=>ok({id:'stranger'}));assert.equal((await h(adminReq(''))).status,401);assert.equal((await h(adminReq())).status,403)});
 test('admin validates token server-side before database access',async()=>{let calls=0;const h=makeAdminHandler(env,async()=>{calls++;return Response.json({}, {status:401})});assert.equal((await h(adminReq())).status,401);assert.equal(calls,1)});
 test('admin can list and rejects unsupported status',async()=>{const h=makeAdminHandler(env,async url=>url.includes('/auth/')?ok({id:'owner'}):ok([]));assert.equal((await h(adminReq())).status,200);assert.equal((await h(adminReq('Bearer token','PATCH',{id:valid.request_key,status:'admin'}))).status,400)});
+test('discovery status requires owner and returns latest source checks without credentials',async()=>{
+ const request=()=>new Request('https://example.test/functions/v1/admin-leads?action=discovery-status',{headers:{origin:'http://localhost:5173',authorization:'Bearer token'}});
+ const h=makeAdminHandler(env,async url=>url.includes('/auth/')?ok({id:'owner'}):ok([{source_id:'a',status:'ok',checked_at:'2026-10-17T13:00:00Z'},{source_id:'a',status:'error',checked_at:'2026-10-17T12:00:00Z'},{source_id:'b',status:'error'}]));
+ const result=await (await h(request())).json();assert.equal(result.sources.length,2);assert.equal(result.sources[0].status,'ok');
+ const denied=makeAdminHandler(env,async()=>ok({id:'stranger'}));assert.equal((await denied(request())).status,403);
+ const absent=makeAdminHandler(env,async url=>url.includes('/auth/')?ok({id:'owner'}):Response.json({}, {status:404}));assert.equal((await absent(request())).status,503);
+});
