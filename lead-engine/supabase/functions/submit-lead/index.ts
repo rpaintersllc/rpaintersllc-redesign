@@ -1,5 +1,5 @@
 // No service credentials are returned to clients. Public traffic stays disabled by default.
-export function makeHandler(env, fetcher = fetch) {
+export function makeHandler(env, fetcher = fetch, defer = task => task.catch(()=>{})) {
  const origins = (env('ALLOWED_ORIGINS') || 'http://localhost:5173').split(',');
  return async request => {
   const origin = request.headers.get('origin') || '';
@@ -34,8 +34,12 @@ export function makeHandler(env, fetcher = fetch) {
    const data=await response.json();
    if(!response.ok)return json({error:'Unable to confirm request'},500);
    if(data.throttled)return json({error:'Too many requests. Please call 843-475-9927.'},429);
+   // The database trigger queues atomically; failed delivery never changes a saved lead into an error.
+   if(!data.duplicate && env('LEAD_NOTIFICATIONS_ENABLED')==='true') {
+    defer(fetcher(env('SUPABASE_URL')+'/functions/v1/notify-leads',{method:'POST',headers:{authorization:'Bearer '+env('SUPABASE_SERVICE_ROLE_KEY'),'content-type':'application/json'},body:'{}',signal:AbortSignal.timeout(25000)}).catch(()=>{}));
+   }
    return json({ok:true,request_key:lead.request_key,duplicate:!!data.duplicate},data.duplicate?200:201);
   } catch {return json({error:'Unable to confirm request. Please retry.'},502)}
  };
 }
-if (typeof Deno !== 'undefined') Deno.serve(makeHandler(key=>Deno.env.get(key)));
+if (typeof Deno !== 'undefined') Deno.serve(makeHandler(key=>Deno.env.get(key),fetch,task=>EdgeRuntime.waitUntil(task)));

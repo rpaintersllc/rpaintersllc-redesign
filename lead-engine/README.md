@@ -23,3 +23,12 @@ Development is confined to `lead-engine/` on `feature/lead-engine-mvp`. Producti
 Email/SMS/push notifications, photo uploads, automatic opportunity discovery, retention automation and pagination beyond 200 records are not enabled. The UI confirms only database storage; it never claims an email was sent. A verified notification provider and retry/outbox workflow are required before production launch. Turnstile or Auth account setup may require the owner to accept provider terms or set their own password.
 
 Do not merge or route production traffic before a successful live end-to-end test. Automated API tests use stubbed external services and do not prove deployed authentication, CAPTCHA or delivery.
+
+## Owner email notifications (003 migration)
+`003-notifications.sql` installs an RLS-protected outbox. Each new lead and its queue entry commit together. `notify-leads` uses Resend and sends only a generic alert plus a dashboard link to the fixed owner recipient, rpaintersinsc@gmail.com. Customer data stays in the dashboard.
+
+Server settings: `RESEND_API_KEY`, `LEAD_NOTIFICATION_FROM`, and `LEAD_NOTIFICATIONS_ENABLED=true`. Keep disabled until the owner authorizes the provider and a live inbox test succeeds. Provider API acceptance is shown as **Accepted**, never as inbox delivery.
+
+Every new nonduplicate submission wakes one queue attempt in the background. The authenticated dashboard button **Retry next pending alert** processes one due job. Jobs use exclusive two-minute leases, bounded exponential backoff, and a stable provider idempotency key. After eight attempts or a twelve-hour retry window, jobs fail for manual investigation. A standalone recurring retry schedule is NOT configured; without another submission or an administrator retry, pending jobs wait. Add a protected scheduled invocation before production launch. Do not change sender settings during active retries.
+
+No historical requests are backfilled. The old sample request therefore displays **Not queued**. Tests: `node --test lead-engine/tests/*.test.mjs`; `tests/notifications.sql` verifies the queue inside a rollback-only transaction. Resend account setup, sender verification, delivery webhook tracking and actual inbox delivery remain pending.

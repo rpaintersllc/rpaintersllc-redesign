@@ -18,7 +18,8 @@ export function makeAdminHandler(env, fetcher=fetch) {
    const dbheaders={apikey:key,authorization:'Bearer '+key,'content-type':'application/json'};
    if(request.method==='GET'){
     const kind=new URL(request.url).searchParams.get('kind')==='opportunities'?'opportunities':'leads';
-    const res=await fetcher(base+'/rest/v1/'+kind+'?select=*&order=created_at.desc&limit=200',{headers:dbheaders});
+    const selection=kind==='leads'?'*,lead_notifications(status,attempts,last_error,accepted_at)':'*';
+    const res=await fetcher(base+'/rest/v1/'+kind+'?select='+selection+'&order=created_at.desc&limit=200',{headers:dbheaders});
     if(!res.ok)return json({error:'Unable to load records'},502);
     return json({records:await res.json()});
    }

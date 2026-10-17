@@ -3,3 +3,7 @@ verify_jwt = false
 [functions.admin-leads]
 # The function verifies the JWT through Auth and checks ADMIN_USER_IDS itself.
 verify_jwt = false
+
+[functions.notify-leads]
+# Server key or verified owner JWT required by the function itself.
+verify_jwt = false
