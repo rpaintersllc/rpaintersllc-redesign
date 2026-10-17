@@ -24,6 +24,11 @@ export function makeNotifyHandler(env, fetcher=fetch) {
    if(env('LEAD_NOTIFICATIONS_ENABLED')!=='true'||!apiKey||!from)return json({error:'Email notifications are not configured'},503);
    const dbheaders={apikey:serverKey,authorization:'Bearer '+serverKey,'content-type':'application/json'};
    const rpc=async(name,body)=>fetcher(base+'/rest/v1/rpc/'+name,{method:'POST',headers:dbheaders,body:JSON.stringify(body),signal:AbortSignal.timeout(8000)});
+   if(env('LEAD_RETRY_SCHEDULE_ENABLED')==='true'){
+    // Existing server authorization stays inside this Supabase project, encrypted in Vault.
+    // A scheduler failure must not prevent the immediate lead alert from being attempted.
+    try{const schedule=await rpc('configure_lead_notification_schedule',{worker_key:serverKey});if(!schedule.ok){const failure=await schedule.json().catch(()=>({}));console.error('retry_schedule_setup_failed',schedule.status,failure.code||'unknown')}}catch{console.error('retry_schedule_setup_failed')}
+   }
    const claim=await rpc('claim_lead_notification',{});
    if(!claim.ok)return json({error:'Unable to claim notification'},502);
    const job=await claim.json();if(!job)return json({ok:true,processed:0});

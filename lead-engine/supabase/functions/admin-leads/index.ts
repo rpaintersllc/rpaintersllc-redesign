@@ -15,6 +15,15 @@ export function makeAdminHandler(env, fetcher=fetch) {
    if(!auth.ok)return json({error:'Session expired'},401);
    const user=await auth.json();
    if(!(env('ADMIN_USER_IDS')||'').split(',').filter(Boolean).includes(user.id))return json({error:'Administrator access required'},403);
+   if(request.method==='POST' && new URL(request.url).searchParams.get('action')==='save-opportunity'){
+    const raw=await request.text();if(raw.length>7000)return json({error:'Payload too large'},413);
+    let body;try{body=JSON.parse(raw)}catch{return json({error:'Invalid request'},400)}
+    const text=k=>typeof body?.[k]==='string'?body[k].trim():'';
+    let url;try{url=new URL(text('source_url'))}catch{return json({error:'Enter a valid source URL'},400)}
+    if(url.protocol!=='https:'||url.username||url.password||url.href.length>1000||text('title').length<5||text('title').length>200||text('source_name').length<2||text('source_name').length>120||text('city').length>100||text('summary').length>2000)return json({error:'Check opportunity details'},400);
+    const res=await fetcher(base+'/rest/v1/opportunities?on_conflict=source_url',{method:'POST',headers:{apikey:key,authorization:'Bearer '+key,'content-type':'application/json',prefer:'resolution=ignore-duplicates,return=representation'},body:JSON.stringify({title:text('title'),source_name:text('source_name'),source_url:url.href,city:text('city')||null,summary:text('summary')||null})});
+    if(!res.ok)return json({error:'Unable to save opportunity'},502);const rows=await res.json();return json({ok:true,duplicate:rows.length===0});
+   }
    if(request.method==='POST'){
     if(new URL(request.url).searchParams.get('action')!=='retry-notification')return json({error:'Invalid action'},400);
     const retry=await fetcher(base+'/functions/v1/notify-leads',{method:'POST',headers:{authorization:'Bearer '+key,'content-type':'application/json'},body:'{}',signal:AbortSignal.timeout(28000)});
@@ -28,6 +37,12 @@ export function makeAdminHandler(env, fetcher=fetch) {
     const res=await fetcher(base+'/rest/v1/'+kind+'?select='+selection+'&order=created_at.desc&limit=200',{headers:dbheaders});
     if(!res.ok)return json({error:'Unable to load records'},502);
     return json({records:await res.json()});
+   }
+   if(new URL(request.url).searchParams.get('kind')==='opportunities'){
+    const raw=await request.text();if(raw.length>1000)return json({error:'Payload too large'},413);const body=JSON.parse(raw);
+    if(!/^[0-9a-f-]{36}$/i.test(body.id||'')||!['unreviewed','relevant','dismissed'].includes(body.review_status))return json({error:'Invalid review update'},400);
+    const res=await fetcher(base+'/rest/v1/opportunities?id=eq.'+body.id+'&select=id,review_status',{method:'PATCH',headers:{...dbheaders,prefer:'return=representation'},body:JSON.stringify({review_status:body.review_status})});
+    if(!res.ok)return json({error:'Unable to save review'},502);const rows=await res.json();return rows.length?json({record:rows[0]}):json({error:'Opportunity not found'},404);
    }
    const raw=await request.text(); if(raw.length>1000)return json({error:'Payload too large'},413);
    const body=JSON.parse(raw);

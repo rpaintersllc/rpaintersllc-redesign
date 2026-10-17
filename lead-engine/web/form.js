@@ -3,7 +3,7 @@ const form=document.querySelector('#estimate'),message=document.querySelector('#
 let token='',widget,requestKey=crypto.randomUUID();
 if(!config.publishableKey||!config.turnstileSiteKey){message.textContent='This preview is not accepting requests yet. Please call 843-475-9927.'}
 else{
- window.onTurnstileReady=()=>{widget=window.turnstile.render('#captcha',{sitekey:config.turnstileSiteKey,action:'lead',callback:value=>{token=value;button.disabled=false},'expired-callback':()=>{token='';button.disabled=true}})};
+ window.onTurnstileReady=()=>{widget=window.turnstile.render('#captcha',{sitekey:config.turnstileSiteKey,action:'lead',callback:value=>{token=value;button.disabled=false},'expired-callback':()=>{token='';button.disabled=true},'error-callback':()=>{token='';button.disabled=true;message.textContent='The security check could not complete. Please reload or call 843-475-9927.'}})};
  const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileReady&render=explicit';script.async=true;script.onerror=()=>{message.textContent='Bot check could not load. Please call 843-475-9927.'};document.head.append(script);
 }
 form.addEventListener('submit',async event=>{
