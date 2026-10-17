@@ -1,0 +1,24 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {makeHandler} from '../supabase/functions/submit-lead/index.ts';import {makeAdminHandler} from '../supabase/functions/admin-leads/index.ts';
+const settings={ALLOWED_ORIGINS:'http://localhost:5173',LEAD_ENGINE_PUBLIC_SUBMISSIONS_ENABLED:'true',TURNSTILE_SECRET_KEY:'test',SUPABASE_URL:'https://example.test',SUPABASE_SERVICE_ROLE_KEY:'server-only',ADMIN_USER_IDS:'owner'};
+const env=k=>settings[k];
+const valid={request_key:'c12ef933-0404-49ea-a6a9-fb9444f3a90f',full_name:'Test Customer',email:'test@example.com',phone:'8435550100',city:'Summerville',zip:'29483',service:'Interior painting',details:'Paint the living room walls.',contact_consent:true,captcha_token:'test'};
+const req=body=>new Request('https://example.test/functions/v1/submit-lead',{method:'POST',headers:{origin:'http://localhost:5173'},body:JSON.stringify(body)});
+const ok=x=>Response.json(x);
+test('preflight and forbidden origins',async()=>{const h=makeHandler(env);assert.equal((await h(new Request('https://x.test',{method:'OPTIONS',headers:{origin:'http://localhost:5173'}}))).status,204);assert.equal((await h(new Request('https://x.test'))).status,403)});
+test('disabled submissions fail closed',async()=>assert.equal((await makeHandler(k=>k==='LEAD_ENGINE_PUBLIC_SUBMISSIONS_ENABLED'?'false':env(k))(req(valid))).status,503));
+test('malformed, consent, honeypot, phone and unsupported service rejected',async()=>{for(const body of [null,[],{...valid,contact_consent:false},{...valid,website:'spam'},{...valid,phone:'abcdefghij'},{...valid,service:'Pressure washing'}])assert.equal((await makeHandler(env)(req(body))).status,400)});
+test('chunked payload size enforced without content-length',async()=>assert.equal((await makeHandler(env)(req({...valid,details:'x'.repeat(13000)}))).status,413));
+test('captcha failure never reaches database',async()=>{let calls=0;const r=await makeHandler(env,async()=>{calls++;return ok({success:false})})(req(valid));assert.equal(r.status,400);assert.equal(calls,1)});
+test('saved, duplicate and throttled outcomes',async()=>{for(const [result,status]of [[{id:'test'},201],[{duplicate:true},200],[{throttled:true},429]]){const h=makeHandler(env,async(url,options)=>{if(url.includes('siteverify'))return ok({success:true,action:'lead',hostname:'localhost'});assert.equal(JSON.parse(options.body).payload.phone,'8435550100');return ok(result)});assert.equal((await h(req(valid))).status,status)}});
+test('database errors never report success',async()=>{const h=makeHandler(env,async url=>url.includes('siteverify')?ok({success:true,action:'lead',hostname:'localhost'}):Response.json({message:'private database detail'},{status:500}));const r=await h(req(valid));assert.equal(r.status,500);assert.doesNotMatch(await r.text(),/private database detail/)});
+const adminReq=(token='Bearer token',method='GET',body)=>new Request('https://example.test/functions/v1/admin-leads',{method,headers:{origin:'http://localhost:5173',authorization:token},...(body?{body:JSON.stringify(body)}:{})});
+test('admin rejects missing token and ordinary authenticated users',async()=>{const h=makeAdminHandler(env,async()=>ok({id:'stranger'}));assert.equal((await h(adminReq(''))).status,401);assert.equal((await h(adminReq())).status,403)});
+test('admin validates token server-side before database access',async()=>{let calls=0;const h=makeAdminHandler(env,async()=>{calls++;return Response.json({}, {status:401})});assert.equal((await h(adminReq())).status,401);assert.equal(calls,1)});
+test('admin can list and rejects unsupported status',async()=>{const h=makeAdminHandler(env,async url=>url.includes('/auth/')?ok({id:'owner'}):ok([]));assert.equal((await h(adminReq())).status,200);assert.equal((await h(adminReq('Bearer token','PATCH',{id:valid.request_key,status:'admin'}))).status,400)});
+test('discovery status requires owner and returns latest source checks without credentials',async()=>{
+ const request=()=>new Request('https://example.test/functions/v1/admin-leads?action=discovery-status',{headers:{origin:'http://localhost:5173',authorization:'Bearer token'}});
+ const h=makeAdminHandler(env,async url=>url.includes('/auth/')?ok({id:'owner'}):ok([{source_id:'a',status:'ok',checked_at:'2026-10-17T13:00:00Z'},{source_id:'a',status:'error',checked_at:'2026-10-17T12:00:00Z'},{source_id:'b',status:'error'}]));
+ const result=await (await h(request())).json();assert.equal(result.sources.length,2);assert.equal(result.sources[0].status,'ok');
+ const denied=makeAdminHandler(env,async()=>ok({id:'stranger'}));assert.equal((await denied(request())).status,403);
+ const absent=makeAdminHandler(env,async url=>url.includes('/auth/')?ok({id:'owner'}):Response.json({}, {status:404}));assert.equal((await absent(request())).status,503);
+});

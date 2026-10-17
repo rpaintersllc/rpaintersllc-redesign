@@ -1,0 +1,16 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile,readdir} from 'node:fs/promises';
+const source=await readFile(new URL('../supabase/functions/platform-api/index.ts',import.meta.url),'utf8');
+const {makePlatformHandler,boundedBody}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const origin='https://r-painters-projects.jessicuriel27.chatgpt.site';
+const env=k=>({SUPABASE_URL:'https://test.invalid',SUPABASE_SERVICE_ROLE_KEY:'server-only'}[k]);
+const request=(action,body,headers={})=>new Request('https://test.invalid/?action='+action,{method:body===undefined?'GET':'POST',headers:{origin,'content-type':'application/json',...headers},...(body===undefined?{}:{body:JSON.stringify(body)})});
+test('unknown origins never reach the database',async()=>{const h=makePlatformHandler(env,()=>{throw Error('must not call')});assert.equal((await h(request('providers',undefined,{origin:'https://evil.invalid'}))).status,403)});
+test('business projects require authentication',async()=>{const h=makePlatformHandler(env,()=>{throw Error('must not call')});assert.equal((await h(request('pro-list'))).status,403)});
+test('membership excludes another business',async()=>{let called=0;const h=makePlatformHandler(env,async url=>{called++;return Response.json(url.includes('/auth/')?{id:'user-one'}:[{business_id:'11111111-1111-4111-8111-111111111111',business:{name:'A'}}])});assert.equal((await h(request('pro-list&business_id=22222222-2222-4222-8222-222222222222',undefined,{authorization:'Bearer example'}))).status,403);assert.equal(called,2)});
+test('private lookup rejects missing capability without database access',async()=>{const h=makePlatformHandler(env,()=>{throw Error('must not call')});assert.equal((await h(request('lookup',{project_id:'bad',access_token:'bad'}))).status,404)});
+test('malformed projects are rejected before insertion',async()=>{const h=makePlatformHandler(env,()=>{throw Error('must not call')});assert.equal((await h(request('create',{contact_consent:false}))).status,400)});
+test('streamed body limits enforce actual bytes',async()=>{await assert.rejects(boundedBody(new Request('https://test.invalid',{method:'POST',body:'123456'}),5),/too_large/)});
+test('provider interest cannot activate a contractor account',async()=>{let target;const h=makePlatformHandler(env,async url=>{target=url;return Response.json({ok:true})});const r=await h(request('provider-interest',{business_name:'Example Painter',email:'example@example.invalid',state:'TX',city:'Austin',consent:true}));assert.equal(r.status,201);assert.match(target,/rpc\/platform_record_provider_interest$/)});
+test('every local HTML asset exists',async()=>{const root=new URL('../web/',import.meta.url),files=new Set(await readdir(root));for(const file of files){if(!file.endsWith('.html'))continue;const html=await readFile(new URL(file,root),'utf8');for(const match of html.matchAll(/(?:src|href)="([^"#?]+)(?:[?#][^"]*)?"/g)){const path=match[1];if(!path.includes(':')&&!path.startsWith('/'))assert.ok(files.has(path),file+' missing '+path)}}});

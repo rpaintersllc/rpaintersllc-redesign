@@ -1,0 +1,106 @@
+export const SERVICES=['Interior painting','Exterior painting','Cabinet refinishing','Drywall repair','Deck or fence staining','Other painting project'];
+const TIMINGS=['As soon as possible','Within a month','1–3 months','Just planning'];
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const TOKEN=/^[0-9a-f]{64}$/;
+export async function digest(value){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))].map(v=>v.toString(16).padStart(2,'0')).join('')}
+export async function boundedBody(request,limit){
+ const reader=request.body?.getReader();if(!reader)throw Error('invalid_body');let size=0;const chunks=[];
+ try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>limit)throw Error('too_large');chunks.push(value)}}finally{await reader.cancel().catch(()=>{})}
+ const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length}return bytes;
+}
+function validImage(bytes,mime){
+ if(mime==='image/jpeg')return bytes.length>3&&bytes[0]===255&&bytes[1]===216&&bytes[2]===255;
+ if(mime==='image/png')return bytes.length>8&&[137,80,78,71,13,10,26,10].every((v,i)=>bytes[i]===v);
+ if(mime==='image/webp')return bytes.length>12&&new TextDecoder().decode(bytes.slice(0,4))==='RIFF'&&new TextDecoder().decode(bytes.slice(8,12))==='WEBP';return false;
+}
+export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
+ const allowed=new Set((env('PLATFORM_ALLOWED_ORIGINS')||'https://r-painters-projects.jessicuriel27.chatgpt.site').split(','));
+ return async request=>{
+  const origin=request.headers.get('origin')||'';
+  const headers={'content-type':'application/json','cache-control':'no-store','referrer-policy':'no-referrer','vary':'Origin',...(allowed.has(origin)?{'access-control-allow-origin':origin,'access-control-allow-headers':'content-type,authorization,apikey,x-project-id,x-project-token','access-control-allow-methods':'GET,POST,OPTIONS'}:{})};
+  const json=(value,status=200)=>new Response(JSON.stringify(value),{status,headers});
+  if(!allowed.has(origin))return json({error:'This origin is not allowed'},403);
+  if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
+  if(!['GET','POST'].includes(request.method))return json({error:'Method not allowed'},405);
+  const base=env('SUPABASE_URL'),key=env('SUPABASE_SERVICE_ROLE_KEY');if(!base||!key)return json({error:'Platform unavailable'},503);
+  const dbHeaders={apikey:key,authorization:'Bearer '+key,'content-type':'application/json'};
+  const db=async(path,body,method)=>{const res=await fetcher(base+'/rest/v1/'+path,{method:method||(body===undefined?'GET':'POST'),headers:{...dbHeaders,prefer:'return=representation'},...(body!==undefined?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(12000)});if(!res.ok)throw Error('storage_error');if(res.status===204)return null;return res.json()};
+  const rpc=(name,body)=>db('rpc/'+name,body);
+  const signedPhotos=async photos=>Promise.all((photos||[]).filter(p=>p.status==='ready').map(async p=>{
+   try{const res=await fetcher(base+'/storage/v1/object/sign/platform-project-photos/'+p.storage_path,{method:'POST',headers:dbHeaders,body:JSON.stringify({expiresIn:1800}),signal:AbortSignal.timeout(8000)});if(!res.ok)return {id:p.id,unavailable:true};const data=await res.json();const path=data.signedURL||data.signedUrl;return {id:p.id,url:path?.startsWith('/')?base+'/storage/v1'+path:path}}catch{return {id:p.id,unavailable:true}}
+  }));
+  async function member(businessId){
+   const authorization=request.headers.get('authorization')||'';if(!authorization.startsWith('Bearer '))return null;
+   const response=await fetcher(base+'/auth/v1/user',{headers:{apikey:key,authorization},signal:AbortSignal.timeout(8000)});if(!response.ok)return null;const user=await response.json();
+   const memberships=await db('platform_business_members?select=business_id,role,business:platform_businesses(id,slug,name)&user_id=eq.'+encodeURIComponent(user.id));
+   const membership=businessId?memberships.find(m=>m.business_id===businessId):memberships[0];return membership?{...membership,user,memberships}:null;
+  }
+  try{
+   const action=new URL(request.url).searchParams.get('action')||'providers';
+   if(action==='providers'&&request.method==='GET'){
+    const providers=await db('platform_businesses?select=slug,name,website,phone,state,cities&active=eq.true&order=created_at.asc');
+    return json({providers,services:SERVICES,pilot:true});
+   }
+   if(action==='upload'&&request.method==='POST'){
+    const project=request.headers.get('x-project-id')||'',token=request.headers.get('x-project-token')||'',mime=(request.headers.get('content-type')||'').split(';')[0];
+    if(!UUID.test(project)||!TOKEN.test(token))return json({error:'Private project access is required'},401);
+    const owned=await db('platform_projects?select=id&id=eq.'+project+'&access_hash=eq.'+await digest(token));if(!owned.length)return json({error:'Project not found'},404);
+    const bytes=await boundedBody(request,5242880);if(!validImage(bytes,mime))return json({error:'Choose a JPEG, PNG or WebP photo up to 5 MB'},400);
+    const slot=await rpc('platform_reserve_photo',{project,access_key_hash:await digest(token),photo_mime:mime,byte_size:bytes.length});
+    if(!slot)return json({error:'Project not found'},404);if(slot.error)return json({error:'Five photos are already saved or uploading'},409);
+    const path=base+'/storage/v1/object/platform-project-photos/'+slot.path;
+    try{
+     const uploaded=await fetcher(path,{method:'POST',headers:{apikey:key,authorization:'Bearer '+key,'content-type':mime,'x-upsert':'false'},body:bytes,signal:AbortSignal.timeout(25000)});
+     if(!uploaded.ok)throw Error('upload_error');
+     await db('platform_photos?id=eq.'+slot.id,{status:'ready'},'PATCH');return json({ok:true,id:slot.id},201);
+    }catch{
+     try{await db('platform_photos?id=eq.'+slot.id,{status:'failed'},'PATCH');await fetcher(path,{method:'DELETE',headers:dbHeaders,signal:AbortSignal.timeout(8000)})}catch{}
+     return json({error:'Photo was not saved. Please retry.'},502);
+    }
+   }
+   let body={};if(request.method==='POST'){try{body=JSON.parse(new TextDecoder().decode(await boundedBody(request,12000)))}catch(error){if(error.message==='too_large')return json({error:'Request is too large'},413);return json({error:'Invalid request'},400)}}
+   if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'Invalid request'},400);
+   const text=k=>typeof body[k]==='string'?body[k].trim():'';
+   if(action==='provider-interest'&&request.method==='POST'){
+    const states='AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
+    let website=text('business_website');if(website){try{const url=new URL(website);if(url.protocol!=='https:'||url.username||url.password||url.href.length>300)throw Error();website=url.href}catch{return json({error:'Use an HTTPS business website URL'},400)}}
+    if(text('business_name').length<2||text('business_name').length>120||!/^\S+@\S+\.\S+$/.test(text('email'))||text('email').length>254||!states.includes(text('state'))||text('city').length<2||text('city').length>100||body.consent!==true||text('website'))return json({error:'Check your business details and contact permission'},400);
+    const result=await rpc('platform_record_provider_interest',{payload:{business_name:text('business_name'),email:text('email').toLowerCase(),state:text('state'),city:text('city'),website}});return result.error?json({error:'The pilot interest limit has been reached. Please contact R Painters.'},429):json(result,201);
+   }
+   if(action==='create'&&request.method==='POST'){
+    const email=text('email').toLowerCase();let phone=text('phone').replace(/\D/g,'');if(phone.length===11&&phone[0]==='1')phone=phone.slice(1);
+    if(!UUID.test(text('request_key'))||!TOKEN.test(text('access_token'))||text('full_name').length<2||text('full_name').length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!/^\d{10}$/.test(phone)||text('city').length<2||text('city').length>100||text('state')!=='SC'||!/^\d{5}$/.test(text('zip'))||!SERVICES.includes(text('service'))||!['Home','Business'].includes(text('property_type'))||!TIMINGS.includes(text('timing'))||text('budget').length>100||text('details').length<10||text('details').length>4000||body.contact_consent!==true||text('website')||text('provider_slug')!=='r-painters-llc')return json({error:'Check the project details and contact permission'},400);
+    // Pilot limits are enforced atomically in PostgreSQL; contact details remain unverified.
+    const ip=(request.headers.get('x-forwarded-for')||'unknown').split(',')[0].trim().slice(0,100);
+    const result=await rpc('platform_create_project',{payload:{request_key:text('request_key'),access_hash:await digest(text('access_token')),ip_hash:await digest(key+'|'+ip),provider_slug:text('provider_slug'),full_name:text('full_name'),email,phone,city:text('city'),state:text('state'),zip:text('zip'),service:text('service'),property_type:text('property_type'),timing:text('timing'),budget:text('budget'),details:text('details'),utm_source:text('utm_source').slice(0,200),utm_campaign:text('utm_campaign').slice(0,200)}});
+    if(result.error)return json({error:result.error==='outside_pilot_area'?'This location is outside the current pilot.':result.error==='rate_limited'?'The pilot request limit has been reached. Please call R Painters.':'This request cannot be repeated with a different private key.'},result.error==='rate_limited'?429:409);
+    if(!result.duplicate&&env('LEAD_NOTIFICATIONS_ENABLED')==='true')defer(fetcher(base+'/functions/v1/notify-leads',{method:'POST',headers:{authorization:'Bearer '+key,'content-type':'application/json'},body:'{}',signal:AbortSignal.timeout(25000)}).catch(()=>{}));
+    return json({ok:true,project_id:result.id,duplicate:!!result.duplicate},result.duplicate?200:201);
+   }
+   const selection='id,created_at,property_type,timing,budget,contact_verified,lead:leads(full_name,email,phone,city,zip,service,details,status),business:platform_businesses(id,slug,name,phone,website),photos:platform_photos(id,storage_path,status),events:platform_events(status,created_at)';
+   if(action==='lookup'&&request.method==='POST'){
+    if(!UUID.test(text('project_id'))||!TOKEN.test(text('access_token')))return json({error:'Project not found'},404);
+    const rows=await db('platform_projects?select='+selection+'&id=eq.'+text('project_id')+'&access_hash=eq.'+await digest(text('access_token')));
+    if(!rows.length)return json({error:'Project not found'},404);const project=rows[0];project.photos=await signedPhotos(project.photos);return json({project});
+   }
+   if(action==='pro-list'&&request.method==='GET'){
+    const chosen=new URL(request.url).searchParams.get('business_id');if(chosen&&!UUID.test(chosen))return json({error:'Invalid workspace'},400);
+    const access=await member(chosen);if(!access)return json({error:'An approved business account is required'},403);
+    const projects=await db('platform_projects?select='+selection+'&business_id=eq.'+access.business_id+'&order=created_at.desc&limit=100');
+    for(const project of projects)project.photos=await signedPhotos(project.photos);
+    return json({business:access.business,memberships:access.memberships.map(m=>({business_id:m.business_id,name:m.business.name})),projects,can_review_interest:(env('ADMIN_USER_IDS')||'').split(',').includes(access.user.id)});
+   }
+   if(action==='interest-list'&&request.method==='GET'){
+    const access=await member();if(!access||!(env('ADMIN_USER_IDS')||'').split(',').includes(access.user.id))return json({error:'Platform owner access required'},403);
+    return json({applications:await db('platform_provider_interest?select=business_name,email,state,city,website,created_at&order=created_at.desc&limit=100')});
+   }
+   if(action==='status'&&request.method==='POST'){
+    if(!UUID.test(text('project_id'))||!UUID.test(text('business_id'))||!['new','contacted','visit_scheduled','quoted','won','lost'].includes(text('status')))return json({error:'Invalid status update'},400);
+    const access=await member(text('business_id'));if(!access)return json({error:'Workspace access required'},403);
+    const updated=await rpc('platform_set_status',{project:text('project_id'),business:access.business_id,next_status:text('status')});return updated?json({ok:true}):json({error:'Project not found'},404);
+   }
+   return json({error:'Unknown platform action'},400);
+  }catch(error){return json({error:error?.message==='too_large'?'File exceeds the 5 MB limit':'Unable to complete the request. Please retry.'},error?.message==='too_large'?413:502)}
+ };
+}
+if(typeof Deno!=='undefined')Deno.serve(makePlatformHandler(k=>Deno.env.get(k),fetch,p=>EdgeRuntime.waitUntil(p)));

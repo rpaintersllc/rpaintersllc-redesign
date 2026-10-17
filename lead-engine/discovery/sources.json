@@ -1,0 +1,13 @@
+{
+  "allowed_hosts": ["www.charleston-sc.gov", "www.google.com", "google.com"],
+  "sources": [
+    {
+      "id": "charleston-open-bids",
+      "name": "City of Charleston open bids",
+      "url": "https://www.charleston-sc.gov/Bids.aspx",
+      "adapter": "civic_bids",
+      "kind": "commercial_bid",
+      "enabled": true
+    }
+  ]
+}
