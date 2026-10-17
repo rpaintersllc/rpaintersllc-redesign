@@ -2,11 +2,11 @@ export function makeAdminHandler(env, fetcher=fetch) {
  return async request=>{
   const origin=request.headers.get('origin')||'';
   const allowed=(env('ALLOWED_ORIGINS')||'http://localhost:5173').split(',');
-  const headers={'content-type':'application/json','cache-control':'no-store','vary':'Origin',...(allowed.includes(origin)?{'access-control-allow-origin':origin,'access-control-allow-headers':'authorization,apikey,content-type','access-control-allow-methods':'GET,PATCH,OPTIONS'}:{})};
+  const headers={'content-type':'application/json','cache-control':'no-store','vary':'Origin',...(allowed.includes(origin)?{'access-control-allow-origin':origin,'access-control-allow-headers':'authorization,apikey,content-type','access-control-allow-methods':'GET,PATCH,POST,OPTIONS'}:{})};
   const json=(body,status=200)=>new Response(JSON.stringify(body),{status,headers});
   if(!allowed.includes(origin))return json({error:'Forbidden'},403);
   if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
-  if(!['GET','PATCH'].includes(request.method))return json({error:'Method not allowed'},405);
+  if(!['GET','PATCH','POST'].includes(request.method))return json({error:'Method not allowed'},405);
   const token=request.headers.get('authorization');
   if(!token?.startsWith('Bearer '))return json({error:'Sign in required'},401);
   try{
@@ -15,6 +15,12 @@ export function makeAdminHandler(env, fetcher=fetch) {
    if(!auth.ok)return json({error:'Session expired'},401);
    const user=await auth.json();
    if(!(env('ADMIN_USER_IDS')||'').split(',').filter(Boolean).includes(user.id))return json({error:'Administrator access required'},403);
+   if(request.method==='POST'){
+    if(new URL(request.url).searchParams.get('action')!=='retry-notification')return json({error:'Invalid action'},400);
+    const retry=await fetcher(base+'/functions/v1/notify-leads',{method:'POST',headers:{authorization:'Bearer '+key,'content-type':'application/json'},body:'{}',signal:AbortSignal.timeout(28000)});
+    const result=await retry.json();
+    return json(result,retry.status);
+   }
    const dbheaders={apikey:key,authorization:'Bearer '+key,'content-type':'application/json'};
    if(request.method==='GET'){
     const kind=new URL(request.url).searchParams.get('kind')==='opportunities'?'opportunities':'leads';

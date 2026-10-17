@@ -5,5 +5,5 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.notify-leads]
-# Server key or verified owner JWT required by the function itself.
-verify_jwt = false
+# Internal worker: legacy gateway + service-role authorization; browser retries go through admin-leads.
+verify_jwt = true
