@@ -14,6 +14,13 @@ jobs:
           python-version: '3.12'
       - name: Test discovery qualification
         run: python -m unittest discover -s lead-engine/tests -p 'test_*.py'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install pinned parser for Edge Function tests
+        run: npm ci --prefix lead-engine/discovery --ignore-scripts
+      - name: Test API, parser and notification behavior
+        run: node --test lead-engine/tests/*.test.mjs
       - name: Check public source availability
         run: python lead-engine/discovery/scanner.py --output /tmp/discovery-report.json
       # Deliberately does not upload prospect data, grant write access, use secrets,

@@ -7,3 +7,9 @@ verify_jwt = false
 [functions.notify-leads]
 # Internal worker: legacy gateway + service-role authorization; browser retries go through admin-leads.
 verify_jwt = true
+
+[functions.discover-opportunities]
+verify_jwt = true
+
+[functions.notify-opportunities]
+verify_jwt = true

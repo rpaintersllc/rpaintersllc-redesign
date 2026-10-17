@@ -1,3 +1,19 @@
+# Discovery deployment update — October 17, 2026, 09:35 Eastern
+
+Private opportunity dashboard: https://rpainters-lead-engine.jessicuriel27.chatgpt.site/admin.html
+
+- Discovery worker v2 and owner API v16 are deployed. Opportunity notifier v1 uses its own atomic outbox.
+- Active discovery schedule: every 15 minutes. Active opportunity-alert retry schedule: every five minutes. Existing website-request retries remain separate.
+- Live worker at 13:32:56 UTC returned HTTP 200, parsed eight open Charleston notices and found zero painting matches.
+- SYSTEM TEST opportunity alert accepted by provider on attempt one at 13:30:51 UTC. Inbox delivery unconfirmed; test record marked Dismissed and explicitly synthetic.
+- Public unauthenticated discovery request returns HTTP 401. Anonymous/ordinary-user source reads and scan/dispatcher privileges checked and denied.
+- 31 Node tests and seven Python tests pass. Includes parser, qualification, size limits, authorization, deduplication, source errors, queue separation and a mocked dashboard interaction test.
+- Private Site published from source 80fd94335baa487176b6daf66fc2d210b19935cc. Owner-only access preserved; home page opens the opportunity dashboard.
+- Remaining: owner must create/connect Google Alerts RSS feeds, validate live homeowner inputs and complete authenticated browser walkthrough. Browser controls are unavailable in this session. No verified real homeowner lead is claimed.
+- Production business website and main remain unchanged. Do not promote the private research dashboard to customers.
+
+## Earlier intake verification record
+
 # Private MVP deployment status — October 17, 2026 UTC
 
 Preview: https://rpainters-lead-engine.jessicuriel27.chatgpt.site

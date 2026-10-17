@@ -15,6 +15,24 @@ export function makeAdminHandler(env, fetcher=fetch) {
    if(!auth.ok)return json({error:'Session expired'},401);
    const user=await auth.json();
    if(!(env('ADMIN_USER_IDS')||'').split(',').filter(Boolean).includes(user.id))return json({error:'Administrator access required'},403);
+   const action=new URL(request.url).searchParams.get('action');
+   if(request.method==='POST'&&action==='connect-discovery-feed'){
+    const raw=await request.text();if(raw.length>2000)return json({error:'Payload too large'},413);let body;try{body=JSON.parse(raw)}catch{return json({error:'Invalid request'},400)}
+    let url;try{url=new URL(body.source_url)}catch{return json({error:'Enter your Google Alerts RSS feed URL'},400)}
+    if(url.protocol!=='https:'||url.username||url.password||url.port||!['www.google.com','google.com'].includes(url.hostname)||!/^\/alerts\/feeds\/\d{1,100}\/\d{1,100}$/.test(url.pathname)||url.search||url.hash)return json({error:'Use the RSS feed URL provided by Google Alerts'},400);
+    const name=typeof body.name==='string'?body.name.trim():'';if(name.length<3||name.length>80)return json({error:'Give this source a short descriptive name'},400);
+    const h={apikey:key,authorization:'Bearer '+key,'content-type':'application/json'};
+    const existing=await fetcher(base+'/rest/v1/discovery_sources?select=id&kind=eq.homeowner_request',{headers:h});if(!existing.ok)return json({error:'Unable to check source configuration'},502);
+    if((await existing.json()).length>=5)return json({error:'Five request feeds are already connected'},409);
+    const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(url.href));const id='homeowner-feed-'+[...new Uint8Array(digest)].slice(0,8).map(b=>b.toString(16).padStart(2,'0')).join('');
+    const saved=await fetcher(base+'/rest/v1/discovery_sources?on_conflict=source_url',{method:'POST',headers:{...h,prefer:'resolution=ignore-duplicates,return=representation'},body:JSON.stringify({id,name,adapter:'google_alerts',kind:'homeowner_request',source_url:url.href,enabled:true})});
+    if(!saved.ok)return json({error:'Unable to connect this source'},502);return json({ok:true,duplicate:(await saved.json()).length===0});
+   }
+   if(request.method==='POST'&&['run-discovery','retry-opportunity-notification'].includes(action)){
+    const route=action==='run-discovery'?'discover-opportunities':'notify-opportunities';
+    const res=await fetcher(base+'/functions/v1/'+route,{method:'POST',headers:{authorization:'Bearer '+key,'content-type':'application/json'},body:action==='run-discovery'?'{"force_run":true}':'{}',signal:AbortSignal.timeout(65000)});
+    return json(await res.json(),res.status);
+   }
    if(request.method==='POST' && new URL(request.url).searchParams.get('action')==='save-opportunity'){
     const raw=await request.text();if(raw.length>7000)return json({error:'Payload too large'},413);
     let body;try{body=JSON.parse(raw)}catch{return json({error:'Invalid request'},400)}
@@ -37,10 +55,11 @@ export function makeAdminHandler(env, fetcher=fetch) {
      if(!res.ok)return json({error:'Discovery has not been activated yet'},503);
      const scans=await res.json(),latest=[];const seen=new Set();
      for(const scan of scans){if(!seen.has(scan.source_id)){seen.add(scan.source_id);latest.push(scan)}}
-     return json({sources:latest});
+     const sourceRes=await fetcher(base+'/rest/v1/discovery_sources?select=id,name,kind,enabled&order=created_at.asc&limit=6',{headers:dbheaders});
+     return json({sources:latest,configured_sources:sourceRes.ok?await sourceRes.json():[]});
     }
     const kind=new URL(request.url).searchParams.get('kind')==='opportunities'?'opportunities':'leads';
-    const selection=kind==='leads'?'*,lead_notifications(status,attempts,last_error,accepted_at)':'*';
+    const selection=kind==='leads'?'*,lead_notifications(status,attempts,last_error,accepted_at)':'*,opportunity_notifications(status,attempts,last_error,accepted_at)';
     const res=await fetcher(base+'/rest/v1/'+kind+'?select='+selection+'&order=created_at.desc&limit=200',{headers:dbheaders});
     if(!res.ok)return json({error:'Unable to load records'},502);
     return json({records:await res.json()});

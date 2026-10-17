@@ -1,80 +1,87 @@
-# Discovery worker
+# R Painters discovery runtime
 
-This is the discovery component, separate from the website intake form. It retrieves
-configured public sources, qualifies potential requests, deduplicates canonical
-original URLs and optionally saves candidates to the private Supabase dashboard.
-It does not contact prospects or turn a public post into an exclusive lead.
+The hosted worker is deployed in the existing isolated Supabase project. It reads
+configured sources, filters potential local requests, deduplicates original URLs,
+saves candidates and queues generic owner email alerts. It does not contact prospects.
 
-## What is operationally verified
+## Current live state — October 17, 2026
 
-On October 17, 2026, the worker retrieved the live Charleston open-bid listing,
-parsed eight notices and found zero painting-service matches. The source's
-robots.txt permits this listing path. Zero matches is a valid result, not a reason
-to invent leads. The homeowner adapter is tested with synthetic RSS/Atom fixtures;
-no homeowner feed is connected yet. This worker is not deployed or scheduled yet.
+- discover-opportunities v2, admin-leads v16 and notify-opportunities v1 are active.
+- Discovery cron is active every 15 minutes; opportunity-alert retry cron is active every five minutes.
+- Live worker scan returned HTTP 200, parsed eight Charleston open notices and rejected all eight as unrelated services.
+- One clearly labeled SYSTEM TEST record verified the dedicated opportunity outbox and provider acceptance on attempt one at 13:30:51 UTC. Inbox delivery was not independently confirmed.
+- The private Site dashboard is published from source 80fd94335baa487176b6daf66fc2d210b19935cc.
+- 31 Node tests and seven Python tests pass. Dashboard interaction checks use mocked services; a live authenticated browser walkthrough remains unverified because browser controls are unavailable.
+- No homeowner feed is connected yet. No real homeowner lead is claimed.
 
-## Run without credentials
+## Owner source setup
 
-Python 3.11 or later; no paid dependencies or packages:
+Open https://rpainters-lead-engine.jessicuriel27.chatgpt.site/admin.html and sign in
+with the existing R Painters application account. The dashboard opens on
+Discovered opportunities. Follow Connect homeowner request searches to create
+Google Alerts with RSS delivery, when available, then paste their feed URLs into
+the source form. Click Check connected sources now to validate the feeds.
+
+The interface contains three ready-to-copy searches for painters, drywall repair
+and cabinet painting in Charleston/Summerville. Up to five homeowner feeds are
+supported. Their URLs are stored only in the protected discovery_sources table;
+status responses return names and IDs rather than private feed URLs. Sources
+must use the exact reviewed Google Alerts feed URL format. No account password
+or new server credential needs to be copied into this application.
+
+Google Alerts coverage is incomplete: posts may be missed or indexed late.
+A new feed publication timestamp does not prove that an original request is new.
+Candidate cards preserve this distinction and require original-source review.
+Facebook groups, Nextdoor and paid lead-platform data are not connected.
+
+## Runtime design
+
+The Edge Function uses the pinned linkedom parser and exact source-host/path
+validation. It never fetches result links, follows redirects, executes source
+scripts, extracts hidden contact details or sends messages to prospects.
+Requests and response sizes are bounded. Concurrent scans acquire a database
+lease and scheduled checks skip redundant runs.
+
+Original URLs are canonicalized; unique URLs preserve the owner's existing
+Relevant/Dismissed decisions. Unrelated services, obviously filled requests,
+advertisements, hiring posts and nonlocal requests are filtered. Homeowner
+entries require request language and a zoned feed publication time within 24
+hours. This is candidate classification, not identity or intent verification.
+
+An opportunity insert atomically creates its separate notification outbox entry.
+The existing sender and fixed owner destination are reused inside Supabase.
+One queued alert is attempted after a scan. Remaining or interrupted alerts are
+checked every five minutes, with exclusive leases, provider idempotency keys and
+at most eight attempts in a twelve-hour window. Failed email does not remove
+the stored opportunity. Provider acceptance is distinct from inbox delivery.
+
+## Deployment and verification
+
+Fresh project order: original schema/intake/notification migrations, then 005,
+007 and 006 (006 includes schedule activation and must follow outbox creation).
+Deploy discover-opportunities, notify-opportunities and admin-leads before
+activating schedules. Existing production website and main branch are unchanged.
+
+The dispatcher reuses internal authorization already encrypted in this same
+project's Vault. The agent never reads or exports the decrypted credential.
+Service callers are checked inside the worker as well as by the gateway.
+Anonymous and ordinary authenticated roles cannot read source settings,
+read scans, claim work or invoke the dispatcher.
+
+Run the checks:
 
 ```sh
-python lead-engine/discovery/scanner.py --output /tmp/discovery-report.json
+npm ci --prefix lead-engine/discovery --ignore-scripts
+node --test lead-engine/tests/*.test.mjs
 python -m unittest discover -s lead-engine/tests -p 'test_*.py'
 ```
 
-The output contains source checks, rejection reasons and candidates. It must stay
-private when real prospect information is present. No credentials or private
-feed URLs are printed. A source error exits nonzero and stays visible in the report.
+The Python CLI is retained as a local dry-run/reference implementation. The
+hosted runtime is the TypeScript Edge Function; it needs no separate runner.
+The manual GitHub workflow validates code and public-source availability without
+uploading prospect data or using new credentials.
 
-## Connect actual homeowner request sources
-
-Create Google Alerts in the owner's account and choose RSS delivery, if available.
-Use separate tightly scoped alerts, for example:
-
-```
-("looking for a painter" OR "need a painter" OR "painter recommendation") ("Summerville" OR "Charleston")
-("need drywall repair" OR "looking for drywall") ("Summerville" OR "Charleston")
-("cabinet painting" OR "cabinet refinishing") ("looking for" OR "recommend") ("Charleston" OR "Summerville")
-```
-
-Put feed URLs in `DISCOVERY_FEED_URLS` as a JSON array through the runner's private
-environment. Do not commit feed identifiers. The default source allowlist accepts
-only google.com and www.google.com feeds plus Charleston's public listing. Other
-sources require an explicit reviewed host/config change.
-
-Google Alerts is a coverage-limited discovery input: it may miss posts, index them
-late, or timestamp an old post when newly indexed. The software labels the feed
-time separately and requires original-post review. It does not promise alerts
-within a particular number of minutes. Facebook and Nextdoor account content is
-not connected or monitored by this worker.
-
-## Connect dashboard storage and unattended operation
-
-1. Apply `005-discovery.sql` to the isolated project and deploy the updated
-   `admin-leads` function and web files. These changes are prepared, not live.
-2. Configure `SUPABASE_URL` and server-side authorization through the chosen trusted
-   runner's normal secrets settings, then add `--save`. Do not copy a browser key
-   or place server authorization in client code. No credentials were extracted or
-   transferred into a new runner during implementation.
-3. Run one scan, verify the source health and any candidate in the dashboard,
-   then schedule the same command at the chosen interval. The prepared GitHub
-   workflow is manual-only until activation; no schedule is claimed active.
-4. Connect and test discovery-specific email notifications before claiming that
-   new opportunities produce alerts. Existing website-request email notifications
-   do not apply to discoveries automatically.
-
-The runner uses unique original URLs and ignores existing rows so subsequent
-scans preserve the owner's Relevant/Dismissed decisions. Its timestamp checks
-reject unzoned, future and older-than-24-hour homeowner feed entries. Generic
-contractor ads, crew hiring, filled requests, unrelated services and nonlocal
-requests are filtered. Classification is heuristic; each remaining result is a
-candidate requiring review. No phone numbers or emails are inferred or revealed
-from lead sellers. A single listing can contain misleading language; human review
-is necessary before outreach.
-
-## Scope intentionally pending
-
-No live homeowner-source validation, unattended runner, discovery email alerts,
-authenticated dashboard E2E test or verified real homeowner lead has been completed.
-Do not describe the new component as a deployed lead generator until those gates
-pass. The existing production website remains unchanged.
+Remaining setup: connect and validate real homeowner request feeds; complete an
+authenticated live browser walkthrough. No verified homeowner request, exclusive
+lead or job is promised. The private dashboard is a research tool and does not
+need customer promotion.
