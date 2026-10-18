@@ -1,4 +1,4 @@
-# Painting Projects: owned platform pilot
+# Buzzie: owned painting-services platform pilot
 
 Private pilot: https://r-painters-projects.jessicuriel27.chatgpt.site
 
@@ -61,6 +61,33 @@ real password sign-in, and the full owner-facing browser walkthrough still need
 review. API and database checks do not replace that walkthrough.
 
 ## Public and national launch gates
+
+### Project conversation and site visits (October 17 update)
+
+Homeowners can now send messages and propose a visit date/time window from their
+private project page. Approved business members open **Messages & site visit** on
+the project card to reply, confirm or decline. Homeowners can cancel a requested
+or confirmed visit. These updates are stored inside Buzzie; there are no automatic
+email/text alerts for replies or visits, and users refresh to check for updates.
+There is no external calendar reservation or exact arrival-time guarantee.
+Dates/windows use America/New_York for the Charleston pilot. Confirming a visit
+advances new/contacted projects to visit_scheduled; cancelling a confirmed visit
+returns that stage to contacted, without reversing quoted/booked/closed projects.
+
+Messages are plain text, at most 2,000 characters, capped at 40 per side per project
+per day and 500 overall. The thread shows the latest 100. Visit preferences are
+limited to the next 180 days, ten requests per project and one open visit at a time.
+Writes are serialized on the project and retries use client request keys.
+The server derives the sender from the project capability or verified business
+membership; clients cannot declare their own author identity. New tables deny
+direct client access, and the service-only invoker RPC rechecks project scope.
+
+Thirteen tests pass, including DOM tests for safe message rendering and form
+wiring, foreign-project denial, sender spoof prevention and homeowner confirmation
+denial. Rollback database checks exercised message retries, visit confirmation,
+cancellation and status history. The manual live test now covers messages and
+visit requests too. Browser visual review and real business sign-in are still
+separate review items.
 
 Keep the Site owner-private until the homeowner and business browser journeys are
 reviewed, production bot protection is enforced, and the public brand/domain and

@@ -3,6 +3,7 @@
 
 /* Temporary Buzzie wordmark; replace with the approved logo when supplied. */
 .brand strong{font-size:27px;letter-spacing:-1.1px;font-weight:750}.brand small{font-size:9px;letter-spacing:1.5px}.team-logo{background:transparent}@media(max-width:600px){.brand strong{font-size:23px}}
+.buzzie-logo{display:block;width:60px;height:60px;object-fit:contain;border-radius:50%;flex-shrink:0;background:#f5f3ed}@media(max-width:600px){.buzzie-logo{width:44px;height:44px}.brand{gap:9px}.nav{gap:12px;flex-wrap:wrap}}
 
 /* Buzzie dark theme: forest surfaces and pearl-white lettering. */
 :root{color:#f5f3ed;background:#163d30;--forest:#f5f3ed;--accent:#f5f3ed;--paper:#1b4839;--line:#587365;--muted:#d2ded5}
@@ -25,3 +26,4 @@ input::placeholder,textarea::placeholder{color:#c1d0c6;opacity:1}
 input:focus,textarea:focus,select:focus{outline-color:#e2ecdf}
 .timeline li{border-color:#8da598}.timeline li:before{background:#f5f3ed;border-color:#315b47}
 .link-box{background:#204c3c;color:#f5f3ed}.error{color:#ffd0c5}
+.conversation-panel{border-top:1px solid var(--line);margin-top:22px;padding-top:24px}.message-thread{margin:24px 0;max-height:500px;overflow:auto}.chat-message{padding:17px;margin:12px 0;border:1px solid var(--line);border-radius:10px;background:#204c3c}.chat-message.from-company{background:#2a5744}.chat-message strong{font-size:12px}.chat-message .scope{margin:9px 0}.chat-message small{color:var(--muted);font-size:11px}.visits{margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}.visit-item{padding:16px;border:1px solid var(--line);border-radius:10px;margin:12px 0}.visit-item button{margin:5px 8px 0 0}.visit-request{margin-top:18px}

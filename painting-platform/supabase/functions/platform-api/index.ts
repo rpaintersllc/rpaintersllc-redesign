@@ -61,11 +61,35 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
    let body={};if(request.method==='POST'){try{body=JSON.parse(new TextDecoder().decode(await boundedBody(request,12000)))}catch(error){if(error.message==='too_large')return json({error:'Request is too large'},413);return json({error:'Invalid request'},400)}}
    if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'Invalid request'},400);
    const text=k=>typeof body[k]==='string'?body[k].trim():'';
+   if(['conversation','message','visit-request','visit-update'].includes(action)&&request.method==='POST'){
+    if(!UUID.test(text('project_id')))return json({error:'Project not found'},404);
+    let businessId='',accessHash='';
+    if(text('business_id')){
+     if(!UUID.test(text('business_id')))return json({error:'Workspace access required'},403);
+     const access=await member(text('business_id'));if(!access)return json({error:'Workspace access required'},403);businessId=access.business_id;
+    }else{
+     if(!TOKEN.test(text('access_token')))return json({error:'Project not found'},404);accessHash=await digest(text('access_token'));
+    }
+    const owned=await db('platform_projects?select=id&id=eq.'+text('project_id')+(businessId?'&business_id=eq.'+businessId:'&access_hash=eq.'+accessHash));
+    if(!owned.length)return json({error:'Project not found'},404);
+    if(action==='conversation'){
+     const project='project_id=eq.'+text('project_id');
+     const [messages,visits]=await Promise.all([db('platform_messages?select=id,author,body,created_at&'+project+'&order=created_at.desc,id.desc&limit=100'),db('platform_visits?select=id,preferred_date,time_window,status,created_at,updated_at&'+project+'&order=created_at.desc&limit=10')]);
+     return json({messages:messages.reverse(),visits,time_zone:'America/New_York',message_limit:100});
+    }
+    if(action==='message'&&(!UUID.test(text('request_key'))||text('message').length<1||text('message').length>2000))return json({error:'Write a message of up to 2,000 characters'},400);
+    if(action==='visit-request'&&(!UUID.test(text('request_key'))||!/^\d{4}-\d{2}-\d{2}$/.test(text('preferred_date'))||!['Morning','Afternoon','Flexible'].includes(text('time_window'))||businessId))return json({error:'Choose a date and preferred time window'},400);
+    if(action==='visit-request'&&(!Number.isFinite(Date.parse(text('preferred_date')+'T12:00:00Z'))||new Date(text('preferred_date')+'T12:00:00Z').toISOString().slice(0,10)!==text('preferred_date')))return json({error:'Choose a valid date'},400);
+    if(action==='visit-update'&&(!UUID.test(text('visit_id'))||!(businessId?['confirmed','declined']:['cancelled']).includes(text('decision'))))return json({error:'This visit action is not available'},400);
+    const result=await rpc('platform_interact',{payload:{action,project_id:text('project_id'),business_id:businessId,access_hash:accessHash,body:text('message'),request_key:text('request_key'),preferred_date:text('preferred_date'),time_window:text('time_window'),visit_id:text('visit_id'),decision:text('decision')}});
+    if(result.error){const errors={not_found:'Project not found',forbidden:'This action is not available',invalid:'Choose a valid date within the next 180 days',open_visit:'A visit is already requested or confirmed. Cancel it before requesting another.',conflict:'This item has changed. Refresh and try again.',limit:'The pilot activity limit has been reached for this project.'};return json({error:errors[result.error]||'Unable to save this update'},result.error==='not_found'?404:result.error==='limit'?429:409)}
+    return json({ok:true,...result});
+   }
    if(action==='provider-interest'&&request.method==='POST'){
     const states='AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
     let website=text('business_website');if(website){try{const url=new URL(website);if(url.protocol!=='https:'||url.username||url.password||url.href.length>300)throw Error();website=url.href}catch{return json({error:'Use an HTTPS business website URL'},400)}}
     if(text('business_name').length<2||text('business_name').length>120||!/^\S+@\S+\.\S+$/.test(text('email'))||text('email').length>254||!states.includes(text('state'))||text('city').length<2||text('city').length>100||body.consent!==true||text('website'))return json({error:'Check your business details and contact permission'},400);
-    const result=await rpc('platform_record_provider_interest',{payload:{business_name:text('business_name'),email:text('email').toLowerCase(),state:text('state'),city:text('city'),website}});return result.error?json({error:'The pilot interest limit has been reached. Please contact R Painters.'},429):json(result,201);
+    const result=await rpc('platform_record_provider_interest',{payload:{business_name:text('business_name'),email:text('email').toLowerCase(),state:text('state'),city:text('city'),website}});return result.error?json({error:'The pilot interest limit has been reached. Please contact Buzzie support.'},429):json(result,201);
    }
    if(action==='create'&&request.method==='POST'){
     const email=text('email').toLowerCase();let phone=text('phone').replace(/\D/g,'');if(phone.length===11&&phone[0]==='1')phone=phone.slice(1);
@@ -73,7 +97,7 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
     // Pilot limits are enforced atomically in PostgreSQL; contact details remain unverified.
     const ip=(request.headers.get('x-forwarded-for')||'unknown').split(',')[0].trim().slice(0,100);
     const result=await rpc('platform_create_project',{payload:{request_key:text('request_key'),access_hash:await digest(text('access_token')),ip_hash:await digest(key+'|'+ip),provider_slug:text('provider_slug'),full_name:text('full_name'),email,phone,city:text('city'),state:text('state'),zip:text('zip'),service:text('service'),property_type:text('property_type'),timing:text('timing'),budget:text('budget'),details:text('details'),utm_source:text('utm_source').slice(0,200),utm_campaign:text('utm_campaign').slice(0,200)}});
-    if(result.error)return json({error:result.error==='outside_pilot_area'?'This location is outside the current pilot.':result.error==='rate_limited'?'The pilot request limit has been reached. Please call R Painters.':'This request cannot be repeated with a different private key.'},result.error==='rate_limited'?429:409);
+    if(result.error)return json({error:result.error==='outside_pilot_area'?'This location is outside the current pilot.':result.error==='rate_limited'?'The pilot request limit has been reached. Please contact Buzzie support.':'This request cannot be repeated with a different private key.'},result.error==='rate_limited'?429:409);
     if(!result.duplicate&&env('LEAD_NOTIFICATIONS_ENABLED')==='true')defer(fetcher(base+'/functions/v1/notify-leads',{method:'POST',headers:{authorization:'Bearer '+key,'content-type':'application/json'},body:'{}',signal:AbortSignal.timeout(25000)}).catch(()=>{}));
     return json({ok:true,project_id:result.id,duplicate:!!result.duplicate},result.duplicate?200:201);
    }
