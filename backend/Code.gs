@@ -149,5 +149,10 @@ function linkify(value) { const safe = escapeHtml(value); return /^https:\/\/dri
 
 function responsePage(success, message) {
   const destination = success ? CONFIG.websiteUrl + '/thank-you.html?submitted=1' : CONFIG.websiteUrl + '/request-estimate.html?form_error=' + encodeURIComponent(message || 'Please try again.');
-  return HtmlService.createHtmlOutput('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>R Painters LLC</title><body style="font-family:Arial,sans-serif;padding:40px;color:#184D70"><p>Redirecting…</p><script>window.top.location.replace(' + JSON.stringify(destination) + ');<\/script></body>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  // The embedded form owns conversion tracking and navigation after acknowledgement.
+  // Keep direct, top-level submissions working without recording an extra lead.
+  const payload = JSON.stringify({ source: 'rp_estimate_form', success: success, message: message || '' }).replace(/</g, '\\u003c');
+  const targetOrigin = JSON.stringify(CONFIG.websiteUrl);
+  const targetUrl = JSON.stringify(destination).replace(/</g, '\\u003c');
+  return HtmlService.createHtmlOutput('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>R Painters LLC</title><body style="font-family:Arial,sans-serif;padding:40px;color:#184D70"><p>Processing your request…</p><script>if(window.top!==window){window.top.postMessage(' + payload + ',' + targetOrigin + ');}else{window.location.replace(' + targetUrl + ');}<\/script></body>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
