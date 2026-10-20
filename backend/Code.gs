@@ -191,7 +191,10 @@ function saveLeadBackup(fields) {
     record['Backup status'] = 'Saved automatically';
     const row = headers.map(header => {
       const value = record[header] == null ? '' : record[header];
-      if (['Preferred date', 'Customer device time', 'Server submission time'].includes(header) && value) {
+      if (header === 'Preferred date' && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+        return Utilities.parseDate(String(value), 'America/New_York', 'yyyy-MM-dd');
+      }
+      if (['Customer device time', 'Server submission time'].includes(header) && value) {
         const date = new Date(value);
         if (!isNaN(date.getTime())) return date;
       }
