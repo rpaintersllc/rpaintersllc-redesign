@@ -154,5 +154,5 @@ function responsePage(success, message) {
   const payload = JSON.stringify({ source: 'rp_estimate_form', success: success, message: message || '' }).replace(/</g, '\\u003c');
   const targetOrigin = JSON.stringify(CONFIG.websiteUrl);
   const targetUrl = JSON.stringify(destination).replace(/</g, '\\u003c');
-  return HtmlService.createHtmlOutput('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>R Painters LLC</title><body style="font-family:Arial,sans-serif;padding:40px;color:#184D70"><p>Processing your request…</p><script>if(window.parent!==window){window.parent.postMessage(' + payload + ',' + targetOrigin + ');}else{window.location.replace(' + targetUrl + ');}<\/script></body>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  return HtmlService.createHtmlOutput('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>R Painters LLC</title><body style="font-family:Arial,sans-serif;padding:40px;color:#184D70"><p>Processing your request…</p><script>if(window.top!==window){window.top.postMessage(' + payload + ',' + targetOrigin + ');}else{window.location.replace(' + targetUrl + ');}<\/script></body>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
