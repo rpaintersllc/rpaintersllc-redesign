@@ -69,6 +69,13 @@ function doPost(e) {
 
     MailApp.sendEmail({ to: CONFIG.notificationEmail, subject: subject, body: textBody, htmlBody: htmlBody, replyTo: clean(p.email), name: 'R Painters Website', attachments: photoAttachments });
     try {
+      saveLeadBackup(fields);
+    } catch (backupError) {
+      // Email has already accepted the request. Never ask the customer to
+      // resubmit a delivered lead because a secondary backup failed.
+      console.error('Lead spreadsheet backup failed: ' + backupError);
+    }
+    try {
       sendPushoverNotification(p, services);
     } catch (pushError) {
       // Email delivery is the primary notification. A temporary Pushover
@@ -155,4 +162,59 @@ function responsePage(success, message) {
   const targetOrigin = JSON.stringify(CONFIG.websiteUrl);
   const targetUrl = JSON.stringify(destination).replace(/</g, '\\u003c');
   return HtmlService.createHtmlOutput('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>R Painters LLC</title><body style="font-family:Arial,sans-serif;padding:40px;color:#184D70"><p>Processing your request…</p><script>if(window.top!==window){window.top.postMessage(' + payload + ',' + targetOrigin + ');}else{window.location.replace(' + targetUrl + ');}<\/script></body>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+/**
+ * Set LEAD_BACKUP_SPREADSHEET_ID in Apps Script properties after importing
+ * the verified backup workbook. This is optional until explicitly configured.
+ * The workbook remains private; this code never changes its sharing settings.
+ */
+function saveLeadBackup(fields) {
+  const spreadsheetId = PropertiesService.getScriptProperties().getProperty('LEAD_BACKUP_SPREADSHEET_ID');
+  if (!spreadsheetId) {
+    console.warn('Lead spreadsheet backup is not configured.');
+    return false;
+  }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName('Leads');
+    if (!sheet || sheet.getLastColumn() < 1) throw new Error('Missing Leads sheet or header row.');
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+    ['Reference', 'Name', 'Email', 'Server submission time'].forEach(header => {
+      if (!headers.includes(header)) throw new Error('Missing backup header: ' + header);
+    });
+    const record = {};
+    fields.forEach(field => { record[field[0]] = field[1]; });
+    record.Reference = 'website:' + hash(record['Server submission time'] + '|' + record.Email);
+    record['Record source'] = 'Website form; confirmed email delivery';
+    record['Backup status'] = 'Saved automatically';
+    const row = headers.map(header => {
+      const value = record[header] == null ? '' : record[header];
+      if (header === 'Preferred date' && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+        return Utilities.parseDate(String(value), 'America/New_York', 'yyyy-MM-dd');
+      }
+      if (['Customer device time', 'Server submission time'].includes(header) && value) {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) return date;
+      }
+      const text = String(value);
+      // Keep customer-controlled text from becoming a spreadsheet formula.
+      return /^[=+@-]/.test(text) ? "'" + text : text;
+    });
+    sheet.getRange(sheet.getLastRow() + 1, 1, 1, row.length).setValues([row]);
+    SpreadsheetApp.flush();
+    return true;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Administrative read-only check. Does not submit a lead or send a message.
+function verifyLeadBackup() {
+  const spreadsheetId = PropertiesService.getScriptProperties().getProperty('LEAD_BACKUP_SPREADSHEET_ID');
+  if (!spreadsheetId) throw new Error('LEAD_BACKUP_SPREADSHEET_ID is not configured.');
+  const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName('Leads');
+  if (!sheet) throw new Error('Leads sheet was not found.');
+  console.log(JSON.stringify({ sheet: sheet.getName(), records: Math.max(0, sheet.getLastRow() - 1), columns: sheet.getLastColumn() }));
 }
