@@ -1,5 +1,43 @@
 # Buzzie: owned painting-services platform pilot
 
+## Immediate request receipt and optional-step recovery (October 21 update)
+
+After the create API confirms the saved project, the request page immediately
+shows a focused receipt with its private link, copy control and an **Open project**
+link in another tab. The request form stays hidden and cannot be submitted again.
+Photos continue uploading in the original tab, with progress and a reminder to
+keep it open. The receipt explicitly names R Painters as the pilot participant
+and distinguishes a free estimate request from a booking. No automatic email
+delivery is claimed, and the private key is not automatically remembered.
+
+Photo failures and account-link failures retain the saved receipt and access link;
+account-link errors now explain how to recover from the project workspace. Photo
+responses lost in transit are described as unconfirmed: check the saved gallery
+before adding missing photos. A failed create still permits a retry using the
+same request UUID and private key for the existing server idempotency check.
+The page no longer automatically redirects after optional work finishes; the
+homeowner can copy the link immediately and open the project without interrupting
+the original tab's uploads. Closing the original tab can interrupt uploads, and
+page-reload recovery of an unconfirmed create is not implemented.
+
+Validation: **36 tests pass**, including four new mocked DOM journeys in
+`tests/request-ui.test.mjs`: receipt during a stalled photo upload, duplicate
+submit protection, partial upload plus account-link failure, create retry with
+unchanged keys, and no-photo account linking. The duplicate-submit assertions
+are part of the slow-upload test. Copy fallback, consent forwarding, private-link
+fragments and no automatic navigation are also covered. `git diff --check` passes.
+No real lead, account, email, upload or message was created during verification.
+No backend or migration changes were needed. Mobile visual and real browser
+walkthroughs remain unverified.
+
+Published to the existing owner-private Site from source commit
+`b5f5fcd2e1f8922bca35d8f96deaf90a18ee751b` on October 21; successful deployment
+`appgdep_6ad8e09049508191b2bed9563621745d`.
+
+Next: review partial-upload recovery on the project page and prepare public
+abuse protection. Sender/domain setup, allowed account redirects, actual email
+delivery and browser/mobile walkthroughs remain launch gates.
+
 ## Homeowner session concurrency fix (October 21 update)
 
 Homeowner requests for an expiring session now share a single refresh. Session
