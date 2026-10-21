@@ -1,5 +1,36 @@
 # Buzzie: owned painting-services platform pilot
 
+## Account dashboard display isolation (October 21 update)
+
+The homeowner dashboard now binds each load to its request generation and session
+revision. Old cards and account identity are removed before a fresh identity check;
+only the newest load for the unchanged session can render projects. Late successes
+and failures from a previous account/load are discarded. Sign-in success copy also
+waits for a current dashboard result rather than declaring success after a stale
+load. A rejected session clears the prior display.
+
+Sign-out immediately removes project cards, account identity, new-password input
+and pasted project/email links before waiting for the server logout response. This
+prevents a delayed logout or project fetch from leaving private account content in
+the visible panel. Server-side project ownership and JWT validation are unchanged;
+this fix addresses the client display, not immediate revocation of issued tokens.
+
+Validation: **78 tests pass**, including seven new deferred-response DOM tests in
+`tests/account-dashboard-races.test.mjs`: response after sign-out, account switch,
+newer refresh ordering, old failure suppression, immediate local sign-out cleanup,
+rejected session cleanup and pending identity isolation. The first six regressions
+were run against the old implementation and all six failed. `git diff --check`
+passes. No real sign-in, account, email, lead, password change or message occurred.
+
+Published to the existing owner-private Site from source
+`852813f8a55d75680bf9237987ebda1109b5f025`; successful deployment
+`appgdep_6ad926e52e9081919bb0cd7886e3b9e0`. No backend, migration, provider or Auth
+setting changed. `LAUNCH.md` records the updated evidence.
+
+Next: browser/mobile and accessibility review of the primary homeowner journey.
+Real browser review, native CAPTCHA enforcement and sender/domain/redirect/delivery
+verification remain separate launch gates; simulated tests do not complete them.
+
 ## Recovery redirects and callback session checks (October 21 update)
 
 Expired or invalid email redirects now show a fixed, actionable message instead

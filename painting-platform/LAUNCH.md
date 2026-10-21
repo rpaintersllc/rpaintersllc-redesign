@@ -7,7 +7,7 @@ participating contractor; external discovery stays a separate channel.
 
 | Gate | Current evidence | Remaining action |
 | --- | --- | --- |
-| Request, receipt, photos, messages and visits | 71 mocked Node/DOM tests pass; prior rollback database checks are recorded in README | Real browser and mobile walkthrough; use mocks or rolled-back fixtures for automated testing |
+| Request, receipt, photos, messages and visits | 78 mocked Node/DOM tests pass; prior rollback database checks are recorded in README | Real browser and mobile walkthrough; use mocks or rolled-back fixtures for automated testing |
 | Homeowner access and contractor separation | Account ownership, capability links, membership scope and session-race tests | Review full sign-in/recovery journey and cross-account access in a browser |
 | New request and company-interest abuse checks | Turnstile frontend and server verification implemented; disabled in the private pilot; mocks cover failures/replay/host/action | Owner configures a widget and secure settings; verify actual widget behavior before activation/public access |
 | Auth sign-in/signup/recovery abuse checks | Homeowner and contractor clients now support native Auth CAPTCHA proof; native settings unchanged and enforcement unverified | Configure the public Auth widget key and native Supabase Auth CAPTCHA; verify server enforcement plus rate limits before launch |
@@ -109,11 +109,24 @@ browser behavior remain unverified. Do not mark delivery complete based on these
 checks. Password changes still require a valid server-verified session; no real
 password was accessed or changed by the tests.
 
+## Account dashboard session isolation
+
+Dashboard loads use both the latest load generation and current session revision.
+Each new load removes old cards/identity before checking the active account.
+Late successes and failures cannot update a newer load or another account's view.
+Sign-out clears cards, account identity and private-link/password inputs locally
+before awaiting server logout. A rejected session also clears the previous view.
+This is client display isolation; server ownership checks remain the authority.
+
+Seven race tests use deferred mocked responses. The initial six tests all failed
+against the prior implementation and now pass, alongside the additional pending
+identity check. No real account was signed into or out of during verification.
+
 ## Evidence and limits
 
-- `npm test`: 71 tests pass, including intake/native Auth checks and eight
-  email-callback regressions for expiry, URL cleanup, explicit completion,
-  recovery guidance, credential pairing, refresh failures and newer sessions. No real challenge token, account, lead, upload, email or message
+- `npm test`: 78 tests pass, including seven account-dashboard race regressions
+  covering sign-out, account changes, response ordering, stale failures, immediate
+  local cleanup, rejected sessions and pending identity checks. No real challenge token, account, lead, upload, email or message
   was created by these tests.
 - Supabase security advisors reviewed October 21: 16 informational RLS-without-
   policy findings align with the intentional server-only deny-client tables.
