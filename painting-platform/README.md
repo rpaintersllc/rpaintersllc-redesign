@@ -1,5 +1,33 @@
 # Buzzie: owned painting-services platform pilot
 
+## Conversation send recovery (October 21 update)
+
+The shared homeowner/contractor conversation now locks message submission while a
+send and its refresh are pending, including repeated Enter/submit events. It clears
+only the exact draft that was sent, preserving new text typed during a slow send.
+A confirmed write followed by a failed conversation read explicitly says the
+message is saved, asks for a refresh and warns against resending that saved message.
+A failed write retains the draft and reuses its idempotency key on a deliberate retry.
+The form exposes its pending state through `aria-busy`; backend access and message
+idempotency rules are unchanged. This does not add email or SMS notifications.
+
+Validation: **85 Node/DOM tests pass**. Four new mocked tests in
+`tests/conversation-send.test.mjs` cover repeated submit while pending (including a
+changed draft), preservation of new text, saved-write/failed-read messaging and
+retry-key stability. The preservation and refresh regressions both fail against
+the previous implementation. `git diff --check` passes. No real conversation,
+message, visit, account or email was created. No new browser/mobile evidence is
+claimed for this change; the prior desktop request-form evidence remains separate.
+
+Published to the existing owner-private Site from source
+`62ccd0d7e697d3fb1bf3e8418d8f25814ed24701`; successful deployment
+`appgdep_6ad94392e5f48191a1ba4e1b8d51c410`. The prior Site conversation file was
+compared byte-for-byte to the branch baseline before copying the tested change.
+No backend, migration, Auth setting, audience or contractor activation changed.
+
+Next: visit-action concurrency/reload feedback and mobile/project-workspace
+accessibility review using mocks; genuine account/email and abuse gates stay open.
+
 ## Request keyboard navigation and validation (October 21 update)
 
 The three-step homeowner form now treats Enter on the first two steps as Continue,
