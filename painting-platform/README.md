@@ -1,5 +1,39 @@
 # Buzzie: owned painting-services platform pilot
 
+## Partial photo upload recovery (October 21 update)
+
+The project-page uploader now attempts each selected photo independently, counts
+confirmed and unconfirmed uploads, clears the attempted selection and refreshes
+the saved gallery even after partial failure. A failed response may still mean
+that the photo was saved, so the homeowner is directed to check the gallery and
+select only missing photos. No photo is automatically retried. Double submission
+is blocked and the file picker is disabled while the current batch runs. Empty,
+invalid and over-capacity selections are rejected before any upload starts.
+
+The API helper preserves HTTP error status for access-aware recovery. A transient
+lookup failure retains the last loaded workspace and private link with a stale
+information notice; additional uploads stay blocked until lookup succeeds.
+401/403/404 lookup failures hide the workspace instead. Account uploads still use
+the signed-in bearer session and do not manufacture a guest key.
+
+Validation: **43 Node/DOM tests pass**, with seven new mocked project-photo
+journeys in `tests/project-photos-ui.test.mjs`. They cover partial success,
+response loss after a save, failed gallery refresh and recovery, access denial,
+double-click protection, size/capacity checks, and account-owned upload headers.
+`git diff --check` passes. No real lead, account, email, photo upload or message
+was created; no backend, schema or storage permissions were changed. These are
+mocked behavior checks, not a real browser/mobile or live-storage walkthrough.
+
+Published successfully to the existing owner-private Site on October 21 from
+source commit `30d0ebfde1cd7ff24d200ec3402342482230873a`; deployment
+`appgdep_6ad8efa8d51c8191a7564e91e6bd00d5`.
+
+Next: prepare public abuse protection and an owner-reviewable launch checklist.
+Email sender/domain, allowed redirects, actual confirmation/recovery delivery and
+browser/mobile walkthroughs remain launch gates. Upload retries across page
+reloads are not server-idempotent; homeowners must inspect the gallery before
+manually adding missing photos.
+
 ## Immediate request receipt and optional-step recovery (October 21 update)
 
 After the create API confirms the saved project, the request page immediately
