@@ -1,5 +1,36 @@
 # Buzzie: owned painting-services platform pilot
 
+## Visit actions and reload recovery (October 21 update)
+
+The shared conversation now serializes visit requests and decisions within its
+mounted panel. All visit controls stay disabled while a mutation/reload is pending,
+so Enter cannot replay a request with a changed date and company confirm/decline
+buttons cannot issue conflicting simultaneous writes from the same panel.
+A saved visit change followed by a failed reload is described explicitly, and
+further visit changes stay blocked until a successful conversation refresh.
+Reads started before a visit mutation cannot restore old visit controls afterward.
+Failed request writes preserve date/time values and their retry key. A failing
+project-status callback cannot misrepresent a saved visit as a failed write.
+This is a client-panel guard, not cross-tab/server transaction locking. Existing
+backend permissions and booking semantics remain unchanged: homeowners request a
+preference; the company must confirm availability; no calendar is reserved.
+
+Validation: **91 Node/DOM tests pass**, including six new mocked visit regressions
+in `tests/visit-actions-ui.test.mjs`. These cover repeated request events, sibling
+company decisions, saved-change/failed-read recovery, retry-key stability, stale
+read suppression and callback failures. The failed-reload and stale-read tests
+both fail against the old implementation. `git diff --check` passes. No real
+visit, lead, message, account, email or calendar booking was created; no browser
+or mobile verification is newly claimed by these DOM tests.
+
+Published owner-private from Site source `74e8b6ef63f818e2bd9806ffc3e1030ae41a3e23`;
+successful deployment `appgdep_6ad95160fdec81919d983cceb96036f8`. The prior Site
+conversation file matched the branch baseline before copying the tested change.
+No backend, migration, Auth configuration, audience or contractor changed.
+
+Next: mobile/project-workspace accessibility review with read-only fixtures;
+account/email delivery and actual abuse-enforcement gates remain open.
+
 ## Conversation send recovery (October 21 update)
 
 The shared homeowner/contractor conversation now locks message submission while a
