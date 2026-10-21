@@ -1,5 +1,36 @@
 # Buzzie: owned painting-services platform pilot
 
+## Request keyboard navigation and validation (October 21 update)
+
+The three-step homeowner form now treats Enter on the first two steps as Continue,
+without attempting to create a project. Step changes focus a keyboard-focusable
+heading and expose the current step/title through a progressbar. Final validation
+reveals an earlier invalid step before focusing and reporting its field; photo
+validation also focuses the selection control. Branding and routing are unchanged.
+
+Validation: **81 tests pass**. Three new regressions cover early Enter, step focus
+and accessible progress, and reveal-before-report validation. All three fail against
+the previous code. Desktop Chromium QA in the managed preview confirmed loaded
+service options, focus on second/third headings, Enter from ZIP advancing to contact,
+and native required-name focus. This was a read-only local fixture: only a mocked
+provider GET is allowed; all other fetches/writes throw. No contact values, consent,
+real lead, upload, account or email were submitted. Mobile and screen-reader device
+checks remain pending; desktop accessibility-tree inspection is not that evidence.
+
+`tests/browser-preview.mjs` generates this fixture in an empty absolute scratch
+folder under `/workspace/`; run it with `node painting-platform/tests/browser-preview.mjs
+<absolute-preview-folder>` and use the Sites managed preview supervisor. Its generated
+network stub and HTTP-only UUID compatibility shim must never be deployed. Only
+production `request.html` and `request.js` were copied to the Site after comparing
+the prior Site files byte-for-byte with the branch baseline.
+
+Published owner-private from Site source `197020eee41496be7cfabc26f0c5b952fd22ea73`;
+successful deployment `appgdep_6ad936404748819184e5b0152060acee`. No backend,
+migration, Auth configuration, audience or participating contractor changed.
+
+Next: mobile keyboard/layout and project workspace accessibility review using
+read-only fixtures; genuine account/email and abuse-enforcement gates remain open.
+
 ## Account dashboard display isolation (October 21 update)
 
 The homeowner dashboard now binds each load to its request generation and session

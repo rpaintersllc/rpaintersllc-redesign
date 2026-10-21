@@ -6,7 +6,7 @@ import {saveSession,clearSession} from '../web/auth-session.js';
 const project='11111111-1111-4111-8111-111111111111';
 const values={full_name:'Test homeowner',email:'test@example.invalid',phone:'2025550190',service:'Interior painting',property_type:'Home',details:'Paint the living room',city:'Summerville',zip:'29483',timing:'Within a month',budget:''};
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}}
-async function screen(run,{files=[],signedIn=false,handle=()=>{}}={}){
+async function screen(run,{files=[],signedIn=false,step=2,handle=()=>{}}={}){
  const old=Object.fromEntries(['document','fetch','location','Option','FormData','sessionStorage'].map(k=>[k,globalThis[k]]));
  const {document}=parseHTML(await readFile(new URL('../web/request.html',import.meta.url),'utf8'));globalThis.document=document;globalThis.location=new URL('https://r-painters-projects.jessicuriel27.chatgpt.site/request.html');
  const store=new Map();globalThis.sessionStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)};
@@ -17,7 +17,7 @@ async function screen(run,{files=[],signedIn=false,handle=()=>{}}={}){
  globalThis.FormData=class{*[Symbol.iterator](){yield* Object.entries(values)}};
  const calls=[];globalThis.fetch=async(url,options={})=>{const action=new URL(url).searchParams.get('action');calls.push({url,action,options});const custom=await handle(action,options);if(custom)return custom;if(action==='providers')return Response.json({providers:[{slug:'r-painters-llc',cities:['Summerville']}],services:['Interior painting']});if(url.endsWith('/user'))return Response.json({email:values.email,user_metadata:{full_name:values.full_name}});if(action==='create')return Response.json({project_id:project});return Response.json({ok:true})};
  clearSession();if(signedIn)saveSession({access_token:'mock-session',refresh_token:'mock-refresh',expires_in:3600});
- try{await import('../web/request.js?test='+crypto.randomUUID());await run({document,form,calls,store,submit:()=>form.onsubmit({preventDefault(){}})})}finally{clearSession();Object.assign(globalThis,old)}
+ try{await import('../web/request.js?test='+crypto.randomUUID());for(let i=0;i<step;i++)document.querySelector('#next').onclick();await run({document,form,calls,store,submit:()=>form.onsubmit({preventDefault(){}})})}finally{clearSession();Object.assign(globalThis,old)}
 }
 test('saved receipt and private link appear before a slow photo finishes',async()=>{
  const photo=deferred(),started=deferred();
@@ -55,3 +55,18 @@ test('protected request sends a fresh widget token after a rejected attempt',asy
   config.callback('first-token');await submit();assert.equal(calls.filter(c=>c.action==='create').length,1);config.callback('fresh-token');await submit();const bodies=calls.filter(c=>c.action==='create').map(c=>JSON.parse(c.options.body));assert.deepEqual(bodies.map(b=>b.challenge_token),['first-token','fresh-token']);assert.equal(bodies[0].request_key,bodies[1].request_key);
  },{handle:action=>{if(action==='providers')return Response.json({providers:[{slug:'r-painters-llc',cities:['Summerville']}],services:['Interior painting'],intake_challenge:{required:true,available:true,site_key:'public-widget'}});if(action==='create'&&++creates===1)return Response.json({error:'Complete security check again'},{status:403})}})}finally{globalThis.window=oldWindow}
 });
+
+test('Enter on early steps advances without creating a project',()=>screen(async({document,calls,submit})=>{
+ await submit();assert.equal(document.querySelector('[data-step="1"]').hidden,false);assert.equal(document.querySelector('.progress').getAttribute('aria-valuenow'),'2');
+ await submit();assert.equal(document.querySelector('[data-step="2"]').hidden,false);assert.equal(document.querySelector('#submit').hidden,false);assert.equal(calls.filter(c=>c.action==='create').length,0);
+},{step:0}));
+test('step navigation focuses a focusable heading and updates accessible progress',()=>screen(async({document})=>{
+ const heading=document.querySelector('[data-step="1"] h2');let focused=false;heading.focus=()=>focused=true;
+ document.querySelector('#next').onclick();assert.equal(focused,true);assert.equal(heading.getAttribute('tabindex'),'-1');assert.equal(document.querySelector('.progress').getAttribute('role'),'progressbar');assert.match(document.querySelector('.progress').getAttribute('aria-valuetext'),/Step 2 of 3: Where and when/);
+ document.querySelector('#back').onclick();assert.equal(document.querySelector('.progress').getAttribute('aria-valuenow'),'1');
+},{step:0}));
+test('final validation reveals an earlier step before focusing and reporting its invalid field',()=>screen(async({document,form,calls,submit})=>{
+ const field=form.elements.namedItem('service'),step=document.querySelector('[data-step="0"]');let reports=0,focused=false;
+ field.checkValidity=()=>false;field.focus=()=>{assert.equal(step.hidden,false);focused=true};field.reportValidity=()=>{assert.equal(step.hidden,false);reports++;return false};
+ await submit();assert.equal(focused,true);assert.equal(reports,1);assert.equal(calls.filter(c=>c.action==='create').length,0);assert.equal(document.querySelector('.progress').getAttribute('aria-valuenow'),'1');
+}));
