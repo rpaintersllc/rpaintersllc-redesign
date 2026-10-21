@@ -26,6 +26,21 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
   const dbHeaders={apikey:key,authorization:'Bearer '+key,'content-type':'application/json'};
   const db=async(path,body,method)=>{const res=await fetcher(base+'/rest/v1/'+path,{method:method||(body===undefined?'GET':'POST'),headers:{...dbHeaders,prefer:'return=representation'},...(body!==undefined?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(12000)});if(!res.ok)throw Error('storage_error');if(res.status===204)return null;return res.json()};
   const rpc=(name,body)=>db('rpc/'+name,body);
+  const challengeRequired=env('PLATFORM_REQUIRE_CHALLENGE')==='true';
+  const challengeConfig=()=>({required:challengeRequired,site_key:challengeRequired?(env('TURNSTILE_SITE_KEY')||''):'',available:!challengeRequired||!!(env('TURNSTILE_SITE_KEY')&&env('TURNSTILE_SECRET_KEY'))});
+  async function challenge(token,action){
+   if(!challengeRequired)return null;
+   if(!challengeConfig().available)return json({error:'Request verification is temporarily unavailable. Please try later.'},503);
+   if(typeof token!=='string'||!token.trim()||token.length>2048)return json({error:'Complete the security check before submitting.'},400);
+   try{
+    const response=await fetcher('https://challenges.cloudflare.com/turnstile/v0/siteverify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({secret:env('TURNSTILE_SECRET_KEY'),response:token}),signal:AbortSignal.timeout(8000)});
+    if(!response.ok)return json({error:'Request verification is temporarily unavailable. Please try again.'},503);
+    const result=await response.json();
+    if(result.success!==true||result.hostname!==new URL(origin).hostname||result.action!==action)return json({error:'The security check expired or could not be verified. Please complete it again.'},403);
+    return null;
+   }catch{return json({error:'Request verification is temporarily unavailable. Please try again.'},503)}
+  }
+
   let userPromise;
   const user=()=>userPromise||(userPromise=(async()=>{const authorization=request.headers.get('authorization')||'';if(!authorization.startsWith('Bearer '))return null;const response=await fetcher(base+'/auth/v1/user',{headers:{apikey:key,authorization},signal:AbortSignal.timeout(8000)});if(!response.ok)return null;const result=await response.json();return result?.id&&result?.email_confirmed_at?result:null})());
   async function homeProject(projectId,token){
@@ -46,7 +61,7 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
    const action=new URL(request.url).searchParams.get('action')||'providers';
    if(action==='providers'&&request.method==='GET'){
     const providers=await db('platform_businesses?select=slug,name,website,phone,state,cities&active=eq.true&accepting_requests=eq.true&order=created_at.asc');
-    return json({providers,services:SERVICES,pilot:true});
+    return json({providers,services:SERVICES,pilot:true,intake_challenge:challengeConfig()});
    }
    if(action==='upload'&&request.method==='POST'){
     const project=request.headers.get('x-project-id')||'',token=request.headers.get('x-project-token')||'',mime=(request.headers.get('content-type')||'').split(';')[0];
@@ -117,11 +132,13 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
     const states='AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
     let website=text('business_website');if(website){try{const url=new URL(website);if(url.protocol!=='https:'||url.username||url.password||url.href.length>300)throw Error();website=url.href}catch{return json({error:'Use an HTTPS business website URL'},400)}}
     if(text('business_name').length<2||text('business_name').length>120||!/^\S+@\S+\.\S+$/.test(text('email'))||text('email').length>254||!states.includes(text('state'))||text('city').length<2||text('city').length>100||body.consent!==true||text('website'))return json({error:'Check your business details and contact permission'},400);
+    const rejected=await challenge(body.challenge_token,'provider_interest');if(rejected)return rejected;
     const result=await rpc('platform_record_provider_interest',{payload:{business_name:text('business_name'),email:text('email').toLowerCase(),state:text('state'),city:text('city'),website}});return result.error?json({error:'The pilot interest limit has been reached. Please contact Buzzie support.'},429):json(result,201);
    }
    if(action==='create'&&request.method==='POST'){
     const email=text('email').toLowerCase();let phone=text('phone').replace(/\D/g,'');if(phone.length===11&&phone[0]==='1')phone=phone.slice(1);
     if(!UUID.test(text('request_key'))||!TOKEN.test(text('access_token'))||text('full_name').length<2||text('full_name').length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!/^\d{10}$/.test(phone)||text('city').length<2||text('city').length>100||text('state')!=='SC'||!/^\d{5}$/.test(text('zip'))||!SERVICES.includes(text('service'))||!['Home','Business'].includes(text('property_type'))||!TIMINGS.includes(text('timing'))||text('budget').length>100||text('details').length<10||text('details').length>4000||body.contact_consent!==true||text('website')||text('provider_slug')!=='r-painters-llc')return json({error:'Check the project details and contact permission'},400);
+    const rejected=await challenge(body.challenge_token,'project_request');if(rejected)return rejected;
     // Pilot limits are enforced atomically in PostgreSQL; contact details remain unverified.
     const ip=(request.headers.get('x-forwarded-for')||'unknown').split(',')[0].trim().slice(0,100);
     const result=await rpc('platform_create_project',{payload:{request_key:text('request_key'),access_hash:await digest(text('access_token')),ip_hash:await digest(key+'|'+ip),provider_slug:text('provider_slug'),full_name:text('full_name'),email,phone,city:text('city'),state:text('state'),zip:text('zip'),service:text('service'),property_type:text('property_type'),timing:text('timing'),budget:text('budget'),details:text('details'),utm_source:text('utm_source').slice(0,200),utm_campaign:text('utm_campaign').slice(0,200)}});

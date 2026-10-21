@@ -1,5 +1,45 @@
 # Buzzie: owned painting-services platform pilot
 
+## Configurable intake abuse verification and launch review (October 21 update)
+
+New painting requests and company-interest forms now support Cloudflare Turnstile
+through an explicit `PLATFORM_REQUIRE_CHALLENGE=true` server setting. Verification
+checks success, the exact submitting Site hostname and the form's action before
+any intake RPC. Missing keys, verifier outages, invalid/expired/replayed tokens
+and mismatched hostname/action are blocked when the feature is required. Only the
+public widget key and availability flags appear in provider discovery. Challenge
+tokens are not forwarded into project/interest records. The client clears expired
+checks and obtains a fresh check for a create retry while retaining its existing
+request UUID/private key. Privacy copy describes the optional external check.
+
+**Prepared and deployed, not activated.** The isolated API is now version 6 and
+the existing owner-private Site was deployed from source commit
+`bc08cdc41a1854ea897ce17df078022fefce2bf0` (deployment
+`appgdep_6ad8fc6c5dfc8191b28b8103889165aa`). A read-only live provider lookup returned
+200, only `r-painters-llc`, and `intake_challenge.required=false`. No keys or
+settings were retrieved/changed, no external verifier was contacted by tests and
+no account, customer lead, photo, email or message was created. Backend source
+matched the branch before replacement; guest JWT gateway behavior is preserved.
+No migration was needed.
+
+Validation: **55 Node/DOM tests pass**, including 12 new checks for verification,
+replay/outage/host/action rejection, configuration secrecy, widget expiry/reset
+and protected request retries. `git diff --check` passes. Real widget behavior,
+public bot protection and email delivery are not proved by these mocks.
+
+`LAUNCH.md` now records the December 1 review gates, exact secure configuration
+steps and evidence still needed. The owner must create a restricted Turnstile
+widget and enter its public and secret keys in the isolated Supabase Edge Function
+settings, then enable the requirement. Never paste a secret into chat or source.
+This covers intake only; direct Supabase Auth signup/recovery needs its own abuse
+protection and client integration before launch. The current Site stays private.
+
+Next: prepare Auth abuse protection and account browser verification without
+sending email. SMTP sender/domain, redirects, genuine email-delivery evidence and
+mobile walkthroughs remain separate launch gates. Security advisors were reviewed;
+the remaining leaked-password-protection warning and informational deny-client
+RLS findings are recorded with their limits in `LAUNCH.md`.
+
 ## Partial photo upload recovery (October 21 update)
 
 The project-page uploader now attempts each selected photo independently, counts

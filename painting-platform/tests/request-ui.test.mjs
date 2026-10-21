@@ -48,3 +48,10 @@ test('a request without photos stays confirmed and can link to its account',()=>
  await submit();assert.match(document.querySelector('#upload-status').textContent,/add photos later/);assert.match(document.querySelector('#account-link-status').textContent,/Project linked/);assert.equal(calls.filter(c=>c.action==='upload').length,0);assert.equal(calls.filter(c=>c.action==='claim-project').length,1);
  const create=JSON.parse(calls.find(c=>c.action==='create').options.body);assert.equal(create.contact_consent,true);assert.match(document.querySelector('#receipt-link').textContent,new RegExp(create.access_token));assert.match(document.querySelector('#request-receipt').textContent,/R Painters/);
 },{signedIn:true}));
+test('protected request sends a fresh widget token after a rejected attempt',async()=>{
+ const oldWindow=globalThis.window;let config,creates=0;globalThis.window={turnstile:{render:(node,options)=>{config=options;return 'widget'},reset:()=>{}}};
+ try{await screen(async({document,submit,calls})=>{
+  await submit();assert.equal(calls.filter(c=>c.action==='create').length,0);assert.match(document.querySelector('#message').textContent,/security check/);
+  config.callback('first-token');await submit();assert.equal(calls.filter(c=>c.action==='create').length,1);config.callback('fresh-token');await submit();const bodies=calls.filter(c=>c.action==='create').map(c=>JSON.parse(c.options.body));assert.deepEqual(bodies.map(b=>b.challenge_token),['first-token','fresh-token']);assert.equal(bodies[0].request_key,bodies[1].request_key);
+ },{handle:action=>{if(action==='providers')return Response.json({providers:[{slug:'r-painters-llc',cities:['Summerville']}],services:['Interior painting'],intake_challenge:{required:true,available:true,site_key:'public-widget'}});if(action==='create'&&++creates===1)return Response.json({error:'Complete security check again'},{status:403})}})}finally{globalThis.window=oldWindow}
+});
