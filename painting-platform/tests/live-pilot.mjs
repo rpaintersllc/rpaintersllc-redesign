@@ -24,3 +24,4 @@ assert.equal((await call('visit-update',{...access,visit_id:visit.data.id,decisi
 assert.equal((await call('visit-update',{...access,visit_id:visit.data.id,decision:'cancelled'})).status,200);
 assert.equal((await call('conversation',access)).data.visits[0].status,'cancelled');
 console.log(JSON.stringify({passed:true,project_id:access.project_id,checks:['routing','idempotence','private lookup','wrong-key denial','photo upload','signed photo retrieval','business authentication','private messages','message duplicate prevention','site visit request','homeowner confirmation denial','visit cancellation']}));
+

@@ -13,3 +13,4 @@ test('conversation renders messages safely and sends replies through project acc
   const message=sent.find(row=>row.url.includes('action=message'));assert.equal(message.body.access_token,'private-key');assert.equal(message.body.message,'Can we discuss the living room?');assert.match(message.body.request_key,/^[0-9a-f-]{36}$/);assert.equal(input.value,'');
  }finally{globalThis.document=previousDocument;globalThis.fetch=previousFetch}
 });
+

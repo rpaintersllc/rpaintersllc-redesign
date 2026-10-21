@@ -81,3 +81,4 @@ end $$;
 revoke all on function public.platform_interact(jsonb) from public,anon,authenticated;
 grant execute on function public.platform_interact(jsonb) to service_role;
 commit;
+

@@ -1,5 +1,39 @@
 # Buzzie: owned painting-services platform pilot
 
+## Homeowner accounts (October 20 update)
+
+`account.html` adds email/password registration, sign-in, confirmation/recovery
+handling, password changes, sign-out and an account project dashboard. A project
+can be linked only by providing its original private key and a confirmed account
+email matching the request. Matching an email alone grants no access. Linked
+projects reopen with server-validated JWT ownership, including photos, messages
+and site visits; account project URLs contain no guest access key. The original
+guest capability link remains valid. Signed-in request creation attempts to link
+the saved project, but a failed linking step never turns a saved request into a
+failed submission. The homeowner can retry from the project or account page.
+
+Sessions use tab-scoped sessionStorage; access tokens refresh and local session
+state clears on sign-out. Only server-fetched confirmed Auth identities authorize
+account access. The server-only claim RPC checks the confirmed auth user, request
+email, capability and current ownership while holding the project row lock. Its
+narrow SECURITY DEFINER access is necessary because service_role cannot directly
+read auth.users; public/anon/authenticated EXECUTE remains revoked. No direct
+client table privileges were added. Homeowner registration does not activate
+contractor membership or expose anyone else's projects.
+
+**Public registration is not launched.** Email confirmation remains enabled.
+Production SMTP sender/domain, allowed confirmation/recovery redirects and delivery
+testing are still required. An account page can also verify the original Supabase
+confirmation/recovery URL explicitly, avoiding reliance on an unconfigured redirect.
+No fake public account was registered and no confirmation email was sent during
+validation. The existing owner's password was not accessed or changed.
+
+Validation: 19 Node/DOM tests pass. Rollback SQL tests passed incorrect-key denial,
+mismatched-email denial, unconfirmed-email denial, repeat linking and prevention
+of ownership reassignment. `tests/accounts.sql` reproduces those checks in the
+isolated pilot and rolls back its synthetic records. Real email delivery and
+cross-device browser sign-in remain launch review items.
+
 Private pilot: https://r-painters-projects.jessicuriel27.chatgpt.site
 
 This app is distinct from the existing discovery dashboard. It accepts homeowner
@@ -102,3 +136,4 @@ After public launch the platform needs customer acquisition and promotion. Exter
 discovery feeds remain a separate channel and their posts are not automatically
 represented as consenting platform customers. The original production website and
 repository main branch are unchanged by this pilot.
+

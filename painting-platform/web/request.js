@@ -1,4 +1,5 @@
 import {api,$,randomKey,projectLink,uploadPhoto,validatePhotos,attribution} from './common.js';
+import {sessionToken,currentUser} from './auth-session.js';
 const form=$('#request-form'),steps=[...document.querySelectorAll('[data-step]')],message=$('#message');let current=0,loading=false;
 const accessToken=randomKey(),requestKey=crypto.randomUUID(),source=attribution();
 function show(step){current=step;steps.forEach((el,i)=>el.hidden=i!==step);document.querySelectorAll('.progress span').forEach((el,i)=>el.classList.toggle('active',i<=step));$('#back').hidden=step===0;$('#next').hidden=step===2;$('#submit').hidden=step!==2;message.textContent='';steps[step].querySelector('h2').focus?.()}
@@ -10,6 +11,9 @@ form.onsubmit=async event=>{event.preventDefault();if(loading)return;for(let i=0
  try{
   const values=Object.fromEntries(new FormData(form));const result=await api('create',{...values,...source,state:'SC',provider_slug:'r-painters-llc',request_key:requestKey,access_token:accessToken,contact_consent:form.elements.namedItem('contact_consent').checked});
   const access={project_id:result.project_id,access_token:accessToken};let failures=0;const files=[...$('#photos').files];for(let i=0;i<files.length;i++){message.textContent='Project saved. Uploading photo '+(i+1)+' of '+files.length+'…';try{await uploadPhoto(files[i],access)}catch{failures++}}
+  const token=await sessionToken();if(token)try{await api('claim-project',access,token)}catch{}
   const link=projectLink(result.project_id,accessToken);location.href=link+(failures?'&photos_failed='+failures:'');
  }catch(e){message.textContent=e.message;$('#submit').disabled=false;$('#back').disabled=false;loading=false}
 };
+
+const user=await currentUser();if(user){form.elements.namedItem('email').value=user.email||'';form.elements.namedItem('full_name').value=user.user_metadata?.full_name||''}

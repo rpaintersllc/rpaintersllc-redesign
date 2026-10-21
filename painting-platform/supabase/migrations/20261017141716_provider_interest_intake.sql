@@ -11,3 +11,4 @@ end $$;
 revoke all on function public.platform_record_provider_interest(jsonb) from public,anon,authenticated;
 grant execute on function public.platform_record_provider_interest(jsonb) to service_role;
 commit;
+

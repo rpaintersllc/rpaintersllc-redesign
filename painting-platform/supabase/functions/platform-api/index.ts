@@ -26,6 +26,13 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
   const dbHeaders={apikey:key,authorization:'Bearer '+key,'content-type':'application/json'};
   const db=async(path,body,method)=>{const res=await fetcher(base+'/rest/v1/'+path,{method:method||(body===undefined?'GET':'POST'),headers:{...dbHeaders,prefer:'return=representation'},...(body!==undefined?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(12000)});if(!res.ok)throw Error('storage_error');if(res.status===204)return null;return res.json()};
   const rpc=(name,body)=>db('rpc/'+name,body);
+  let userPromise;
+  const user=()=>userPromise||(userPromise=(async()=>{const authorization=request.headers.get('authorization')||'';if(!authorization.startsWith('Bearer '))return null;const response=await fetcher(base+'/auth/v1/user',{headers:{apikey:key,authorization},signal:AbortSignal.timeout(8000)});if(!response.ok)return null;const result=await response.json();return result?.id&&result?.email_confirmed_at?result:null})());
+  async function homeProject(projectId,token){
+   if(!UUID.test(projectId))return null;
+   let filter;if(TOKEN.test(token||''))filter='&access_hash=eq.'+await digest(token);else{const account=await user();if(!account)return null;filter='&owner_user_id=eq.'+encodeURIComponent(account.id)}
+   const rows=await db('platform_projects?select=id,access_hash&id=eq.'+projectId+filter);return rows[0]||null;
+  }
   const signedPhotos=async photos=>Promise.all((photos||[]).filter(p=>p.status==='ready').map(async p=>{
    try{const res=await fetcher(base+'/storage/v1/object/sign/platform-project-photos/'+p.storage_path,{method:'POST',headers:dbHeaders,body:JSON.stringify({expiresIn:1800}),signal:AbortSignal.timeout(8000)});if(!res.ok)return {id:p.id,unavailable:true};const data=await res.json();const path=data.signedURL||data.signedUrl;return {id:p.id,url:path?.startsWith('/')?base+'/storage/v1'+path:path}}catch{return {id:p.id,unavailable:true}}
   }));
@@ -43,10 +50,10 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
    }
    if(action==='upload'&&request.method==='POST'){
     const project=request.headers.get('x-project-id')||'',token=request.headers.get('x-project-token')||'',mime=(request.headers.get('content-type')||'').split(';')[0];
-    if(!UUID.test(project)||!TOKEN.test(token))return json({error:'Private project access is required'},401);
-    const owned=await db('platform_projects?select=id&id=eq.'+project+'&access_hash=eq.'+await digest(token));if(!owned.length)return json({error:'Project not found'},404);
+    if(!UUID.test(project))return json({error:'Private project access is required'},401);
+    const owned=await homeProject(project,token);if(!owned)return json({error:'Project not found'},404);
     const bytes=await boundedBody(request,5242880);if(!validImage(bytes,mime))return json({error:'Choose a JPEG, PNG or WebP photo up to 5 MB'},400);
-    const slot=await rpc('platform_reserve_photo',{project,access_key_hash:await digest(token),photo_mime:mime,byte_size:bytes.length});
+    const slot=await rpc('platform_reserve_photo',{project,access_key_hash:owned.access_hash,photo_mime:mime,byte_size:bytes.length});
     if(!slot)return json({error:'Project not found'},404);if(slot.error)return json({error:'Five photos are already saved or uploading'},409);
     const path=base+'/storage/v1/object/platform-project-photos/'+slot.path;
     try{
@@ -61,6 +68,12 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
    let body={};if(request.method==='POST'){try{body=JSON.parse(new TextDecoder().decode(await boundedBody(request,12000)))}catch(error){if(error.message==='too_large')return json({error:'Request is too large'},413);return json({error:'Invalid request'},400)}}
    if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'Invalid request'},400);
    const text=k=>typeof body[k]==='string'?body[k].trim():'';
+   if(action==='claim-project'&&request.method==='POST'){
+    const account=await user();if(!account)return json({error:'Sign in with a confirmed email address first'},401);
+    if(!UUID.test(text('project_id'))||!TOKEN.test(text('access_token')))return json({error:'A complete private project link is required'},400);
+    const result=await rpc('platform_claim_project',{project:text('project_id'),access_key_hash:await digest(text('access_token')),account_id:account.id});
+    return result?json({ok:true}):json({error:'Use the confirmed account email from this request and its original private link. This project could not be linked.'},403);
+   }
    if(['conversation','message','visit-request','visit-update'].includes(action)&&request.method==='POST'){
     if(!UUID.test(text('project_id')))return json({error:'Project not found'},404);
     let businessId='',accessHash='';
@@ -68,7 +81,7 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
      if(!UUID.test(text('business_id')))return json({error:'Workspace access required'},403);
      const access=await member(text('business_id'));if(!access)return json({error:'Workspace access required'},403);businessId=access.business_id;
     }else{
-     if(!TOKEN.test(text('access_token')))return json({error:'Project not found'},404);accessHash=await digest(text('access_token'));
+     const project=await homeProject(text('project_id'),text('access_token'));if(!project)return json({error:'Project not found'},404);accessHash=project.access_hash;
     }
     const owned=await db('platform_projects?select=id&id=eq.'+text('project_id')+(businessId?'&business_id=eq.'+businessId:'&access_hash=eq.'+accessHash));
     if(!owned.length)return json({error:'Project not found'},404);
@@ -102,9 +115,14 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
     return json({ok:true,project_id:result.id,duplicate:!!result.duplicate},result.duplicate?200:201);
    }
    const selection='id,created_at,property_type,timing,budget,contact_verified,lead:leads(full_name,email,phone,city,zip,service,details,status),business:platform_businesses(id,slug,name,phone,website),photos:platform_photos(id,storage_path,status),events:platform_events(status,created_at)';
+   if(action==='home-projects'&&request.method==='GET'){
+    const account=await user();if(!account)return json({error:'Sign in with a confirmed email address first'},401);
+    const projects=await db('platform_projects?select=id,created_at,lead:leads(service,city,status)&owner_user_id=eq.'+encodeURIComponent(account.id)+'&order=created_at.desc&limit=100');
+    return json({projects,email:account.email});
+   }
    if(action==='lookup'&&request.method==='POST'){
-    if(!UUID.test(text('project_id'))||!TOKEN.test(text('access_token')))return json({error:'Project not found'},404);
-    const rows=await db('platform_projects?select='+selection+'&id=eq.'+text('project_id')+'&access_hash=eq.'+await digest(text('access_token')));
+    const owned=await homeProject(text('project_id'),text('access_token'));if(!owned)return json({error:'Project not found'},404);
+    const rows=await db('platform_projects?select='+selection+'&id=eq.'+owned.id);
     if(!rows.length)return json({error:'Project not found'},404);const project=rows[0];project.photos=await signedPhotos(project.photos);return json({project});
    }
    if(action==='pro-list'&&request.method==='GET'){
@@ -128,3 +146,4 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
  };
 }
 if(typeof Deno!=='undefined')Deno.serve(makePlatformHandler(k=>Deno.env.get(k),fetch,p=>EdgeRuntime.waitUntil(p)));
+
