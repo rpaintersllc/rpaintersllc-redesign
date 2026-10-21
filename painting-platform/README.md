@@ -1,5 +1,38 @@
 # Buzzie: owned painting-services platform pilot
 
+## Contractor inbox and approved brand (October 21 update)
+
+The brand is **BUZZIE — Find Your Local Painter**, with discreet **by R Painters**,
+the approved dog logo, forest-green backgrounds and pearl-white lettering. The
+homeowner pages explain that the local pilot assigns eligible requests to one
+participating company, rather than implying a live multi-contractor comparison.
+Requesting an estimate is free; submitting does not book painting work.
+
+The contractor dashboard now has name/service/location/contact search, project
+status and team-review filters, newest/oldest order, metrics for the latest 100
+loaded projects, private internal notes and manual qualification. A review can
+be needs-review, qualified-by-your-team, or not-a-fit. It is not independent
+contact verification, a billable qualification decision, or a booking guarantee.
+Notes and reviews use their own deny-all client table and are returned only by
+the membership-scoped contractor API; homeowner lookup never selects them.
+Optimistic revisions reject stale saves without replacing newer notes.
+
+Business owners can pause/resume new requests. Staff can manage project reviews
+but cannot change intake availability. Both membership and project scope are
+checked in the API and server-only invoker RPCs. Pausing removes a provider from
+new discovery/routing while preserving existing requests, conversations and retry
+idempotence. Provider activation and coverage editing remain managed pilot tasks;
+this dashboard does not activate a nationwide paid contractor network.
+
+Validation: 24 Node/DOM tests pass. Transactional SQL checks in
+`tests/contractor-controls.sql` passed unauthorized review denial, revision
+conflicts, staff availability denial, paused-provider assignment rejection and
+existing-request retry preservation. All synthetic changes roll back. No real
+customer was contacted, and no fake production-site lead was submitted.
+Public SMTP/confirmation delivery, bot protection and real browser walkthrough
+remain launch gates. Contractor sessions stay in memory and refresh while the
+page is open; contractor and homeowner sessions are kept separate.
+
 ## Homeowner accounts (October 20 update)
 
 `account.html` adds email/password registration, sign-in, confirmation/recovery
