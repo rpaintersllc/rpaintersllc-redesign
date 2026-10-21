@@ -1,5 +1,34 @@
 # Buzzie: owned painting-services platform pilot
 
+## Homeowner session concurrency fix (October 21 update)
+
+Homeowner requests for an expiring session now share a single refresh. Session
+revisions prevent a delayed refresh or user lookup from restoring a signed-out
+session, replacing a newer login, or clearing a newer login after an old failure.
+Sign-out clears tab storage immediately without waiting for a refresh; the
+existing server logout remains best-effort. This is client session lifecycle
+hardening, not a claim of immediate revocation of every already-issued JWT.
+Contractor sessions, database permissions and the isolated API are unchanged.
+
+Evidence: `npm test` passes **32 tests**, including eight new mocked session
+regressions in `tests/auth-session.test.mjs`. They cover simultaneous refresh,
+sign-out during refresh, successful/failed stale refresh, successful/failed stale
+user lookup, failed shared refresh and sign-out before a user lookup starts.
+The first seven regressions were also run against the previous implementation:
+six failed, confirming they detect the concurrency bugs. `git diff --check`
+passes. No real sign-in, email, lead submission or customer message was sent.
+No schema migration was needed. The static fix was published successfully to
+the existing owner-private Site from source commit
+`003a14e8b4c3fefb0bae5acd597bdb8c5490e560` on October 21. Deployment:
+`appgdep_6ad8d31c65788191b84ff6ae4c7bab45`.
+
+Next: review request/photo error recovery and enforce public abuse protection
+before opening access. Real confirmation/recovery delivery, sender/domain setup,
+allowed redirects and mobile/browser walkthrough remain unverified launch gates;
+this update does not complete them. Sender setup requires the owner's approved
+sending domain/address and configuration in Supabase Auth; credentials must be
+entered through the provider's secure settings, never committed here.
+
 ## Contractor inbox and approved brand (October 21 update)
 
 The brand is **BUZZIE — Find Your Local Painter**, with discreet **by R Painters**,
