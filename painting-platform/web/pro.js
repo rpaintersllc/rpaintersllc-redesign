@@ -1,7 +1,8 @@
 import {api,$,STATUS,el,drawPhotos} from './common.js';
-import {authCall} from './auth-session.js';
+import {authCall,prepareAuthCheck,authPayload} from './auth-session.js';
 import {mountConversation} from './conversation.js';
 const QUALIFICATION={unreviewed:'Needs review',qualified:'Qualified by your team',not_fit:'Not a fit'};
+let authCheck,signingIn=false;$('#signin button').disabled=true;
 let session=null,workspace='',projects=[],coverage=null,role='',generation=0;
 const interestPanel=el('section',undefined,$('#workspace'),'panel');interestPanel.hidden=true;
 async function businessToken(){if(!session)throw Error('Sign in to your contractor workspace.');if(session.expires_at<Date.now()+60000){try{const data=await authCall('token?grant_type=refresh_token',{refresh_token:session.refresh_token});session={...data,expires_at:Date.now()+data.expires_in*1000}}catch{clear();throw Error('Your session expired. Sign in again.')}}return session.access_token}
@@ -24,8 +25,10 @@ function render(){
  }
 }
 async function load(){const version=++generation;const result=await call('pro-list'+(workspace?'&business_id='+workspace:''));if(version!==generation||!session)return;workspace=result.business.id;coverage=result.coverage;role=result.role;projects=result.projects.map(p=>({...p,review:p.review||{qualification:'unreviewed',notes:'',revision:0}}));$('#login').hidden=true;$('#workspace').hidden=false;$('#business-title').textContent=result.business.name;$('#business-select').replaceChildren();for(const m of result.memberships){const option=new Option(m.name,m.business_id);option.selected=m.business_id===workspace;$('#business-select').append(option)}metrics();renderCoverage();render();interestPanel.hidden=!result.can_review_interest;if(result.can_review_interest){try{const data=await call('interest-list');if(version!==generation||!session)return;interestPanel.replaceChildren();el('h2','Business expansion interest',interestPanel);if(!data.applications.length)el('p','No painting businesses have registered interest yet.',interestPanel,'small');for(const row of data.applications){const item=el('div',undefined,interestPanel);el('h3',row.business_name,item);el('p',row.city+', '+row.state+' · '+row.email,item,'small')}}catch(e){el('p',e.message,interestPanel,'small')}}}
-$('#signin').onsubmit=async event=>{event.preventDefault();const button=event.target.querySelector('button');button.disabled=true;try{const result=await authCall('token?grant_type=password',Object.fromEntries(new FormData(event.target)));session={...result,expires_at:Date.now()+result.expires_in*1000};await load();event.target.reset();$('#message').textContent='Contractor workspace loaded.'}catch(e){clear();$('#message').textContent=e.message}finally{button.disabled=false}};
+$('#signin').onsubmit=async event=>{event.preventDefault();if(signingIn)return;signingIn=true;const button=event.target.querySelector('button');button.disabled=true;try{const result=await authCall('token?grant_type=password',authPayload(Object.fromEntries(new FormData(event.target)),authCheck));session={...result,expires_at:Date.now()+result.expires_in*1000};await load();event.target.reset();$('#message').textContent='Contractor workspace loaded.'}catch(e){clear();$('#message').textContent=e.message}finally{signingIn=false;authCheck?.reset();button.disabled=!authCheck}};
 $('#refresh').onclick=async()=>{try{await load();$('#message').textContent='Projects refreshed.'}catch(e){$('#message').textContent=e.message}};
 for(const id of ['status-filter','qualification-filter','sort-order'])$('#'+id).onchange=render;$('#project-search').oninput=render;
 $('#business-select').onchange=async()=>{workspace=$('#business-select').value;projects=[];render();try{await load()}catch(e){$('#message').textContent=e.message}};
 $('#signout').onclick=async()=>{const previous=session?.access_token;clear();$('#message').textContent='Signed out.';if(previous)try{await authCall('logout',undefined,previous)}catch{}};
+
+try{authCheck=await prepareAuthCheck($('#auth-check'));$('#signin button').disabled=false}catch(e){$('#message').textContent=e.message}

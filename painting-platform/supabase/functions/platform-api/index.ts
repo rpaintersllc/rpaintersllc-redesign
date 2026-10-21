@@ -61,7 +61,7 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
    const action=new URL(request.url).searchParams.get('action')||'providers';
    if(action==='providers'&&request.method==='GET'){
     const providers=await db('platform_businesses?select=slug,name,website,phone,state,cities&active=eq.true&accepting_requests=eq.true&order=created_at.asc');
-    return json({providers,services:SERVICES,pilot:true,intake_challenge:challengeConfig()});
+    return json({providers,services:SERVICES,pilot:true,intake_challenge:challengeConfig(),auth_challenge:{required:!!env('AUTH_TURNSTILE_SITE_KEY'),site_key:env('AUTH_TURNSTILE_SITE_KEY')||'',available:true}});
    }
    if(action==='upload'&&request.method==='POST'){
     const project=request.headers.get('x-project-id')||'',token=request.headers.get('x-project-token')||'',mime=(request.headers.get('content-type')||'').split(';')[0];

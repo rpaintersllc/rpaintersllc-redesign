@@ -1,4 +1,7 @@
-import {AUTH,PUBLISHABLE} from './common.js';
+import {AUTH,PUBLISHABLE,api} from './common.js';
+import {createIntakeCheck} from './intake-check.js';
+export async function prepareAuthCheck(target){const data=await api('providers');return createIntakeCheck(data.auth_challenge,target,'account_auth')}
+export function authPayload(body,check){if(!check)throw Error('Security settings are still loading. Refresh to try again.');const token=check.token();return {...body,...(token?{gotrue_meta_security:{captcha_token:token}}:{})}}
 let memory,refreshPending,revision=0;
 function readSession(){if(memory===undefined){try{memory=JSON.parse(sessionStorage.getItem('buzzie.session')||'null')}catch{memory=null}}return memory}
 export function clearSession(){revision++;refreshPending=null;memory=null;try{sessionStorage.removeItem('buzzie.session')}catch{}}
@@ -6,7 +9,7 @@ export function saveSession(data){if(!data?.access_token||!data?.refresh_token)t
 export async function authCall(path,body,token,method='POST'){
  const response=await fetch(AUTH+'/auth/v1/'+path,{method,headers:{apikey:PUBLISHABLE,'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(25000)});
  const data=response.status===204?{}:await response.json();
- if(!response.ok){const code=data.error_code||data.code;throw Error(code==='email_not_confirmed'?'Confirm your email before signing in.':code==='email_address_not_authorized'?'Pilot email delivery is restricted. Buzzie support must finish sender setup before this address can register.':response.status===429?'Too many attempts. Please wait before trying again.':path.startsWith('token')?'Unable to sign in. Check your email and password.':path==='signup'?'Registration could not be completed. Please try later or contact Buzzie support.':'This confirmation or recovery request could not be completed. It may have expired.');}return data;
+ if(!response.ok){const code=data.error_code||data.code;throw Error(code==='captcha_failed'?'Complete the security check again before trying to sign in, register or recover your account.':code==='email_not_confirmed'?'Confirm your email before signing in.':code==='email_address_not_authorized'?'Pilot email delivery is restricted. Buzzie support must finish sender setup before this address can register.':response.status===429?'Too many attempts. Please wait before trying again.':path.startsWith('token')?'Unable to sign in. Check your email and password.':path.startsWith('signup')?'Registration could not be completed. Please try later or contact Buzzie support.':'This confirmation or recovery request could not be completed. It may have expired.');}return data;
 }
 export async function sessionToken(){
  const session=readSession();if(!session?.access_token)return '';

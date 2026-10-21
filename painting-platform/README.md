@@ -1,5 +1,41 @@
 # Buzzie: owned painting-services platform pilot
 
+## Native Auth CAPTCHA client preparation (October 21 update)
+
+Homeowner signup, password sign-in and recovery, plus contractor password sign-in,
+now support the native Supabase Auth CAPTCHA protocol. The shared helper adds
+`gotrue_meta_security.captcha_token` to those requests only, keeping proof separate
+from profile metadata and session refresh payloads. Checks reset after each
+attempt; homeowner sign-in/recovery share a lock and contractor sign-in rejects
+duplicate submissions. Failed security-configuration lookup blocks new auth
+attempts until refresh. Native CAPTCHA errors now give a useful retry message.
+
+Provider discovery exposes a separate public `auth_challenge` configuration driven
+by `AUTH_TURNSTILE_SITE_KEY`. It does not expose any native Auth secret and does
+not assert that Supabase's native CAPTCHA enforcement is enabled. The actual
+Auth provider/secret/toggle must be configured in Supabase Authentication settings.
+Intake verification and native Auth verification are separate controls.
+
+Validation: **63 tests pass**, with eight new tests covering sign-in/signup/recovery
+proof, reset and failure handling, concurrent homeowner attempts, contractor
+compatibility, disabled/unloaded helper behavior and public-key separation. No
+real sign-in, account, recovery email, lead or message was created. Current Auth
+CAPTCHA docs and the official auth-js request protocol were checked. No schema
+migration, Auth settings or secrets were changed/read/exported.
+
+Deployment: isolated `platform-api` version 7; existing owner-private Site source
+`8e23bc8eb5ab8f13e129614d567457b7c2bfc823`, successful deployment
+`appgdep_6ad90ad7d3948191beb717a942b5c1ad`. Read-only live provider lookup returned
+200 with R Painters alone and `auth_challenge.required=false`/empty public key.
+The new client support is deployed but **real native enforcement remains
+unverified**. It is not a completed anti-bot or email-delivery launch gate.
+
+`LAUNCH.md` now describes the correct activation order for both homeowner and
+contractor access, including the secure native Auth setting and evidence needed.
+Next: browser/mobile review and account recovery edge cases that can be exercised
+without sending email. Sender/domain/redirect setup, actual delivery and genuine
+CAPTCHA enforcement still need separate evidence before opening public access.
+
 ## Configurable intake abuse verification and launch review (October 21 update)
 
 New painting requests and company-interest forms now support Cloudflare Turnstile

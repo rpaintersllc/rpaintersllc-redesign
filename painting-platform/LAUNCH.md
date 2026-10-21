@@ -7,10 +7,10 @@ participating contractor; external discovery stays a separate channel.
 
 | Gate | Current evidence | Remaining action |
 | --- | --- | --- |
-| Request, receipt, photos, messages and visits | 55 mocked Node/DOM tests pass; prior rollback database checks are recorded in README | Real browser and mobile walkthrough; use mocks or rolled-back fixtures for automated testing |
+| Request, receipt, photos, messages and visits | 63 mocked Node/DOM tests pass; prior rollback database checks are recorded in README | Real browser and mobile walkthrough; use mocks or rolled-back fixtures for automated testing |
 | Homeowner access and contractor separation | Account ownership, capability links, membership scope and session-race tests | Review full sign-in/recovery journey and cross-account access in a browser |
 | New request and company-interest abuse checks | Turnstile frontend and server verification implemented; disabled in the private pilot; mocks cover failures/replay/host/action | Owner configures a widget and secure settings; verify actual widget behavior before activation/public access |
-| Auth signup/recovery abuse checks | Existing Supabase Auth configuration has not been changed or proved protected | Separate Supabase Auth CAPTCHA/rate-limit review and matching client integration; intake Turnstile does not protect these endpoints |
+| Auth sign-in/signup/recovery abuse checks | Homeowner and contractor clients now support native Auth CAPTCHA proof; native settings unchanged and enforcement unverified | Configure the public Auth widget key and native Supabase Auth CAPTCHA; verify server enforcement plus rate limits before launch |
 | Confirmation/recovery email | Code prepared; no real external delivery evidence | Owner approves sender address/domain; configure SMTP and allowed redirects, then verify genuine delivery through an authorized flow |
 | Owner notifications | Existing transactional outbox and generic alerts documented | Verify notification delivery with permitted fixtures; messages/visits do not currently send email/SMS |
 | Operations | One active provider, manual qualification, pause control | Name support contact/process, review retention/privacy copy and coverage before opening |
@@ -54,10 +54,49 @@ values are not stored in project/interest records. Cloudflare receives the token
 and widget secret for validation; Buzzie does not forward form contacts or photos
 to Siteverify. The widget's technical processing is disclosed in privacy.html.
 
+## Activate native Auth verification separately
+
+Account sign-in, homeowner signup and password recovery now send the widget proof
+in `gotrue_meta_security.captcha_token`, matching Supabase's native Auth protocol.
+Contractor sign-in supports the same protocol. Proof is kept out of profile
+metadata, reset after each attempt and never added to session refresh requests.
+The homeowner sign-in/recovery controls share an in-flight lock; contractor
+sign-in also rejects duplicate submissions. A failed configuration lookup blocks
+new sign-in/signup/recovery attempts until the page is refreshed successfully.
+Existing signed-in account access, manual email-link verification, project linking
+and password updates continue through their existing session/capability checks.
+
+1. Create or intentionally reuse a Turnstile widget restricted to the approved
+   Buzzie hostname. In the isolated Edge Function settings, configure only its
+   **public** key as `AUTH_TURNSTILE_SITE_KEY`. This is separate from the intake
+   settings above; no Auth secret belongs in this Edge configuration.
+2. With the Site still private, review both `account.html` and `pro.html` using
+   the deployed client. A nonempty public key renders a check in both pages.
+   Provider discovery's `auth_challenge.required` means the client should render
+   a check; it is **not evidence** that native Auth CAPTCHA is enabled.
+3. In Supabase Authentication → Bot and Abuse Protection, select Turnstile and
+   enter the matching secret through the secure settings, then enable CAPTCHA.
+   Do not read/export existing secrets or put them into chat or code. These native
+   settings were not changed by the implementation. Intake's
+   `PLATFORM_REQUIRE_CHALLENGE` does not switch native Auth enforcement on.
+4. Verify native enforcement and rate limits through a separately authorized
+   genuine account journey; do not register fake users or send test emails to
+   people. The automated suite uses mocks only. Token-free attempts must fail
+   once native CAPTCHA is enabled, and both homeowner and contractor sign-in
+   need an actual browser walkthrough before the gate is complete.
+5. Keep public access closed until matching keys, native enforcement and recovery
+   delivery have evidence. Removing the public UI key while native enforcement
+   remains enabled can block sign-in; coordinate any rollback in both settings.
+
+Protocol and configuration references:
+https://supabase.com/docs/guides/auth/auth-captcha
+https://github.com/supabase/auth-js/blob/master/src/GoTrueClient.ts
+
 ## Evidence and limits
 
-- `npm test`: 55 tests pass, including 12 new challenge checks and protected-form
-  retry coverage. No real challenge token, account, lead, upload, email or message
+- `npm test`: 63 tests pass, including the previous intake coverage and eight
+  new Auth checks for proof forwarding, resets, configuration failures, concurrent
+  operations, contractor compatibility and public-key separation. No real challenge token, account, lead, upload, email or message
   was created by these tests.
 - Supabase security advisors reviewed October 21: 16 informational RLS-without-
   policy findings align with the intentional server-only deny-client tables.
