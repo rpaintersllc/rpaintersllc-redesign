@@ -7,7 +7,7 @@ participating contractor; external discovery stays a separate channel.
 
 | Gate | Current evidence | Remaining action |
 | --- | --- | --- |
-| Request, receipt, photos, messages and visits | 63 mocked Node/DOM tests pass; prior rollback database checks are recorded in README | Real browser and mobile walkthrough; use mocks or rolled-back fixtures for automated testing |
+| Request, receipt, photos, messages and visits | 71 mocked Node/DOM tests pass; prior rollback database checks are recorded in README | Real browser and mobile walkthrough; use mocks or rolled-back fixtures for automated testing |
 | Homeowner access and contractor separation | Account ownership, capability links, membership scope and session-race tests | Review full sign-in/recovery journey and cross-account access in a browser |
 | New request and company-interest abuse checks | Turnstile frontend and server verification implemented; disabled in the private pilot; mocks cover failures/replay/host/action | Owner configures a widget and secure settings; verify actual widget behavior before activation/public access |
 | Auth sign-in/signup/recovery abuse checks | Homeowner and contractor clients now support native Auth CAPTCHA proof; native settings unchanged and enforcement unverified | Configure the public Auth widget key and native Supabase Auth CAPTCHA; verify server enforcement plus rate limits before launch |
@@ -92,11 +92,28 @@ Protocol and configuration references:
 https://supabase.com/docs/guides/auth/auth-captcha
 https://github.com/supabase/auth-js/blob/master/src/GoTrueClient.ts
 
+## Email-link recovery review
+
+Expired/invalid redirect fragments show a fixed actionable message without echoing
+an arbitrary error description. Callback fragments are removed from the address
+before configuration requests, while the page query is retained. Valid links
+require a deliberate completion click. Before saving a session, the client checks
+the original access identity, exchanges the supplied refresh token and checks
+that the refreshed identity matches and has a confirmed email. A newer sign-in or
+sign-out while verification is pending prevents adoption of the older callback.
+Successful recovery opens the new-password step; confirmation uses different copy.
+
+These flows were verified with mocked responses only. Real email delivery,
+redirect configuration, security scanners consuming links and cross-device
+browser behavior remain unverified. Do not mark delivery complete based on these
+checks. Password changes still require a valid server-verified session; no real
+password was accessed or changed by the tests.
+
 ## Evidence and limits
 
-- `npm test`: 63 tests pass, including the previous intake coverage and eight
-  new Auth checks for proof forwarding, resets, configuration failures, concurrent
-  operations, contractor compatibility and public-key separation. No real challenge token, account, lead, upload, email or message
+- `npm test`: 71 tests pass, including intake/native Auth checks and eight
+  email-callback regressions for expiry, URL cleanup, explicit completion,
+  recovery guidance, credential pairing, refresh failures and newer sessions. No real challenge token, account, lead, upload, email or message
   was created by these tests.
 - Supabase security advisors reviewed October 21: 16 informational RLS-without-
   policy findings align with the intentional server-only deny-client tables.

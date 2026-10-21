@@ -1,5 +1,38 @@
 # Buzzie: owned painting-services platform pilot
 
+## Recovery redirects and callback session checks (October 21 update)
+
+Expired or invalid email redirects now show a fixed, actionable message instead
+of silently opening a normal sign-in screen. Callback fragments are scrubbed from
+the address before configuration requests, preserving the page's query. Duplicate,
+incomplete and unsupported callback parameters are rejected; arbitrary error
+text from a link is never echoed into the page.
+
+Valid callback credentials still require a deliberate completion click. The
+client now verifies the original access identity, exchanges the refresh token,
+and verifies the renewed identity matches with a confirmed email before saving
+that renewed session. A changed session revision while checking the link blocks
+adoption of an older callback. Recovery-specific completion prompts the homeowner
+to choose a new password and focuses that field; signup/email confirmation keeps
+its own wording. Manual email-link verification and callback completion share
+the existing auth-operation lock.
+
+Validation: **71 tests pass**, including eight new mocked callback tests for
+expiry/description handling, malformed parameters, early URL cleanup, explicit
+completion, recovery/confirmation behavior, mixed identities, failed refresh and
+newer sign-in protection. `git diff --check` passes. No real account, email,
+sign-in, lead, message or password change was performed. These tests do not
+establish SMTP delivery or a real cross-device browser journey.
+
+The static fix is published to the existing owner-private Site from source
+`9388f3de653b184aa5cacb29828c0bf89ed062a6`; successful deployment
+`appgdep_6ad9192114548191b5384b7d033ef55d`. No backend, database or Auth-setting
+changes were needed. `LAUNCH.md` records the behavior and remaining evidence.
+
+Next: review late account-dashboard responses and browser/mobile accessibility.
+Native CAPTCHA activation, sender/domain/redirect setup, actual email delivery
+and a genuine browser walkthrough remain separate launch gates.
+
 ## Native Auth CAPTCHA client preparation (October 21 update)
 
 Homeowner signup, password sign-in and recovery, plus contractor password sign-in,

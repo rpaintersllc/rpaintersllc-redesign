@@ -28,3 +28,24 @@ export function emailConfirmation(link){
  if(url.origin!==AUTH||url.pathname!=='/auth/v1/verify'||url.username||url.password||!['signup','recovery','magiclink','email'].includes(url.searchParams.get('type'))||!url.searchParams.get('token'))throw Error('Use the original confirmation link from your Buzzie email.');
  return {token_hash:url.searchParams.get('token'),type:url.searchParams.get('type')};
 }
+
+export const sessionVersion=()=>revision;
+export function emailCallback(hash){
+ const params=new URLSearchParams(hash.replace(/^#/,''));
+ const fields=['access_token','refresh_token','error','error_code','error_description'];
+ if(!fields.some(key=>params.has(key)))return null;
+ const invalid='This email link is incomplete or invalid. Request a new link or sign in.';
+ if([...fields,'type'].some(key=>params.getAll(key).length>1))return {error:invalid};
+ if(['error','error_code','error_description'].some(key=>params.has(key)))return {error:params.get('error_code')==='otp_expired'?'This confirmation or recovery link has expired. Request a new link or sign in.':'This email link could not be verified. Request a new link or sign in.'};
+ const type=params.get('type')||'email',access_token=params.get('access_token'),refresh_token=params.get('refresh_token');
+ if(!['recovery','signup','email','magiclink'].includes(type)||!access_token||!refresh_token||access_token.length>8192||refresh_token.length>4096)return {error:invalid};
+ return {type,session:{access_token,refresh_token}};
+}
+export async function verifyEmailCallback(callback){
+ if(!callback?.session)throw Error('Open a complete confirmation or recovery link.');
+ const original=await authCall('user',undefined,callback.session.access_token,'GET');
+ const renewed=await authCall('token?grant_type=refresh_token',{refresh_token:callback.session.refresh_token});
+ const verified=await authCall('user',undefined,renewed.access_token,'GET');
+ if(!original.id||original.id!==verified.id||!verified.email_confirmed_at)throw Error('The email link could not be verified. Request a new link or sign in.');
+ return renewed;
+}
