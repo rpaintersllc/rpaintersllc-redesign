@@ -32,7 +32,23 @@ async function showAccount(){
 
 $('#account-form').onsubmit=async event=>{event.preventDefault();if(authenticating)return;const button=$('#auth-submit');authBusy(true);try{const email=$('#account-email').value.trim(),password=$('#account-password').value;if(mode==='signup'){if(!$('#account-consent').checked)throw Error('Please agree to the privacy and project-access terms.');const data=await authCall('signup?redirect_to='+encodeURIComponent(new URL('account.html',location.href).href),authPayload({email,password,data:{full_name:$('#account-name').value.trim()}},authCheck));$('#account-password').value='';if(data.access_token){saveSession(data);if(await showAccount())message.textContent='Your homeowner account is ready.'}else{message.textContent='If this address can register, check its inbox for a confirmation email. Return here to sign in after confirming.';setMode('signin');message.textContent='Check your inbox to confirm your email, then sign in here.'}}else{saveSession(await authCall('token?grant_type=password',authPayload({email,password},authCheck)));$('#account-password').value='';if(await showAccount())message.textContent='You’re signed in.'}}catch(e){message.textContent=e.message}finally{authCheck?.reset();authBusy(false)}};
 $('#recover-account').onclick=async()=>{if(authenticating)return;const email=$('#account-email').value.trim();if(!email||!$('#account-email').checkValidity()){message.textContent='Enter your email above first.';return}authBusy(true);try{await authCall('recover?redirect_to='+encodeURIComponent(new URL('account.html',location.href).href),authPayload({email},authCheck));message.textContent='If recovery is available for this address, check its inbox. Use the recovery link to return here and choose a new password.'}catch(e){message.textContent=e.message}finally{authCheck?.reset();authBusy(false)}};
-$('#confirmation-form').onsubmit=async event=>{event.preventDefault();if(authenticating)return;authBusy(true);const button=event.target.querySelector('button');button.disabled=true;try{const input=$('#confirmation-link'),params=emailConfirmation(input.value);saveSession(await authCall('verify',params));input.value='';await showAccount();message.textContent=params.type==='recovery'?'Recovery verified. Choose a new password below.':'Email confirmed. Your account is ready.';if(params.type==='recovery')$('#new-password').focus()}catch(e){message.textContent=e.message}finally{button.disabled=false;authBusy(false)}};
+async function showEmailAccount(type,success,revision){
+ const loaded=await showAccount();if(sessionVersion()!==revision)return;
+ message.textContent=loaded?success:'Email link verified, but your account could not load. Refresh your account to continue'+(type==='recovery'?' password recovery.':'.');
+ if(loaded&&type==='recovery')$('#new-password').focus();
+}
+$('#confirmation-form').onsubmit=async event=>{
+ event.preventDefault();if(authenticating)return;authBusy(true);
+ const button=event.target.querySelector('button'),input=$('#confirmation-link'),submitted=input.value;
+ button.disabled=true;let revision=sessionVersion();
+ try{
+  const params=emailConfirmation(submitted),data=await authCall('verify',params);
+  if(sessionVersion()!==revision)return;
+  saveSession(data);revision=sessionVersion();if(input.value===submitted)input.value='';
+  await showEmailAccount(params.type,params.type==='recovery'?'Recovery verified. Choose a new password below.':'Email confirmed. Your account is ready.',revision);
+ }catch(e){if(sessionVersion()===revision)message.textContent=e.message}
+ finally{button.disabled=false;authBusy(false)}
+};
 $('#claim-form').onsubmit=async event=>{
  event.preventDefault();if(claiming)return;claiming=true;
  const button=event.target.querySelector('button'),input=$('#claim-link'),submitted=input.value;
@@ -67,15 +83,14 @@ $('#account-refresh').onclick=showAccount;$('#account-signout').onclick=async()=
 if(callback?.session){
  const button=el('button',callback.type==='recovery'?'Finish password recovery':'Finish email confirmation',$('#confirmation-section'),'secondary');button.id='complete-email-link';button.type='button';
  button.onclick=async()=>{
-  if(authenticating)return;button.disabled=true;authBusy(true);const started=sessionVersion();
+  if(authenticating)return;button.disabled=true;authBusy(true);let revision=sessionVersion();
   try{
    const data=await verifyEmailCallback(callback);
-   if(sessionVersion()!==started)throw Error('Your sign-in changed while checking this link. Open the link again if needed.');
-   saveSession(data);callback.session=null;await showAccount();
-   message.textContent=callback.type==='recovery'?'Recovery verified. Choose a new password below.':'Email link verified. You can manage your account below.';
-   if(callback.type==='recovery')$('#new-password').focus();button.remove();
-  }catch(e){message.textContent=e.message.startsWith('Your sign-in changed')?e.message:'This email link could not be verified. It may have expired. Request a new link or sign in.';button.disabled=false}
-  finally{authBusy(false)}
+   if(sessionVersion()!==revision)return;
+   saveSession(data);revision=sessionVersion();callback.session=null;button.remove();
+   await showEmailAccount(callback.type,callback.type==='recovery'?'Recovery verified. Choose a new password below.':'Email link verified. You can manage your account below.',revision);
+  }catch(e){if(sessionVersion()===revision)message.textContent='This email link could not be verified. It may have expired. Request a new link or sign in.';button.disabled=false}
+  finally{button.disabled=false;authBusy(false)}
  };
 }
 

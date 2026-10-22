@@ -1,5 +1,42 @@
 # Buzzie: owned painting-services platform pilot
 
+## Email-link adoption and account-load recovery (October 22 update)
+
+Pasted confirmation/recovery links now adopt their returned session only if the
+local session has not changed while verification was pending. Late successes and
+failures after logout or a newer login cannot replace the current session, clear
+a new pasted link or overwrite current feedback. The shared authentication lock
+continues to block duplicate submits; ordinary errors preserve the link for a
+deliberate retry. A successful response clears only the originally submitted link.
+
+Both pasted links and URL callbacks now scope account-load feedback to the adopted
+session. A late list response after logout cannot show recovery success or focus
+the hidden password field. A verified link followed by a failed account load
+accurately asks for an account refresh; it does not imply verification failed or
+that a password was changed. Password focus occurs only after a successful load.
+A consumed callback button is removed when its session is adopted; a discarded
+pre-adoption result leaves the button available for a new deliberate click.
+
+Validation: **12 browser modules linked; 169 mocked Node/DOM tests pass** through
+`npm run verify`. Twelve new UI cases cover both link entry paths, late
+success/failure, post-adoption logout, failed account load, preserved newer link,
+duplicate events, normal recovery/confirmation wording and retry. Nine fail
+against the previous account.js. An existing callback race test now checks that
+the newer session's feedback is preserved. `git diff --check` passes. No real
+confirmation, recovery, account, password, lead or email was created or changed;
+this is client behavior evidence with simulated responses, not delivery or an
+end-to-end Auth/browser claim.
+
+Published owner-private from Site source
+`f8baf5144ba6feb14ab82f27df78bc517aedb37c`; successful deployment
+`appgdep_6ad9fa758ae081919ed242fd26bb81c1`. Only production account.js changed,
+after its hosted baseline matched GitHub HEAD byte-for-byte. No backend, schema,
+Auth setting, audience or contractor changed.
+
+Next: review sign-in/signup/recovery responses across local session changes and
+complete remaining safe account/browser evidence. Genuine email delivery, actual
+abuse enforcement and physical-device/accessibility checks remain separate gates.
+
 ## Account mutation/session recovery (October 22 update)
 
 Project linking and password updates now have independent in-flight locks and

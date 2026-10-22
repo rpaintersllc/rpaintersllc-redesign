@@ -26,7 +26,7 @@ are not a network-isolation boundary. Existing responsive-fixture tests create
 scratch directories under `/workspace/`, so that directory must be writable in
 the current managed test environment.
 
-Evidence: **12 browser modules linked; 157 tests passed**. Five new checker tests
+Evidence: **12 browser modules linked; 169 tests passed**. Five new checker tests
 use temporary broken graphs to prove missing files, invalid exports, syntax
 errors and outside-directory imports fail. A valid cyclic graph containing a
 throwing top-level statement passes, proving application code is not evaluated.
@@ -58,3 +58,9 @@ newer input, stale-session feedback, retry, both token acquisition boundaries an
 saved-link/failed-list recovery; two helper cases cover renewal/obsolete tokens.
 Nine of the first eleven UI cases fail against the prior account.js. All fifteen
 new cases pass with the fix. No live Auth write or email was exercised.
+
+Email-link evidence: twelve new UI cases cover manual confirmation/recovery and
+URL callback adoption, session changes before/after adoption, failed list loads,
+newer pasted links, normal focus/wording and retry. Nine fail against the previous
+account.js. An existing callback race assertion now verifies newer feedback is
+preserved. All 169 tests pass; no live confirmation/recovery was performed.
