@@ -63,8 +63,8 @@ $('#recover-account').onclick=async()=>{
 async function showEmailAccount(type,success,revision,focusFrom){
  const loaded=await showAccount();if(sessionVersion()!==revision)return;
  message.textContent=loaded?success:'Email link verified, but your account could not load. Refresh your account to continue'+(type==='recovery'?' password recovery.':'.');
- if(loaded&&type==='recovery')$('#new-password').focus();
- else if(loaded&&focusFrom&&$('#confirmation-section').contains(focusFrom)&&!(focusFrom.id==='confirmation-link'&&focusFrom.value)&&(document.activeElement===focusFrom||(focusFrom.disabled&&document.activeElement===document.body)))$('#account-identity').focus();
+ const moveFocus=loaded&&focusFrom&&$('#confirmation-section').contains(focusFrom)&&!(focusFrom.id==='confirmation-link'&&focusFrom.value)&&(document.activeElement===focusFrom||(focusFrom.disabled&&document.activeElement===document.body));
+ if(moveFocus)$(type==='recovery'?'#new-password':'#account-identity').focus();
 }
 $('#confirmation-form').onsubmit=async event=>{
  event.preventDefault();if(authenticating)return;const focusFrom=document.activeElement;authBusy(true);

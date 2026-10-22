@@ -136,3 +136,13 @@ confirmation at 320px and manual pasted-link Enter at 390px. Confirmation now
 focuses the visible heading and Tab reaches Refresh projects. Only production
 account.js was deployed owner-private; fixtures stay local. ACCOUNT-BROWSER-QA.md
 records evidence and limits. No genuine Auth/email/password mutation was tested.
+
+
+Recovery focus ownership: ten additional mocked cases pass; five fail against the
+previous account.js. Manual/callback completion preserves another field chosen
+during verification/list loads and a newer recovery-link draft; ordinary recovery
+still focuses new-password. Older adoption/callback fixtures now explicitly model
+the initiating focused control. Current verifier: 12 linked browser modules,
+**253 passing tests**. Only production account.js was published owner-private.
+This is mocked focus evidence, not a new browser/device walkthrough or genuine
+recovery/email/password verification.

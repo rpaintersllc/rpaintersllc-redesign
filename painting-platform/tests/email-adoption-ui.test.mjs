@@ -13,7 +13,8 @@ async function screen(route,run){
  const {document}=parseHTML(await readFile(new URL('../web/account.html',import.meta.url),'utf8'));
  globalThis.document=document;globalThis.location=new URL('https://r-painters-projects.jessicuriel27.chatgpt.site/account.html'+(route==='callback'?fragment:''));
  globalThis.history={replaceState:()=>{}};const storage=new Map();globalThis.sessionStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};clearSession();
- let focused=0;const input=id=>document.querySelector('#'+id);input('new-password').focus=()=>focused++;
+ let active=document.body;Object.defineProperty(document,'activeElement',{get:()=>active});
+ let focused=0;const input=id=>document.querySelector('#'+id);input('new-password').focus=()=>{active=input('new-password');focused++};
  const model={verify:null,list:null,verifications:0};
  globalThis.fetch=async(url,options={})=>{
   if(url.includes('action=providers'))return Response.json({});
@@ -26,7 +27,7 @@ async function screen(route,run){
   if(url.includes('action=home-projects'))return model.list?model.list():Response.json({projects:[]});
   throw Error('Unexpected URL');
  };
- const submit=()=>route==='callback'?input('complete-email-link').onclick():input('confirmation-form').onsubmit({preventDefault(){},target:input('confirmation-form')});
+ const submit=()=>{active=route==='callback'?input('complete-email-link'):input('confirmation-form').querySelector('button');return route==='callback'?active.onclick():input('confirmation-form').onsubmit({preventDefault(){},target:input('confirmation-form')})};
  try{await import('../web/account.js?test='+crypto.randomUUID());input('confirmation-link').value=link('recovery');await run({input,model,submit,focused:()=>focused,signout:()=>input('account-signout').onclick()})}
  finally{clearSession();Object.assign(globalThis,old)}
 }

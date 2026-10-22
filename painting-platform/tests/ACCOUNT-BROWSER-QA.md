@@ -99,3 +99,20 @@ actual signup/confirmation/recovery delivery, CAPTCHA enforcement, concurrent
 real sessions, physical-device behavior or screen-reader announcements. Existing
 native form validation is browser behavior; no new server password policy was
 implemented or inferred here.
+
+
+## Recovery focus ownership — mocked follow-up
+
+October 22: recovery completion now retains another control selected during
+verification/account-list loading and a newer recovery-link draft, while ordinary
+manual/callback completion still focuses new-password. Ten new mocked cases pass;
+five fail against prior account.js. Logout and failed loads cannot focus hidden
+password controls. Existing confirmation and recovery cases continue to pass;
+the full verifier links 12 browser modules and passes 253 tests.
+
+This follow-up adds **mocked evidence only**; no new browser, physical-device or
+screen-reader walkthrough was performed, and no genuine Auth/email/password
+mutation was made. Only tested account.js was published owner-private from Site
+source `76bddc67071bbdc161b261abbd5f004f5ff0f22c`, successful deployment
+`appgdep_6ada94a76928819185865ead80c47a41`. No fixture was deployed and no backend
+or Auth configuration changed. Prior browser observations above remain separate.

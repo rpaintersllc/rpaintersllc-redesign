@@ -1,5 +1,37 @@
 # Buzzie: owned painting-services platform pilot
 
+## Recovery preserves a newer keyboard choice (October 22 update)
+
+Recovery completion now uses the same focus-ownership guard as email confirmation.
+It still focuses Choose a new password after an ordinary deliberate completion,
+but no longer takes focus from another control selected during verification or
+account-list loading. A newer recovery-link draft keeps its field focus; logout
+or an unsuccessful current account load cannot focus a hidden password control.
+The change affects focus only, not verification, session adoption or password writes.
+
+Added **10 mocked recovery cases** to the existing confirmation-focus fixture;
+five fail against the preceding account.js and all pass with the fix. Manual and
+callback recovery cover ordinary completion, changed focus during verification/
+list reads, logout, a newer pasted draft and disabled-button blur. Two older
+Auth fixtures now explicitly model the initiating focused control instead of
+leaving activeElement undefined; their expected behavior remains unchanged.
+
+Validation: **12 browser modules linked; 253 mocked Node/DOM tests pass** through
+`npm run verify`; `git diff --check` passes. This follow-up did not run a new
+browser/device/screen-reader walkthrough or make a genuine recovery request.
+No real account, password, project, message or email was changed.
+
+Published only the tested production `account.js` after the hosted baseline
+matched GitHub byte-for-byte. Owner-private Site source
+`76bddc67071bbdc161b261abbd5f004f5ff0f22c`; successful deployment
+`appgdep_6ada94a76928819185865ead80c47a41`. Tests remain in GitHub; no fixture,
+Supabase function/migration/Auth setting, contractor or audience changed.
+
+Next: review provider coverage and assignment boundary cases with isolated
+fixtures, keeping external discovery separate. Genuine sender/redirect/delivery,
+actual CAPTCHA enforcement, full authenticated browser isolation and physical-
+device/screen-reader checks remain distinct December 1 launch-review gates.
+
 ## Confirmation keyboard focus and signup browser follow-up (October 22 update)
 
 A synthetic Chromium walkthrough exposed a keyboard gap after successful email
