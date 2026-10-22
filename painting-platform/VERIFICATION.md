@@ -90,10 +90,19 @@ read-only selected table/function grant report. The complete run passes 217 test
 No application behavior was changed or deployed for this evidence update.
 
 
-Live RPC evidence: `tests/rpc-isolation.sql` separately passed 34 explicit checks
+Initial live RPC evidence: `tests/rpc-isolation.sql` separately passed 34 explicit checks
 on October 22 against fresh, uncommitted synthetic fixtures in the isolated pilot.
 The final ROLLBACK report showed zero fixture leads, Auth rows and companies.
 `tests/ACCESS-BOUNDARIES.md` documents replay, trigger review, positive controls,
 operator-vs-JWT scope and recovery after a SQL error. This SQL is intentionally
 outside the local 217-test command; no live intake, Auth API, Storage upload or
 notification dispatcher was used. No application or Site change was deployed.
+
+
+Current live boundary evidence: the same self-contained SQL transaction now passes
+65 checks (31 added), including photo metadata capacity/expiry, rolling-day and
+total message caps, visit dates/history limits and later pipeline preservation.
+The October 22 replay reverted all fixtures; final lead/user/company
+counts were zero. The local verifier still links 12 browser modules and passes
+217 mocked tests. These counts describe separate suites. No parallel race,
+Storage cleanup, native CAPTCHA/rate-limit enforcement or delivery is inferred.

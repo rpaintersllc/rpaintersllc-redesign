@@ -1,5 +1,38 @@
 # Buzzie: owned painting-services platform pilot
 
+## Photo and conversation limit boundaries (October 22 update)
+
+Extended `tests/rpc-isolation.sql` with **31 additional live database checks**.
+On October 22, the full **65-check** transaction passed in the isolated
+pilot. The final ROLLBACK report again returned zero fixture leads, Auth rows and
+companies. No existing customer/company data was changed, no contractor activated
+and no Auth API, public intake, Storage upload or notification dispatcher called.
+
+New photo evidence covers zero/over-limit/exact-5-MiB sizes, five pending slots,
+sixth-slot denial, the exact five-minute expiry boundary and recovery of an older
+pending reservation. A wrong capability or invalid MIME cannot expire another
+slot; old ready photos still count toward capacity. These are metadata checks,
+not uploaded-object or signed-URL-expiry evidence.
+
+New conversation evidence covers the 40-message rolling-day limit per author,
+exact 24-hour exclusion, the 500-message total limit and idempotent retries at both
+caps. Visit checks cover past/day-181/invalid-window denial, today/day-180
+acceptance, a single open visit, expired-date confirmation denial, ten-visit
+history capacity and retry behavior. Confirming/cancelling visits preserves each
+later pipeline status: quoted, won and lost. All data remains synthetic and
+uncommitted; these project limits do not establish CAPTCHA or global abuse
+protection. Current SQL cases run serially, not as a parallel race test.
+
+Validation: **65 live SQL checks**, **12 browser modules linked**, **217 mocked
+Node/DOM tests pass**, and `git diff --check` passes. The live SQL is manual and
+separate from the local Node suite. Saved in tests/runbook/launch documentation
+only; no application fix was needed and no Site or backend change was deployed.
+
+Next: verify upload-error cleanup/retry behavior through synthetic gateway tests,
+then review the remaining account/browser signup states. Genuine email delivery,
+actual CAPTCHA enforcement, full authenticated browser journeys, physical mobile
+devices and screen readers remain separate launch gates.
+
 ## Reproducible live RPC isolation checks (October 22 update)
 
 Added `tests/rpc-isolation.sql`, an operator-only transaction fixture that creates

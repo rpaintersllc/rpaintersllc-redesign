@@ -99,10 +99,11 @@ another transaction. No object is uploaded and no Auth email is requested.
 | Messages: wrong key/company, authorized insert, stable retry, conflicting retry preservation | 5 |
 | Visits: authorized request, cross-project denial, homeowner confirmation denial, contractor confirmation, homeowner cancellation, terminal-state protection | 6 |
 | Foreign fixture unchanged; generated outbox remains unclaimed | 2 |
-| **Total** | **34** |
+| **Initial isolation subtotal** | **34** |
 
-The October 22 run completed every explicit `IF ... IS DISTINCT FROM true` check
-without an exception. The transaction-local report returns `checks_passed=34`;
+The initial October 22 run completed the 34 checks above. The expanded replay
+completed **65** explicit `IF ... IS DISTINCT FROM true` checks
+without an exception. The transaction-local report now returns `checks_passed=65`;
 connectors that expose only the last query show the post-ROLLBACK report instead.
 That final report returned `remaining_fixture_leads=0`,
 `remaining_fixture_users=0`, `remaining_fixture_businesses=0`. All three counts
@@ -121,6 +122,39 @@ RPCs check membership/role internally. Status and conversation RPCs check suppli
 business/project scope and depend on the gateway to verify the actual member
 first; this test does not claim they authenticate a submitted business UUID.
 Photo checks cover metadata only, not Storage upload/download or URL expiry.
-No actual email delivery, parallel database race, capacity/rate-limit boundary,
-full browser journey or complete security audit is established. Application code,
+No actual email delivery, parallel database race, global abuse enforcement,
+full browser journey or complete security audit is established. The selected
+capacity/rate/date boundaries below now have serial database evidence. Application code,
 schema, grants, runtime settings and the private Site were unchanged.
+
+
+## Photo / conversation boundary extension
+
+The same self-contained transaction now adds 31 checks after the initial 34:
+
+| Added boundary | Checks |
+| --- | ---: |
+| Photo zero/over/exact byte size; five pending/sixth denied; exact and older-than-five-minute expiry; wrong-key/invalid-MIME non-mutation; old ready photo preserved | 10 |
+| Message 40th/41st recent per-author limit, exact 24h exclusion, opposite-author allowance, 500 total cap and stable retries at daily/total caps | 6 |
+| Visit past/day-181/invalid window, today/day-180, one open visit, past-date confirmation, quoted/won/lost preservation on confirmation/cancellation, ten-total cap and retry | 15 |
+| **Added subtotal** | **31** |
+| **Current full transaction** | **65** |
+
+The live replay on October 22 passed all 65 checks and left zero
+fixture leads/users/companies. The message cap fixture inserts only 500 tiny
+synthetic rows inside the transaction; no HTTP message action is invoked. Every
+fixture company stays inactive. Existing statement/lock timeouts and the trigger
+preflight remain in place. No migration, grant, RPC implementation, Auth setting,
+application source or Site deployment changed.
+
+Expiry and rolling-day checks use transaction-stable `now()`: a pending photo at
+exactly five minutes is retained, while one older by one microsecond expires;
+a message at exactly 24 hours does not consume a recent-author slot. Visit date
+checks derive today in America/New_York, matching the RPC's business date instead
+of the operator's UTC date. No clock setting or real record is modified.
+
+These checks prove the current RPC's selected serial boundaries. They do not
+exercise two concurrent database sessions, transport retries after a genuinely
+lost response, image decoding, Storage writes/cleanup, native Auth rate limiting,
+CAPTCHA enforcement or notification delivery. They also do not authenticate a
+business UUID: the gateway's verified membership remains necessary.
