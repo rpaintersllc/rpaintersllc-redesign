@@ -1,5 +1,39 @@
 # Buzzie: owned painting-services platform pilot
 
+## Private review save recovery (October 21 update)
+
+Private contractor reviews now reject concurrent submit events, including when
+notes or qualification change while a save is pending. The form exposes its
+pending state and sends a snapshot of the submitted draft. On success it keeps
+newer edits and explicitly says those edits are not saved yet. A failed save keeps
+the text and original expected revision for a deliberate retry.
+
+Review forms also bind their actions/results to the current rendered card,
+workspace generation and signed-in state. Detached or superseded forms cannot
+start a new write or apply a late response to the model used by a replacement
+form. The existing server optimistic-revision check remains authoritative.
+This is a guard for private reviews only; status, availability and conversation
+controls retain their own existing behavior. It does not cancel an accepted
+server write or preserve drafts across filtering, navigation or page reloads.
+
+Validation: **112 Node/DOM tests pass**. Five new mocked tests in
+`tests/contractor-review-save.test.mjs` cover repeated submit, newer drafts,
+failed-write retry, late results after card replacement and detached submission.
+Four fail against the prior pro.js; the fifth confirms existing retry behavior.
+JS syntax checks and `git diff --check` pass. No real review, contractor session,
+account, lead, message, visit, email or upload was created. No new browser/mobile
+or real server-write verification is claimed by these DOM checks.
+
+Published owner-private from Site source
+`e703e4649cd5d4f4a299a917b909f3d0dea7e7f0`; successful deployment
+`appgdep_6ad9898748348191a797032b23abec10`. Only production pro.js was copied,
+after matching the existing Site file byte-for-byte to the branch baseline.
+No backend, schema, Auth setting, audience or contractor changed.
+
+Next: review stale status/availability feedback and account-backed project access.
+Genuine account/email delivery, abuse enforcement, physical-mobile and
+screen-reader walkthroughs remain separate launch gates.
+
 ## Contractor refresh session isolation (October 21 update)
 
 Contractor credential renewal now uses an isolated in-memory session helper.
