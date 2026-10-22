@@ -26,7 +26,7 @@ are not a network-isolation boundary. Existing responsive-fixture tests create
 scratch directories under `/workspace/`, so that directory must be writable in
 the current managed test environment.
 
-Evidence: **12 browser modules linked; 138 tests passed**. Five new checker tests
+Evidence: **12 browser modules linked; 142 tests passed**. Five new checker tests
 use temporary broken graphs to prove missing files, invalid exports, syntax
 errors and outside-directory imports fail. A valid cyclic graph containing a
 throwing top-level statement passes, proving application code is not evaluated.

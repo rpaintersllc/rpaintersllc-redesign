@@ -13,4 +13,14 @@ export async function uploadPhoto(file,access,token){const response=await fetch(
 export function validatePhotos(files){if(files.length>5)throw Error('Choose up to five photos.');for(const file of files)if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5242880)throw Error('Photos must be JPEG, PNG or WebP and no larger than 5 MB each.')}
 export function savedProjects(){try{return JSON.parse(localStorage.getItem('painting.saved')||'[]').filter(x=>typeof x.project_id==='string'&&typeof x.access_token==='string').slice(0,20)}catch{return []}}
 export function remember(access){const saved=savedProjects().filter(x=>x.project_id!==access.project_id);saved.unshift(access);localStorage.setItem('painting.saved',JSON.stringify(saved.slice(0,20)))}
-export function drawPhotos(photos,target){target.replaceChildren();for(const photo of photos||[]){if(photo.url){const image=document.createElement('img');image.src=photo.url;image.alt='Private project photo';image.loading='lazy';target.append(image)}else el('p','Photo unavailable. Refresh to retry.',target,'small')}}
+export function drawPhotos(photos,target){
+ target.replaceChildren();
+ for(const [index,photo]of (photos||[]).entries()){
+  const number=index+1;
+  const unavailable=()=>{const notice=el('p','Photo '+number+' could not load. Refresh this workspace to try again.',undefined,'small');notice.setAttribute('role','status');return notice};
+  if(!photo.url){target.append(unavailable());continue}
+  const image=document.createElement('img');image.alt='Private project photo '+number;image.loading='lazy';
+  image.onerror=()=>{if(image.parentNode!==target)return;image.onerror=null;image.replaceWith(unavailable())};
+  image.src=photo.url;target.append(image);
+ }
+}

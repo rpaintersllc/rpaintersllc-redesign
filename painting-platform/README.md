@@ -1,5 +1,38 @@
 # Buzzie: owned painting-services platform pilot
 
+## Private photo display recovery (October 22 update)
+
+The shared homeowner/contractor photo renderer now replaces a failed image with
+a numbered status notice explaining how to retry by refreshing the workspace.
+Missing signed-URL metadata gets the same recovery guidance. Images have numbered
+accessible names, so each failure can be distinguished in a multi-photo gallery.
+The notice does not expose the signed URL, claim deletion or ask for re-upload.
+
+A late image error from an older gallery cannot replace or append content in a
+new gallery. Repeated error callbacks do not duplicate notices. When an authorized
+workspace refresh returns a usable URL, the normal renderer replaces the notice
+with the image. This does not automatically refresh URLs, change their existing
+30-minute server lifetime or determine whether a browser failure was expiration,
+a network problem or another error. Photo storage and access rules are unchanged.
+
+Validation: **12 browser modules linked; 142 Node/DOM tests pass** through
+`npm run verify`. Four new mocked photo-display regressions all fail against the
+previous common.js: failed-image guidance, stale/repeated events, replacement
+with a refreshed URL, and unavailable metadata/numbered names. `git diff --check`
+passes. These tests simulate DOM error callbacks and synthetic URLs; they do not
+prove actual signed-URL expiry or real browser/storage retrieval. No real photo,
+lead, message, visit, account or email was created, changed or deleted.
+
+Published owner-private from Site source
+`f4a057b9844e54b077fda1decb41538635efba8d`; successful deployment
+`appgdep_6ad9cff2eaa4819183b03259ce5c263c`. Only production common.js was copied
+after matching the existing Site baseline byte-for-byte to the branch. No backend,
+schema, Auth setting, audience or contractor changed.
+
+Next: review safe operational/notification diagnostics without sending anything.
+Genuine account/email delivery, actual abuse enforcement, physical-mobile and
+screen-reader walkthroughs remain separate launch gates.
+
 ## Conversation access recovery (October 22 update)
 
 The shared homeowner/contractor conversation now keeps the message input/send
