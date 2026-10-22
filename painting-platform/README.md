@@ -1,5 +1,40 @@
 # Buzzie: owned painting-services platform pilot
 
+## Confirmation keyboard focus and signup browser follow-up (October 22 update)
+
+A synthetic Chromium walkthrough exposed a keyboard gap after successful email
+confirmation: removing the callback button left focus on the document. Manual
+confirmation also left focus below the newly opened dashboard. Successful
+confirmation now focuses the visible account heading when focus still belongs to
+the initiating confirmation control; the next Tab reaches Refresh projects.
+Callback removal happens after account presentation. Another control chosen during
+verification/list loading, a newer pasted link, logout or a failed account load
+prevents the heading transfer. Existing recovery password focus is preserved.
+
+Added **14 mocked focus cases**; five fail against the preceding account.js and
+all pass with the fix. Extended the local-only browser fixture with immediate-
+session signup, rejected signup and signup-link confirmation; two new fixture
+boundary checks pass. Chromium verified signup consent and keyboard-entered
+12-character validation, conditional confirmation wording at 320px, immediate
+signup/session/focus at 390px, rejected signup at 768px, callback confirmation and
+Tab at 320px, and manual pasted-link Enter focus at 390px. Document/usable widths
+matched at 305/375/753px in those respective narrow-frame states. These are
+desktop frames with synthetic responses, not physical phones or real Auth/email.
+
+Validation: **12 browser modules linked; 243 mocked tests pass**, plus
+`git diff --check`. Only the tested production `account.js` was copied to the
+existing owner-private Site after its hosted baseline matched GitHub HEAD byte-
+for-byte. Site source `cd0abb149687f1e64720d08604f804d1b52c90b9`; successful
+private deployment `appgdep_6ada88af89888191abdb26fd952f121e`. No fixture script
+was published. Tests/QA documentation stay in GitHub. No Supabase API, migration,
+Auth configuration, real account/password/email, contractor or audience changed.
+The local preview was stopped after review.
+
+Next: review remaining recovery completion and signed-out keyboard transitions
+with isolated fixtures; keep genuine sender/redirect/delivery verification,
+actual CAPTCHA enforcement, full authenticated browser isolation, physical-device
+and screen-reader checks as separate gates for the December 1 review.
+
 ## Isolated API upload fix deployed (October 22 update)
 
 Published the previously tested upload cleanup fix to **platform-api version 8**

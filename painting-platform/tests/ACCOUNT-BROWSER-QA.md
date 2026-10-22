@@ -12,8 +12,8 @@ sites-preview start /workspace/buzzie-account-qa
 ```
 
 Open `http://terminal.local:4173/qa.html` in the managed browser. The page labels
-the simulation and offers signin, signup, recovery, expired, list-failure and
-auth-failure scenarios at 320, 390 and 768px. The actual application modules are
+the simulation and offers signin, signup, signup-session, signup-rejected,
+confirmation, recovery, expired, list-failure and auth-failure scenarios at 320, 390 and 768px. The actual application modules are
 copied unchanged. Network substitution loads before account.js and clears only
 the fixture origin's Buzzie session at page load. Use only synthetic values, such
 as `homeowner@example.invalid` and a disposable non-secret password-shaped string.
@@ -40,8 +40,8 @@ remains read-only and unchanged.
 
 The 15px difference between selected frame width and usable width is the desktop
 scrollbar. This is narrow-frame testing, not a physical phone or touch keyboard.
-The signup scenario is prepared but its complete browser walkthrough was not
-performed in this review. Real email links, CAPTCHA enforcement, server-side
+The initial review did not walk through signup. The follow-up below now covers
+the selected synthetic signup outcomes. Real email links, CAPTCHA enforcement, server-side
 cross-account access, screen-reader announcements, physical devices and Safari
 remain separate gates. The October 22 focus follow-up now moves from password Enter or keyboard activation
 of Sign in to the visible account heading, then Tab reaches Refresh projects. This
@@ -59,3 +59,43 @@ Stop the managed preview when finished:
 ```sh
 sites-preview stop
 ```
+
+
+## Signup / confirmation follow-up — October 22
+
+Added three fixture scenarios while retaining the exact-origin/method allowlist,
+CSP, blocked alternative transports and credential-free call log. Signup-session
+returns a synthetic immediate session; signup-rejected returns 403/signup_disabled;
+confirmation supplies only synthetic URL credentials and still requires the
+production Finish email confirmation button. No real account exists or is created.
+
+| Desktop Chromium path | Observed result |
+| --- | --- |
+| Signup 320px, valid fields, no consent, Enter | Native checkbox-required feedback; focus reaches consent. |
+| Signup 320px, consent checked, keyboard submit | Returns to Sign in with conditional inbox wording, not a delivery assertion; document/usable width 305px. |
+| Signup-session 390px, five-character keyboard input | Native instruction requires at least 12 characters; submission blocked. Direct programmatic fill is not used as evidence of native minlength enforcement. |
+| Signup-session 390px, valid keyboard input and consent | Synthetic account/project appears; focus moves to account heading, then Tab reaches Refresh projects; width 375px. |
+| Signup-rejected 768px | Registration error appears; signup form/input retained and submit enabled for a deliberate retry; width 753px. |
+| Confirmation callback 320px before fix | Deliberate Finish email confirmation succeeds, button disappears and focus falls to the document. |
+| Confirmation callback 320px after fix | Heading receives focus after success; next Tab reaches Refresh projects. No session adopted before the deliberate action. |
+| Manual synthetic signup link at 390px after fix | Enter from the pasted-link field focuses the visible account heading after confirmation. |
+
+The production fix passes fourteen mocked focus checks; five fail against the
+preceding account.js. They additionally cover focus changes during verification
+and account-list reads, stale logout results, list failure, disabled-button blur
+and preserving a newer link draft. Recovery's existing focus tests still pass.
+Two new fixture boundary checks verify signup variants and synthetic confirmation
+without logging request bodies or credentials. The complete verifier now passes
+**243 tests** and links **12 browser modules**.
+
+Only production account.js was published owner-private from Site source
+`cd0abb149687f1e64720d08604f804d1b52c90b9`; deployment
+`appgdep_6ada88af89888191abdb26fd952f121e` succeeded. The hosted baseline matched
+GitHub before replacement. The generated fixture was not published and preview
+was stopped. No backend/Auth setting or real account/email/password changed.
+
+These browser paths are selected serial synthetic outcomes. They do not prove
+actual signup/confirmation/recovery delivery, CAPTCHA enforcement, concurrent
+real sessions, physical-device behavior or screen-reader announcements. Existing
+native form validation is browser behavior; no new server password policy was
+implemented or inferred here.

@@ -60,20 +60,21 @@ $('#recover-account').onclick=async()=>{
  }catch(e){if(sessionVersion()===revision)message.textContent=e.message}
  finally{authCheck?.reset();authBusy(false)}
 };
-async function showEmailAccount(type,success,revision){
+async function showEmailAccount(type,success,revision,focusFrom){
  const loaded=await showAccount();if(sessionVersion()!==revision)return;
  message.textContent=loaded?success:'Email link verified, but your account could not load. Refresh your account to continue'+(type==='recovery'?' password recovery.':'.');
  if(loaded&&type==='recovery')$('#new-password').focus();
+ else if(loaded&&focusFrom&&$('#confirmation-section').contains(focusFrom)&&!(focusFrom.id==='confirmation-link'&&focusFrom.value)&&(document.activeElement===focusFrom||(focusFrom.disabled&&document.activeElement===document.body)))$('#account-identity').focus();
 }
 $('#confirmation-form').onsubmit=async event=>{
- event.preventDefault();if(authenticating)return;authBusy(true);
+ event.preventDefault();if(authenticating)return;const focusFrom=document.activeElement;authBusy(true);
  const button=event.target.querySelector('button'),input=$('#confirmation-link'),submitted=input.value;
  button.disabled=true;let revision=sessionVersion();
  try{
   const params=emailConfirmation(submitted),data=await authCall('verify',params);
   if(sessionVersion()!==revision)return;
   saveSession(data);revision=sessionVersion();if(input.value===submitted)input.value='';
-  await showEmailAccount(params.type,params.type==='recovery'?'Recovery verified. Choose a new password below.':'Email confirmed. Your account is ready.',revision);
+  await showEmailAccount(params.type,params.type==='recovery'?'Recovery verified. Choose a new password below.':'Email confirmed. Your account is ready.',revision,focusFrom);
  }catch(e){if(sessionVersion()===revision)message.textContent=e.message}
  finally{button.disabled=false;authBusy(false)}
 };
@@ -111,12 +112,12 @@ $('#account-refresh').onclick=showAccount;$('#account-signout').onclick=async()=
 if(callback?.session){
  const button=el('button',callback.type==='recovery'?'Finish password recovery':'Finish email confirmation',$('#confirmation-section'),'secondary');button.id='complete-email-link';button.type='button';
  button.onclick=async()=>{
-  if(authenticating)return;button.disabled=true;authBusy(true);let revision=sessionVersion();
+  if(authenticating)return;const focusFrom=document.activeElement;button.disabled=true;authBusy(true);let revision=sessionVersion();
   try{
    const data=await verifyEmailCallback(callback);
    if(sessionVersion()!==revision)return;
-   saveSession(data);revision=sessionVersion();callback.session=null;button.remove();
-   await showEmailAccount(callback.type,callback.type==='recovery'?'Recovery verified. Choose a new password below.':'Email link verified. You can manage your account below.',revision);
+   saveSession(data);revision=sessionVersion();callback.session=null;
+   await showEmailAccount(callback.type,callback.type==='recovery'?'Recovery verified. Choose a new password below.':'Email link verified. You can manage your account below.',revision,focusFrom);button.remove();
   }catch(e){if(sessionVersion()===revision)message.textContent='This email link could not be verified. It may have expired. Request a new link or sign in.';button.disabled=false}
   finally{button.disabled=false;authBusy(false)}
  };

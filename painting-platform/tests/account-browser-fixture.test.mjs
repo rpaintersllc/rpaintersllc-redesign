@@ -28,3 +28,18 @@ test('account fixture failure modes and CSP isolate the real application modules
  const html=await readFile(directory+'/dist/account.html','utf8');assert.match(html,/connect-src 'none'/);assert.match(html,/form-action 'none'/);assert.ok(html.indexOf('qa-network.js')<html.indexOf('src="account.js"'));
  assert.equal(await readFile(directory+'/dist/account.js','utf8'),await readFile(new URL('../web/account.js',import.meta.url),'utf8'));
 });
+
+test('signup fixture distinguishes confirmation-needed, immediate-session and rejected results',async()=>{
+ const signup=scenario=>fixture(scenario).fetch(base+'/auth/v1/signup',{method:'POST'});
+ assert.deepEqual(await (await signup('signup')).json(),{});
+ const immediate=await (await signup('signup-session')).json();assert.equal(immediate.access_token,'synthetic-account-access');
+ const denied=await signup('signup-rejected');assert.equal(denied.status,403);assert.equal((await denied.json()).code,'signup_disabled');
+});
+test('confirmation fixture verifies synthetic identity without exposing credentials in call logs',async()=>{
+ const f=fixture('confirmation');
+ const verified=await (await f.fetch(base+'/auth/v1/verify',{method:'POST',body:JSON.stringify({token_hash:'synthetic-do-not-log'})})).json();
+ assert.equal(verified.access_token,'synthetic-account-access');
+ assert.equal((await (await f.fetch(base+'/auth/v1/user')).json()).id,'synthetic-homeowner');
+ assert.equal(JSON.stringify(f.buzzieQa.calls).includes('synthetic-do-not-log'),false);
+ const wrapper=await readFile(directory+'/dist/qa.html','utf8');assert.match(wrapper,/signup-session/);assert.match(wrapper,/signup-rejected/);assert.match(wrapper,/type=signup/);
+});

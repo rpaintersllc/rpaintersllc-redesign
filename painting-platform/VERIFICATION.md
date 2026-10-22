@@ -126,3 +126,13 @@ Provider read, rejected origin, missing-project upload rejection and preflight
 passed before/after publication (200/403/401/204). No real Storage write/delete,
 customer mutation, Auth write or email dispatch was exercised. See
 tests/UPLOAD-CLEANUP.md for the exact version, fingerprints and remaining limits.
+
+
+Confirmation focus evidence: fourteen new mocked cases pass, five fail against
+prior account.js, and two additional browser-fixture boundary cases pass. The
+current full run links 12 browser modules and passes **243 tests**. Chromium
+verified selected signup outcomes and consent/minlength validation, callback
+confirmation at 320px and manual pasted-link Enter at 390px. Confirmation now
+focuses the visible heading and Tab reaches Refresh projects. Only production
+account.js was deployed owner-private; fixtures stay local. ACCOUNT-BROWSER-QA.md
+records evidence and limits. No genuine Auth/email/password mutation was tested.
