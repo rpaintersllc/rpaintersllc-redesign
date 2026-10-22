@@ -30,8 +30,34 @@ async function showAccount(){
  }catch(e){if(current()){$('#account-projects').replaceChildren();message.textContent='Unable to load your projects. Refresh to try again.'}return false}
 }
 
-$('#account-form').onsubmit=async event=>{event.preventDefault();if(authenticating)return;const button=$('#auth-submit');authBusy(true);try{const email=$('#account-email').value.trim(),password=$('#account-password').value;if(mode==='signup'){if(!$('#account-consent').checked)throw Error('Please agree to the privacy and project-access terms.');const data=await authCall('signup?redirect_to='+encodeURIComponent(new URL('account.html',location.href).href),authPayload({email,password,data:{full_name:$('#account-name').value.trim()}},authCheck));$('#account-password').value='';if(data.access_token){saveSession(data);if(await showAccount())message.textContent='Your homeowner account is ready.'}else{message.textContent='If this address can register, check its inbox for a confirmation email. Return here to sign in after confirming.';setMode('signin');message.textContent='Check your inbox to confirm your email, then sign in here.'}}else{saveSession(await authCall('token?grant_type=password',authPayload({email,password},authCheck)));$('#account-password').value='';if(await showAccount())message.textContent='You’re signed in.'}}catch(e){message.textContent=e.message}finally{authCheck?.reset();authBusy(false)}};
-$('#recover-account').onclick=async()=>{if(authenticating)return;const email=$('#account-email').value.trim();if(!email||!$('#account-email').checkValidity()){message.textContent='Enter your email above first.';return}authBusy(true);try{await authCall('recover?redirect_to='+encodeURIComponent(new URL('account.html',location.href).href),authPayload({email},authCheck));message.textContent='If recovery is available for this address, check its inbox. Use the recovery link to return here and choose a new password.'}catch(e){message.textContent=e.message}finally{authCheck?.reset();authBusy(false)}};
+$('#account-form').onsubmit=async event=>{
+ event.preventDefault();if(authenticating)return;authBusy(true);let revision=sessionVersion();
+ const input=$('#account-password'),password=input.value,email=$('#account-email').value.trim(),signup=mode==='signup';
+ try{
+  if(signup&&!$('#account-consent').checked)throw Error('Please agree to the privacy and project-access terms.');
+  const path=signup?'signup?redirect_to='+encodeURIComponent(new URL('account.html',location.href).href):'token?grant_type=password';
+  const body={email,password,...(signup?{data:{full_name:$('#account-name').value.trim()}}:{})};
+  const data=await authCall(path,authPayload(body,authCheck));if(sessionVersion()!==revision)return;
+  if(input.value===password)input.value='';
+  if(data.access_token){
+   saveSession(data);revision=sessionVersion();const loaded=await showAccount();
+   if(sessionVersion()===revision&&loaded)message.textContent=signup?'Your homeowner account is ready.':'You’re signed in.';
+  }else if(signup){
+   setMode('signin');message.textContent='If this address can register, check its inbox for a confirmation email. Return here to sign in after confirming.';
+  }else throw Error('Sign-in could not be completed. Please try again.');
+ }catch(e){if(sessionVersion()===revision)message.textContent=e.message}
+ finally{authCheck?.reset();authBusy(false)}
+};
+$('#recover-account').onclick=async()=>{
+ if(authenticating)return;const email=$('#account-email').value.trim();
+ if(!email||!$('#account-email').checkValidity()){message.textContent='Enter your email above first.';return}
+ authBusy(true);const revision=sessionVersion();
+ try{
+  await authCall('recover?redirect_to='+encodeURIComponent(new URL('account.html',location.href).href),authPayload({email},authCheck));
+  if(sessionVersion()===revision)message.textContent='If recovery is available for this address, check its inbox. Use the recovery link to return here and choose a new password.';
+ }catch(e){if(sessionVersion()===revision)message.textContent=e.message}
+ finally{authCheck?.reset();authBusy(false)}
+};
 async function showEmailAccount(type,success,revision){
  const loaded=await showAccount();if(sessionVersion()!==revision)return;
  message.textContent=loaded?success:'Email link verified, but your account could not load. Refresh your account to continue'+(type==='recovery'?' password recovery.':'.');

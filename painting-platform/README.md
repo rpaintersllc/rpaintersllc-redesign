@@ -1,5 +1,42 @@
 # Buzzie: owned painting-services platform pilot
 
+## Sign-in, signup and recovery response isolation (October 22 update)
+
+Homeowner sign-in and signup now adopt a returned session only while the local
+session revision still matches the attempt. Late success/failure after logout or
+a newer login cannot restore access, overwrite the newer feedback or clear a
+new password draft. A successful current response clears only the password value
+that was submitted. After adoption, account-ready feedback also checks the adopted
+revision following the project-list load. Ordinary failures preserve the input
+and release the existing shared Auth lock for a deliberate retry.
+
+Recovery requests now apply feedback only to the revision that started the
+request. Signup without an immediate session retains conditional confirmation
+wording instead of unconditionally asserting a confirmation email was sent.
+Native CAPTCHA payloads, reset behavior, server authentication and allowed
+redirects are unchanged. A discarded response does not cancel a request already
+received by Auth or revoke a server-issued session; this is client isolation.
+
+Validation: **12 browser modules linked; 187 mocked Node/DOM tests pass** through
+`npm run verify`. Eighteen new cases cover all three actions' late success/failure
+across logout and newer login, edited passwords, post-adoption logout, conditional
+signup feedback and deliberate retry. Fifteen fail against the previous
+account.js. `git diff --check` passes. These tests use synthetic responses and do
+not create accounts, change passwords, register fake leads or send email. Genuine
+Auth delivery and a full browser account journey remain unverified.
+
+Published owner-private from Site source
+`a6cbeb4f6da24c285c41d74c6b89aaea1aab4129`; successful deployment
+`appgdep_6ada0870d5e881919dfd0a9f3ec1f248`. Only production account.js changed.
+The opening Site source matched the GitHub baseline byte-for-byte, and packaged
+account.js matched the tested code. No backend, schema, Auth configuration,
+audience or contractor changed.
+
+Next: prepare a browser account-journey fixture with synthetic responses to
+review keyboard/focus and visible recovery states without live Auth writes.
+Genuine email delivery, actual abuse enforcement and physical-device/screen-reader
+checks remain separate launch gates.
+
 ## Email-link adoption and account-load recovery (October 22 update)
 
 Pasted confirmation/recovery links now adopt their returned session only if the
