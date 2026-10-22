@@ -9,7 +9,7 @@ export async function mountConversation(target,access,token,onChange=()=>{}){
  const message=el('p','Loading conversation…',target,'message');message.setAttribute('role','status');
  const refresh=el('button','Refresh conversation',target,'secondary');refresh.type='button';
  const visits=el('section',undefined,target,'visits');
- const thread=el('div',undefined,target,'message-thread');thread.setAttribute('aria-label','Project messages');
+ const thread=el('div',undefined,target,'message-thread');thread.setAttribute('aria-label','Project messages');thread.setAttribute('role','region');thread.tabIndex=0;
  const form=el('form',undefined,target);
  const label=el('label','Your message',form),input=el('textarea',undefined,label);input.required=true;input.maxLength=2000;input.placeholder=business?'Reply about the project or arrange the visit details.':'Ask a question or share more details about your project.';
  const send=el('button','Send message',form);send.type='submit';

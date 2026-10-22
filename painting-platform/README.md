@@ -1,5 +1,42 @@
 # Buzzie: owned painting-services platform pilot
 
+## Narrow-screen layout and message-region access (October 21 update)
+
+A long, unbroken homeowner email made the private project grid wider than a narrow
+screen. The responsive grid now uses a zero minimum track, its project columns
+can shrink and contact text wraps inside its panel. The message history is now a
+named region with an explicit keyboard tab stop, allowing keyboard users to reach
+its independently scrollable content. Branding, routing and server permissions
+are unchanged.
+
+Validation: **98 Node/DOM tests pass**, including two new tests that verify the
+local responsive fixtures allow only synthetic provider/project/conversation
+reads and reject writes, Auth requests and unexpected origins/paths/methods.
+The existing conversation test also checks the region name, role and tabindex.
+`git diff --check` passes. Chromium QA found the original project overflow at
+591px for a 305px content viewport; after the fix both widths are 305px. Request,
+project and signed-out account pages were checked at 320/390/768px iframe widths
+(with scrollbar-adjusted content widths). The 320px request walkthrough reached
+all three steps and Enter focused the third heading; it was never submitted.
+Tab from the visit request button focused the named message-history region.
+
+The reusable `tests/browser-preview.mjs` now generates `qa.html` with these narrow
+frames and a synthetic project/conversation. `tests/RESPONSIVE-QA.md` records the
+procedure and limits. No real account, lead, upload, message, visit or email was
+created. These are desktop narrow-frame checks, not touch-device, mobile Safari,
+screen-reader or genuine sign-in/email-delivery evidence.
+
+Published owner-private from Site source
+`a03ac1a69d80a1eaa7e2b426b1985721ab49db88`; successful deployment
+`appgdep_6ad96cf8d878819196f559e952798315`. Only production theme.css and
+conversation.js were copied after matching both Site baselines to the branch;
+no QA harness or mocked network code was published. No backend, schema, Auth
+configuration, audience or contractor changed.
+
+Next: review account-backed project session changes and complete physical-mobile,
+screen-reader and genuine account/email walkthroughs when available. Actual abuse
+enforcement and sender/redirect/delivery verification remain launch gates.
+
 ## Project refresh ordering and gallery safety (October 21 update)
 
 The private project workspace now applies only its newest lookup result. Late
