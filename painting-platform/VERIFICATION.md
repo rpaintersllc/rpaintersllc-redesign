@@ -26,7 +26,7 @@ are not a network-isolation boundary. Existing responsive-fixture tests create
 scratch directories under `/workspace/`, so that directory must be writable in
 the current managed test environment.
 
-Evidence: **12 browser modules linked; 142 tests passed**. Five new checker tests
+Evidence: **12 browser modules linked; 157 tests passed**. Five new checker tests
 use temporary broken graphs to prove missing files, invalid exports, syntax
 errors and outside-directory imports fail. A valid cyclic graph containing a
 throwing top-level statement passes, proving application code is not evaluated.
@@ -50,4 +50,11 @@ Notification diagnostics have a separate read-only SQL regression described in
 [operations/README.md](operations/README.md). On October 22, its five checks passed
 against synthetic CTE relations in the isolated database; both real aggregate
 reports also executed successfully without dispatch or writes. This SQL check is
-manual and is not run by `npm run verify`; the 142 mocked-test count is unchanged.
+manual and is not run by `npm run verify`; the 142-test snapshot in that operations
+report predates the account-mutation tests.
+
+Account-mutation evidence: thirteen UI cases cover link/password duplicate events,
+newer input, stale-session feedback, retry, both token acquisition boundaries and
+saved-link/failed-list recovery; two helper cases cover renewal/obsolete tokens.
+Nine of the first eleven UI cases fail against the prior account.js. All fifteen
+new cases pass with the fix. No live Auth write or email was exercised.

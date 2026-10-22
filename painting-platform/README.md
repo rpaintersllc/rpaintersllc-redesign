@@ -1,5 +1,43 @@
 # Buzzie: owned painting-services platform pilot
 
+## Account mutation/session recovery (October 22 update)
+
+Project linking and password updates now have independent in-flight locks and
+snapshot their submitted values. A late response clears a field only if it still
+contains that submitted value; a newer password draft is retained and explicitly
+marked unsaved. An ordinary failure unlocks a deliberate retry without clearing
+the input. A successful link followed by a failed project-list load now explains
+that linking succeeded and asks for an account refresh instead of implying the
+list reloaded successfully.
+
+Both mutations obtain a token-bound session snapshot, recheck it before dispatch
+and ignore success/failure feedback after logout or a newer session. An obsolete
+token cannot dispatch while token acquisition or snapshot resolution is pending.
+Normal token renewal remains supported. This protects client state and feedback;
+it does not cancel an already accepted server write or change server ownership,
+password policy or session revocation rules.
+
+Validation: **12 browser modules linked; 157 mocked Node/DOM tests pass** through
+`npm run verify`. Thirteen new UI cases cover duplicate events, edited fields,
+late success/failure across sign-out/new login, deliberate retry, both token
+acquisition boundaries and saved-link/failed-list recovery. Nine of the first
+eleven cases fail against the prior account.js. Two additional helper tests
+cover normal renewal and an obsolete token before dispatch. `git diff --check`
+passes. No real account, password, link ownership, request or email was changed;
+these are simulated requests and session transitions, not genuine Auth delivery
+or a full browser recovery walkthrough.
+
+Published owner-private from Site source
+`79e1fd4db22c25fe166ff4fb00947abe92a189ab`; successful deployment
+`appgdep_6ad9ec01234c8191880456fa1b7b740c`. Only account.js and auth-session.js
+were copied after both hosted baseline files matched GitHub HEAD byte-for-byte.
+No backend, migration, Auth configuration, audience or contractor changed.
+
+Next: review manual confirmation-link adoption against session changes, then
+remaining account/browser evidence without sending test emails. Genuine email
+delivery, actual abuse enforcement and physical-device/accessibility review
+remain separate launch gates.
+
 ## Safe notification operations diagnostics (October 22 update)
 
 Added operator-only read-only SQL reports and a runbook in

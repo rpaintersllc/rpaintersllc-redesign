@@ -21,6 +21,13 @@ export async function sessionToken(){
  refreshPending=pending;
  try{return await pending}finally{if(refreshPending===pending)refreshPending=null}
 }
+// Scope client feedback to the exact session that supplied a mutation token.
+export async function sessionSnapshot(){
+ const token=await sessionToken();
+ if(!token||readSession()?.access_token!==token)throw Error('Sign in or verify your recovery link first.');
+ const started=revision;
+ return {token,isCurrent:()=>revision===started};
+}
 export async function currentUser(){const token=await sessionToken();if(!token||readSession()?.access_token!==token)return null;const started=revision;try{const user=await authCall('user',undefined,token,'GET');return revision===started?user:null}catch{if(revision===started)clearSession();return null}}
 export async function signOut(){const token=readSession()?.access_token;clearSession();if(token)try{await authCall('logout',undefined,token)}catch{}}
 export function emailConfirmation(link){

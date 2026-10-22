@@ -35,3 +35,12 @@ test('failed shared refresh clears only its expired session and allows a later l
 test('sign-out before user lookup starts prevents the old identity request',()=>setup(async(auth)=>{
  let calls=0;globalThis.fetch=async()=>{calls++;return Response.json({id:'old-user'})};auth.saveSession(session('old',3600));const user=auth.currentUser();auth.clearSession();assert.equal(await user,null);assert.equal(calls,0);
 }));
+test('mutation snapshot accepts a renewed session and retires on the next login',()=>setup(async(auth)=>{
+ globalThis.fetch=async()=>Response.json(session('renewed',3600));auth.saveSession(session());
+ const scope=await auth.sessionSnapshot();assert.equal(scope.token,'renewed');assert.equal(scope.isCurrent(),true);
+ auth.saveSession(session('next',3600));assert.equal(scope.isCurrent(),false);
+}));
+test('mutation snapshot rejects an obsolete token even before network dispatch',()=>setup(async(auth)=>{
+ auth.saveSession(session('old',3600));const pending=auth.sessionSnapshot();auth.saveSession(session('next',3600));
+ await assert.rejects(pending,/Sign in or verify/);assert.equal(await auth.sessionToken(),'next');
+}));

@@ -1,7 +1,7 @@
 import {api,$,el,STATUS,AUTH} from './common.js';
-import {authCall,saveSession,sessionToken,currentUser,signOut,emailConfirmation,prepareAuthCheck,authPayload,emailCallback,verifyEmailCallback,sessionVersion} from './auth-session.js';
+import {authCall,saveSession,sessionToken,currentUser,signOut,emailConfirmation,prepareAuthCheck,authPayload,emailCallback,verifyEmailCallback,sessionVersion,sessionSnapshot} from './auth-session.js';
 const callback=emailCallback(location.hash);if(callback)history.replaceState(null,'',location.pathname+location.search);
-let mode='signin',authCheck,authenticating=false,accountLoad=0;$('#auth-submit').disabled=true;$('#recover-account').disabled=true;const message=$('#account-message');
+let mode='signin',authCheck,authenticating=false,accountLoad=0,claiming=false,passwordSaving=false;$('#auth-submit').disabled=true;$('#recover-account').disabled=true;const message=$('#account-message');
 function setMode(value){mode=value;const signup=value==='signup';$('#name-label').hidden=!signup;$('#signup-consent').hidden=!signup;$('#account-consent').required=signup;$('#account-password').minLength=signup?12:1;$('#account-password').autocomplete=signup?'new-password':'current-password';$('#auth-title').textContent=signup?'Make room for your next project.':'Welcome back.';$('#auth-submit').textContent=signup?'Create homeowner account':'Sign in';message.textContent=''}
 $('#mode-signin').onclick=()=>setMode('signin');$('#mode-signup').onclick=()=>setMode('signup');
 function authBusy(value){authenticating=value;for(const id of ['auth-submit','recover-account','mode-signin','mode-signup'])$('#'+id).disabled=value||!authCheck}
@@ -33,8 +33,35 @@ async function showAccount(){
 $('#account-form').onsubmit=async event=>{event.preventDefault();if(authenticating)return;const button=$('#auth-submit');authBusy(true);try{const email=$('#account-email').value.trim(),password=$('#account-password').value;if(mode==='signup'){if(!$('#account-consent').checked)throw Error('Please agree to the privacy and project-access terms.');const data=await authCall('signup?redirect_to='+encodeURIComponent(new URL('account.html',location.href).href),authPayload({email,password,data:{full_name:$('#account-name').value.trim()}},authCheck));$('#account-password').value='';if(data.access_token){saveSession(data);if(await showAccount())message.textContent='Your homeowner account is ready.'}else{message.textContent='If this address can register, check its inbox for a confirmation email. Return here to sign in after confirming.';setMode('signin');message.textContent='Check your inbox to confirm your email, then sign in here.'}}else{saveSession(await authCall('token?grant_type=password',authPayload({email,password},authCheck)));$('#account-password').value='';if(await showAccount())message.textContent='You’re signed in.'}}catch(e){message.textContent=e.message}finally{authCheck?.reset();authBusy(false)}};
 $('#recover-account').onclick=async()=>{if(authenticating)return;const email=$('#account-email').value.trim();if(!email||!$('#account-email').checkValidity()){message.textContent='Enter your email above first.';return}authBusy(true);try{await authCall('recover?redirect_to='+encodeURIComponent(new URL('account.html',location.href).href),authPayload({email},authCheck));message.textContent='If recovery is available for this address, check its inbox. Use the recovery link to return here and choose a new password.'}catch(e){message.textContent=e.message}finally{authCheck?.reset();authBusy(false)}};
 $('#confirmation-form').onsubmit=async event=>{event.preventDefault();if(authenticating)return;authBusy(true);const button=event.target.querySelector('button');button.disabled=true;try{const input=$('#confirmation-link'),params=emailConfirmation(input.value);saveSession(await authCall('verify',params));input.value='';await showAccount();message.textContent=params.type==='recovery'?'Recovery verified. Choose a new password below.':'Email confirmed. Your account is ready.';if(params.type==='recovery')$('#new-password').focus()}catch(e){message.textContent=e.message}finally{button.disabled=false;authBusy(false)}};
-$('#claim-form').onsubmit=async event=>{event.preventDefault();const button=event.target.querySelector('button');button.disabled=true;try{const url=new URL($('#claim-link').value);const p=new URLSearchParams(url.hash.slice(1));if(url.origin!==location.origin||!p.get('project')||!p.get('key'))throw Error('Paste the original Buzzie private project link.');await api('claim-project',{project_id:p.get('project'),access_token:p.get('key')},await sessionToken());$('#claim-link').value='';await showAccount();message.textContent='Project linked. You can now reopen it from this account.'}catch(e){message.textContent=e.message}finally{button.disabled=false}};
-$('#password-form').onsubmit=async event=>{event.preventDefault();const button=event.target.querySelector('button');button.disabled=true;try{const token=await sessionToken();if(!token)throw Error('Sign in or verify your recovery link first.');await authCall('user',{password:$('#new-password').value},token,'PUT');$('#new-password').value='';message.textContent='Password updated.'}catch(e){message.textContent=e.message}finally{button.disabled=false}};
+$('#claim-form').onsubmit=async event=>{
+ event.preventDefault();if(claiming)return;claiming=true;
+ const button=event.target.querySelector('button'),input=$('#claim-link'),submitted=input.value;
+ button.disabled=true;let scope;const started=sessionVersion();
+ try{
+  const url=new URL(submitted),p=new URLSearchParams(url.hash.slice(1));
+  if(url.origin!==location.origin||!p.get('project')||!p.get('key'))throw Error('Paste the original Buzzie private project link.');
+  scope=await sessionSnapshot();if(!scope.isCurrent())return;
+  await api('claim-project',{project_id:p.get('project'),access_token:p.get('key')},scope.token);
+  if(!scope.isCurrent())return;
+  if(input.value===submitted)input.value='';
+  const loaded=await showAccount();if(!scope.isCurrent())return;
+  message.textContent=loaded?'Project linked. You can now reopen it from this account.':'Project linked, but your project list could not refresh. Refresh your account to reopen it.';
+ }catch(e){if(scope?scope.isCurrent():sessionVersion()===started)message.textContent=e.message}
+ finally{claiming=false;button.disabled=false}
+};
+$('#password-form').onsubmit=async event=>{
+ event.preventDefault();if(passwordSaving)return;passwordSaving=true;
+ const button=event.target.querySelector('button'),input=$('#new-password'),submitted=input.value;
+ button.disabled=true;let scope;const started=sessionVersion();
+ try{
+  scope=await sessionSnapshot();if(!scope.isCurrent())return;
+  await authCall('user',{password:submitted},scope.token,'PUT');
+  if(!scope.isCurrent())return;
+  if(input.value===submitted)input.value='';
+  message.textContent=input.value?'Password updated. The newer value in the field has not been saved.':'Password updated.';
+ }catch(e){if(scope?scope.isCurrent():sessionVersion()===started)message.textContent=e.message}
+ finally{passwordSaving=false;button.disabled=false}
+};
 $('#account-refresh').onclick=showAccount;$('#account-signout').onclick=async()=>{accountLoad++;const pending=signOut();clearAccountView();message.textContent='Signed out.';await pending};
 // Do not adopt URL credentials until a deliberate click and matching server identities.
 if(callback?.session){
