@@ -43,12 +43,16 @@ scrollbar. This is narrow-frame testing, not a physical phone or touch keyboard.
 The signup scenario is prepared but its complete browser walkthrough was not
 performed in this review. Real email links, CAPTCHA enforcement, server-side
 cross-account access, screen-reader announcements, physical devices and Safari
-remain separate gates. Sign-in currently leaves focus on the document after its
-form is hidden; review deliberate dashboard focus as a follow-up.
+remain separate gates. The October 22 focus follow-up now moves from password Enter or keyboard activation
+of Sign in to the visible account heading, then Tab reaches Refresh projects. This
+was checked in Chromium at 390px (password Enter) and 320px (button Enter). Recovery
+at 390px still focuses new-password. A programmatic tabindex=-1 keeps the heading
+out of the normal Tab sequence. Mocked tests also cover preserving a user focus
+change during Auth/identity lookups, manual-refresh focus and logout races.
 
 Three automated fixture-boundary tests check the declared responses, rejected
 origins/methods/transports, failure scenarios, CSP and unchanged copied account.js.
-They run with `npm run verify --prefix painting-platform`; all 190 tests pass.
+They run with `npm run verify --prefix painting-platform`; all 197 tests pass.
 No customer account, password, request or email was created/changed by this review.
 Stop the managed preview when finished:
 

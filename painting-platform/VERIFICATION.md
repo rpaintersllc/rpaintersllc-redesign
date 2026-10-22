@@ -26,7 +26,7 @@ are not a network-isolation boundary. Existing responsive-fixture tests create
 scratch directories under `/workspace/`, so that directory must be writable in
 the current managed test environment.
 
-Evidence: **12 browser modules linked; 190 tests passed**. Five new checker tests
+Evidence: **12 browser modules linked; 197 tests passed**. Five new checker tests
 use temporary broken graphs to prove missing files, invalid exports, syntax
 errors and outside-directory imports fail. A valid cyclic graph containing a
 throwing top-level statement passes, proving application code is not evaluated.
@@ -76,3 +76,9 @@ submission, recovery focus and error-state checks plus the 320/390/768px signed-
 layout regression/fix. Three boundary tests validate its network stubs/CSP and
 unchanged application module. The current verifier passes 190 tests. The fixture
 output must never be deployed; production CSS is the only hosted change.
+
+Account focus evidence: seven mocked cases pass; three fail against the prior
+account.js/HTML. Chromium confirmed password Enter at 390px and button Enter at
+320px focus the identity heading and Tab reaches Refresh projects. Recovery at
+390px still focuses new-password. The current verifier passes 197 tests; no real
+Auth request or screen-reader claim is inferred.

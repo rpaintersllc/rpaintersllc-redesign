@@ -10,16 +10,18 @@ function clearAccountView(){
  $('#account-projects').replaceChildren();$('#account-identity').textContent='';
  for(const id of ['account-password','new-password','claim-link','confirmation-link'])$('#'+id).value='';
 }
-async function showAccount(){
+async function showAccount({focusFrom,focusAnchor=focusFrom}={}){
  const load=++accountLoad;$('#account-projects').replaceChildren();$('#account-identity').textContent='';await sessionToken();const revision=sessionVersion();
  const current=()=>load===accountLoad&&revision===sessionVersion();
  try{
   const user=await currentUser();if(load!==accountLoad)return false;
   if(!user){const token=await sessionToken();if(load===accountLoad&&!token)clearAccountView();return false}
   if(!current())return false;
+  const moveFocus=focusFrom&&$('#account-auth').contains(focusFrom)&&(document.activeElement===focusAnchor||(focusFrom.disabled&&document.activeElement===document.body));
   $('#account-auth').hidden=true;$('#account-dashboard').hidden=false;
   $('#account-identity').textContent=user.email;$('#account-projects').replaceChildren();
   if(!user.email_confirmed_at){message.textContent='Confirm your email before linking or viewing projects.';return false}
+  if(moveFocus)$('#account-identity').focus();
   const token=await sessionToken();if(!current())return false;
   el('p','Loading your projects…',$('#account-projects'),'small');
   const data=await api('home-projects',undefined,token);if(!current())return false;
@@ -31,8 +33,8 @@ async function showAccount(){
 }
 
 $('#account-form').onsubmit=async event=>{
- event.preventDefault();if(authenticating)return;authBusy(true);let revision=sessionVersion();
- const input=$('#account-password'),password=input.value,email=$('#account-email').value.trim(),signup=mode==='signup';
+ event.preventDefault();if(authenticating)return;const focusFrom=document.activeElement;authBusy(true);let revision=sessionVersion();
+ const focusAnchor=document.activeElement,input=$('#account-password'),password=input.value,email=$('#account-email').value.trim(),signup=mode==='signup';
  try{
   if(signup&&!$('#account-consent').checked)throw Error('Please agree to the privacy and project-access terms.');
   const path=signup?'signup?redirect_to='+encodeURIComponent(new URL('account.html',location.href).href):'token?grant_type=password';
@@ -40,7 +42,7 @@ $('#account-form').onsubmit=async event=>{
   const data=await authCall(path,authPayload(body,authCheck));if(sessionVersion()!==revision)return;
   if(input.value===password)input.value='';
   if(data.access_token){
-   saveSession(data);revision=sessionVersion();const loaded=await showAccount();
+   saveSession(data);revision=sessionVersion();const loaded=await showAccount({focusFrom,focusAnchor});
    if(sessionVersion()===revision&&loaded)message.textContent=signup?'Your homeowner account is ready.':'You’re signed in.';
   }else if(signup){
    setMode('signin');message.textContent='If this address can register, check its inbox for a confirmation email. Return here to sign in after confirming.';

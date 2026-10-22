@@ -1,5 +1,40 @@
 # Buzzie: owned painting-services platform pilot
 
+## Account keyboard focus after sign-in (October 22 update)
+
+Successful homeowner sign-in and immediate-session signup now move focus from the
+submitted auth control to the visible confirmed account heading. The heading has
+`tabindex=-1`, so it can receive deliberate focus without becoming an extra Tab
+stop. The next Tab reaches Refresh projects. The guard also handles browsers
+that blur the submit button to the document when the busy state disables it.
+
+Focus transfer requires the current account lookup/session and the original
+control still belonging to the auth panel. If the user focused another control
+while Auth/identity checks were pending, their chosen focus is preserved. Manual
+project refreshes do not move focus. Existing email recovery still focuses the
+new-password field through its separate path; no server permissions changed.
+
+Validation: **12 browser modules linked; 197 mocked tests pass** through
+`npm run verify`. Seven focus cases cover sign-in/signup, focus changes during
+Auth and identity reads, refresh, logout and button blur; three fail against the
+previous account.js/HTML. `git diff --check` passes. Synthetic Chromium review
+confirmed password Enter at 390px and button Enter at 320px focus account-identity;
+Tab then reaches Refresh projects. Recovery at 390px still focuses new-password.
+The local fixture's CSP/network isolation stayed in place and the preview was
+stopped after review. No real sign-in, account, password, request or email changed.
+
+Published owner-private from Site source
+`abe26ea375bb1c0524c3ea814140013a64d55bb2`; successful deployment
+`appgdep_6ada254d93c081919a50ee0be6918d10`. Only tested production account.js and
+account.html were copied after both hosted files matched GitHub HEAD byte-for-byte.
+Tests/documentation remain in branch code; no mock script was deployed. No backend,
+migration, Auth setting, audience or contractor changed.
+
+Next: review signed-out keyboard recovery and remaining synthetic signup/browser
+states, then revisit server-side cross-account evidence. Genuine email delivery,
+actual abuse enforcement, physical devices and screen-reader announcements remain
+separate gates; this focus improvement does not close them.
+
 ## Synthetic account browser review and narrow dashboard fix (October 22 update)
 
 Added a local-only account browser-fixture generator with six labeled scenarios
