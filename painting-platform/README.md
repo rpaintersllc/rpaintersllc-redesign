@@ -1,5 +1,39 @@
 # Buzzie: owned painting-services platform pilot
 
+## Project access-denial cache retirement (October 22 update)
+
+A current 401/403/404 project lookup now retires the cached project model and
+removes contact/scope text, photo elements, timeline, private-link text, company
+links, file selection and conversation UI from the page. Previously, denial hid
+the workspace but retained its model; a subsequent network failure could invoke
+the transient-error fallback and reopen that old private data. The fallback now
+has no retired model to show. A fresh successful lookup is required to restore
+the project; reopening its conversation mounts a fresh thread.
+
+Account-backed project URLs now give account-specific recovery guidance and a
+visible Open My account link when access is unavailable. The page does not create
+a guest key for account access. A transient error before any denial still keeps
+the previously authorized view with its existing stale-data warning.
+
+Validation: **12 browser modules linked; 131 tests pass** through `npm run verify`.
+Five new mocked regressions all fail against the prior project.js/project.html.
+They cover 401/403/404 followed by network failure, sensitive DOM cleanup and
+upload blocking, fresh authorized recovery with conversation reload, and the
+account recovery link/bearer request. `git diff --check` passes. No real account,
+lead, upload, message, visit, email or permission was changed. This is client
+cache/display recovery evidence, not a real expired-session/browser walkthrough.
+It does not revoke JWTs, erase user-saved browser links or change server access.
+
+Published owner-private from Site source
+`44c72f73957c757aa2098266c3154c25b732c6dd`; successful deployment
+`appgdep_6ad9b4fcd4d88191b33a9894febca69c`. Only production project.js and
+project.html were copied after matching both Site baselines to the branch.
+No backend, schema, Auth setting, audience or contractor changed.
+
+Next: review recovery of conversation loads and remaining genuine account/email,
+abuse-enforcement, physical-mobile and screen-reader launch gates. Continue using
+the local verification command before publishing code changes.
+
 ## Repeatable local validation gate (October 22 update)
 
 `npm run verify --prefix painting-platform` now runs a fail-fast local check of

@@ -86,3 +86,33 @@ test('uploads wait for an in-flight project refresh to confirm the current galle
   reply.resolve(Response.json({error:'Try later'},{status:502}));await pending;
  },{handle:action=>{if(action==='lookup'&&++lookups===2){started.resolve();return reply.promise}}});
 });
+
+for(const status of [401,403,404])test('access rejection '+status+' retires cached account project data through a later network failure',async()=>{
+ let lookups=0;
+ await screen(async({document,input,calls,submit})=>{
+  document.querySelector('.message-thread').textContent='Previously loaded private conversation';input.value='private-photo.jpg';
+  await document.querySelector('#refresh').onclick();
+  assert.equal(document.querySelector('#project-content').hidden,true);
+  await document.querySelector('#refresh').onclick();
+  assert.equal(document.querySelector('#project-content').hidden,true);assert.equal(document.querySelector('#missing').hidden,false);
+  for(const id of ['contact-details','project-scope','private-link','photos','timeline'])assert.equal(document.querySelector('#'+id).textContent,'');
+  assert.equal(document.querySelector('#photos').children.length,0);
+  assert.equal(document.querySelector('#business-phone').hasAttribute('href'),false);assert.equal(input.value,'');
+  assert.equal(document.querySelector('.message-thread'),null);
+  input.files=[file()];await submit();assert.equal(calls.filter(c=>c.action==='upload').length,0);
+ },{account:true,photos:[photo(1)],handle:action=>{if(action!=='lookup')return;if(++lookups===2)return Response.json({error:'Access rejected'},{status});if(lookups>2)throw Error('Network unavailable')}});
+});
+test('a fresh authorized lookup restores the project with a newly loaded conversation after rejection',async()=>{
+ let lookups=0;
+ await screen(async({document,calls})=>{
+  document.querySelector('.message-thread').textContent='Old private conversation';
+  await document.querySelector('#refresh').onclick();assert.equal(document.querySelector('#project-content').hidden,true);
+  await document.querySelector('#refresh').onclick();assert.equal(document.querySelector('#project-content').hidden,false);
+  assert.equal(calls.filter(c=>c.action==='conversation').length,2);assert.doesNotMatch(document.querySelector('#project-content').textContent,/Old private conversation/);
+ },{handle:action=>action==='lookup'&&++lookups===2?Response.json({error:'Access rejected'},{status:403}):undefined});
+});
+test('account project recovery links to My account without manufacturing a guest key',()=>screen(async({document,calls})=>{
+ const missing=document.querySelector('#missing');assert.match(missing.querySelector('p').textContent,/Sign in to your homeowner account/);
+ assert.equal(missing.querySelector('a').getAttribute('href'),'account.html');
+ const lookup=calls.find(c=>c.action==='lookup');assert.equal(lookup.options.headers.authorization,'Bearer mock-session');assert.equal(JSON.parse(lookup.options.body).access_token,'');
+},{account:true}));
