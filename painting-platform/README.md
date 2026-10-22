@@ -1,6 +1,40 @@
 # Buzzie: owned painting-services platform pilot
 
-## Upload failure cleanup fix prepared for review (October 22 update)
+## Isolated API upload fix deployed (October 22 update)
+
+Published the previously tested upload cleanup fix to **platform-api version 8**
+in isolated project `ocmgrgvzhuhyigaddhue`. Before deployment, version 7's single
+`index.ts` matched the preceding GitHub API source byte-for-byte. A final live
+source/version check and unchanged PR head confirmed no intervening deployment
+or branch change. Only the upload error handler differed: independent failed-state
+metadata/object cleanup and accurate unconfirmed-upload guidance.
+
+After deployment, the ACTIVE version 8 source matches GitHub commit
+`d4a895d5a723e6fa9539f36ae1fa11816c5ddd9d` byte-for-byte. Preserved the existing
+`verify_jwt=false` setting and the handler's capability/confirmed-user/membership
+checks. No secret value was retrieved or modified; no runtime setting, schema,
+migration, grant, contractor activation, Site source or audience changed.
+
+Validation: fresh checkout `npm run verify` linked **12 browser modules and passed
+227 mocked Node/DOM tests**. Four harmless live smoke paths passed before and
+after publication: provider GET 200 (R Painters only), untrusted-origin GET 403,
+upload POST without a project 401 before reservation/Storage, and OPTIONS 204.
+Only provider catalog data was read. No customer request, account, message,
+notification dispatch, Storage upload or object deletion was performed.
+
+This updates the API used by the existing private pilot; no Site deployment was
+needed. The upload-failure cleanup remains best effort, and real provider
+failure/deletion, signed-URL expiry and full authenticated browser journeys are
+not established by mocks or early-rejection smoke checks. See
+[tests/UPLOAD-CLEANUP.md](tests/UPLOAD-CLEANUP.md) for release evidence and limits.
+
+Next: review the remaining synthetic signup/browser states and permitted
+confirmation/recovery journeys, while retaining owner sender/redirect decisions,
+genuine email delivery, actual CAPTCHA enforcement and physical-device/screen-
+reader checks as launch gates. A real Storage cleanup exercise requires an
+explicitly permitted disposable object; never use a customer photo as a test.
+
+## Initial source-only upload cleanup evidence (October 22 update)
 
 Fixed the branch's `platform-api` upload error path: metadata failure no longer
 skips the independent best-effort deletion of the exact reserved object. A lost
@@ -24,14 +58,14 @@ confirms the existing single-object DELETE route; no endpoint, grants, migration
 Auth setting, contractor, audience or schema changed. See
 [tests/UPLOAD-CLEANUP.md](tests/UPLOAD-CLEANUP.md) for evidence and limits.
 
-**Saved in branch code/tests/docs only; not deployed to the isolated Edge API or
-Site.** This is a verified source fix, not evidence that live Storage cleanup
-succeeds. Cleanup remains best effort when the provider is unavailable, and the
-current deployed API still has the earlier coupled cleanup behavior.
+At this initial checkpoint the fix was saved in branch code/tests/docs only.
+It was subsequently deployed as isolated API version 8, as recorded above. This
+source evidence does not establish real Storage cleanup success; cleanup remains
+best effort when the provider is unavailable.
 
-Next: compare the deployed isolated `platform-api` source/settings to this branch's
-baseline before publishing the tested fix, then verify read-only/early-rejection
-smoke paths without uploading or deleting real objects. Keep genuine Storage
+The subsequent release compared deployed source/settings to the baseline and
+verified read-only/early-rejection smoke paths without uploading or deleting real
+objects. Keep genuine Storage
 cleanup, authenticated browser journeys, email delivery and actual CAPTCHA
 verification as separate review evidence.
 

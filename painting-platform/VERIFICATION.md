@@ -113,5 +113,16 @@ object creation before a failed upload response, independent object cleanup afte
 metadata HTTP/transport failure and a deliberate retry with a new reservation.
 Four fail against the prior API source. The current local run links 12 browser
 modules and passes **227 tests**; see tests/UPLOAD-CLEANUP.md. The fix is saved in
-branch source only and has not been deployed. Genuine Storage cleanup remains
-unverified; no live object was uploaded or deleted.
+branch source only at that checkpoint; its subsequent isolated API version 8
+publication is recorded below. Genuine Storage cleanup remains unverified; no
+live object was uploaded or deleted.
+
+
+Isolated API release evidence (October 22): platform-api version 8 is ACTIVE and
+read-back source exactly matches the tested upload cleanup fix at d4a895d.
+Version 7 matched the preceding baseline before publication; JWT behavior stayed
+unchanged. A fresh local run passes all 227 tests and links 12 browser modules.
+Provider read, rejected origin, missing-project upload rejection and preflight
+passed before/after publication (200/403/401/204). No real Storage write/delete,
+customer mutation, Auth write or email dispatch was exercised. See
+tests/UPLOAD-CLEANUP.md for the exact version, fingerprints and remaining limits.
