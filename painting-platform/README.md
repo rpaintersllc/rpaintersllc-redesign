@@ -1,5 +1,31 @@
 # Buzzie: owned painting-services platform pilot
 
+## Repeatable local validation gate (October 22 update)
+
+`npm run verify --prefix painting-platform` now runs a fail-fast local check of
+the static browser module graph, followed by the explicit mocked Node/DOM suite.
+It parses/links browser modules without evaluating their top-level code, catching
+missing files, missing named exports and syntax errors before runtime. No new
+dependency, hosted workflow, deployment or live integration run was added.
+`VERIFICATION.md` records the exact command, Node version and remaining limits.
+
+Validation: **12 browser modules linked; 126 tests pass**, including five new
+fault-injection checks for the verifier: cyclic imports without evaluation,
+missing files, invalid named exports, syntax errors and outside-directory imports.
+The valid fixture intentionally throws at top level; successful validation proves
+that code was never evaluated. The production module check and complete mocked
+suite passed through the new command on Node 24.19.0. `git diff --check` passes.
+
+This change is **saved in code only**. Browser application files and the published
+owner-private Site did not need changes. No backend, schema, Auth setting,
+audience or contractor changed; no real account, lead, message, visit, email or
+upload was created. Static linking does not validate dynamic imports, actual
+provider behavior or physical-mobile/screen-reader/email launch gates.
+
+Next: review account-backed project access and use this verification gate for
+future changes. Genuine sender/redirect/delivery setup, abuse enforcement and
+device walkthroughs remain required before public access.
+
 ## Contractor status and availability action guards (October 22 update)
 
 Project status writes now snapshot the requested value, reject repeat change
