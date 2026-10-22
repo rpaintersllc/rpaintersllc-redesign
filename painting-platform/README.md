@@ -1,5 +1,37 @@
 # Buzzie: owned painting-services platform pilot
 
+## Contractor refresh session isolation (October 21 update)
+
+Contractor credential renewal now uses an isolated in-memory session helper.
+Concurrent actions share one refresh request. Clearing the session invalidates
+pending refreshes; an older success cannot restore signed-out credentials or
+replace a newer login, and an older failure cannot clear the newer login.
+A current failed refresh clears the workspace once and requires sign-in again.
+API calls also check that their resolved token still belongs to the active local
+contractor session before starting the request. Homeowner session storage and
+server membership checks remain separate and unchanged.
+
+Validation: **107 Node/DOM tests pass**, including six session-helper cases and
+three deferred-response contractor UI regressions. All three UI regressions
+fail against the previous pro.js: stale renewal revives access after logout,
+replaces a newer token, or clears a newer login. The fixed panel preserves logout
+and the newer login in each case. The existing contractor-inbox controls test
+also passes. JS syntax checks and `git diff --check` pass. These checks use mocks;
+no real sign-in, account, password, lead, message, visit, upload or email was used.
+No new browser/mobile or genuine Auth-provider behavior is claimed.
+
+Published owner-private from Site source
+`caa411735fdff72b39ba497a86ccce8a32e9e012`; successful deployment
+`appgdep_6ad97aa37d708191a8a708fa3f4356bb`. The prior Site pro.js matched the
+branch baseline before copying it and the new contractor-session.js module.
+No backend, schema, Auth configuration, audience or contractor changed. This is
+local credential lifecycle protection; it does not immediately revoke all issued
+JWTs or synchronize sessions across tabs.
+
+Next: review contractor stale mutation feedback and account-backed project access;
+physical-mobile, screen-reader and genuine account/email walkthroughs remain
+separate launch gates, along with actual abuse enforcement and sender setup.
+
 ## Narrow-screen layout and message-region access (October 21 update)
 
 A long, unbroken homeowner email made the private project grid wider than a narrow

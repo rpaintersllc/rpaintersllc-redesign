@@ -7,8 +7,8 @@ participating contractor; external discovery stays a separate channel.
 
 | Gate | Current evidence | Remaining action |
 | --- | --- | --- |
-| Request, receipt, photos, messages and visits | 98 mocked Node/DOM tests pass; Chromium narrow-frame request/project/signed-out account layouts checked at 320/390/768px; long-contact project overflow fixed; message-history region reachable by Tab; project lookups discard stale successes/failures and uploads wait for a current gallery; visit action concurrency, stale reads and saved-change/failed-reload recovery covered; message sends preserve newer drafts, block concurrent sends and distinguish failed reads after a saved write; desktop request-step focus, Enter navigation and required-field checks verified in read-only local browser fixture; prior rollback database checks in README | Physical-mobile, screen-reader and full authenticated project/account walkthroughs; all narrow-frame checks use synthetic read-only data, not live intake |
-| Homeowner access and contractor separation | Account ownership, capability links, membership scope and session-race tests | Review full sign-in/recovery journey and cross-account access in a browser |
+| Request, receipt, photos, messages and visits | 107 mocked Node/DOM tests pass; Chromium narrow-frame request/project/signed-out account layouts checked at 320/390/768px; long-contact project overflow fixed; message-history region reachable by Tab; project lookups discard stale successes/failures and uploads wait for a current gallery; visit action concurrency, stale reads and saved-change/failed-reload recovery covered; message sends preserve newer drafts, block concurrent sends and distinguish failed reads after a saved write; desktop request-step focus, Enter navigation and required-field checks verified in read-only local browser fixture; prior rollback database checks in README | Physical-mobile, screen-reader and full authenticated project/account walkthroughs; all narrow-frame checks use synthetic read-only data, not live intake |
+| Homeowner access and contractor separation | Account ownership, capability links, membership scope and session-race tests; contractor renewal now coalesces concurrent refreshes and discards late success/failure after logout or a newer login (three UI regressions fail against the old code) | Review full sign-in/recovery journey and cross-account access in a browser |
 | New request and company-interest abuse checks | Turnstile frontend and server verification implemented; disabled in the private pilot; mocks cover failures/replay/host/action | Owner configures a widget and secure settings; verify actual widget behavior before activation/public access |
 | Auth sign-in/signup/recovery abuse checks | Homeowner and contractor clients now support native Auth CAPTCHA proof; native settings unchanged and enforcement unverified | Configure the public Auth widget key and native Supabase Auth CAPTCHA; verify server enforcement plus rate limits before launch |
 | Confirmation/recovery email | Code prepared; no real external delivery evidence | Owner approves sender address/domain; configure SMTP and allowed redirects, then verify genuine delivery through an authorized flow |
@@ -124,7 +124,8 @@ identity check. No real account was signed into or out of during verification.
 
 ## Evidence and limits
 
-- `npm test`: 98 tests pass, including two responsive-fixture network-boundary tests and five project-refresh ordering/gallery regressions
+- `npm test`: 107 tests pass, including six contractor-session helper cases, three
+  contractor-refresh UI regressions (all three fail against the prior code), two responsive-fixture network-boundary tests and five project-refresh ordering/gallery regressions
   (all five fail against the prior code), six visit-action regressions, four
   conversation-send regressions, three request-keyboard regressions and seven account-dashboard race regressions
   covering sign-out, account changes, response ordering, stale failures, immediate
