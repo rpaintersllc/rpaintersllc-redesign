@@ -88,3 +88,12 @@ and unauthorized controls. A separate source copy lacking the ownership filter
 fails seven checks. `tests/ACCESS-BOUNDARIES.md` records the matrix and the live
 read-only selected table/function grant report. The complete run passes 217 tests.
 No application behavior was changed or deployed for this evidence update.
+
+
+Live RPC evidence: `tests/rpc-isolation.sql` separately passed 34 explicit checks
+on October 22 against fresh, uncommitted synthetic fixtures in the isolated pilot.
+The final ROLLBACK report showed zero fixture leads, Auth rows and companies.
+`tests/ACCESS-BOUNDARIES.md` documents replay, trigger review, positive controls,
+operator-vs-JWT scope and recovery after a SQL error. This SQL is intentionally
+outside the local 217-test command; no live intake, Auth API, Storage upload or
+notification dispatcher was used. No application or Site change was deployed.

@@ -1,5 +1,44 @@
 # Buzzie: owned painting-services platform pilot
 
+## Reproducible live RPC isolation checks (October 22 update)
+
+Added `tests/rpc-isolation.sql`, an operator-only transaction fixture that creates
+its own two inactive companies, three synthetic identities and two projects.
+It no longer depends on a previously saved test project or changes R Painters'
+intake availability. All fixture rows and generated outbox/status events roll
+back; no Auth API, intake endpoint, Storage object or dispatcher is invoked.
+
+At 17:54 UTC October 22, all **34 explicit checks passed** against the isolated
+Supabase pilot: confirmed-email/capability ownership and no reassignment; review
+membership, project scope and revision conflicts; owner-only availability; company
+status scope; photo metadata reservation; message authorization/idempotency; and
+cross-project visit isolation, confirmation/cancellation status transitions and
+terminal-state protection. Positive controls demonstrate permitted operations
+within the same transaction. Post-rollback aggregate counts were **0 fixture
+leads, 0 fixture Auth rows and 0 fixture companies**. Unexpected fixture-table row
+triggers abort the script before inserts. Ten-second statement/two-second lock
+timeouts bound the test; SQL exceptions remain active even if ASSERT is disabled.
+
+Validation: `npm run verify` links **12 browser modules and passes 217 mocked
+tests**; `git diff --check` passes. The new SQL is a separate manual live check,
+not 34 additional Node tests. An initial fixture assertion combined a mutating
+function and a state subquery in one expression; separating the write from the
+read fixed the fixture's snapshot-order problem. The aborted attempt also left
+zero fixture records. No application defect or production-code change is inferred.
+
+Saved in tests/documentation only, with no Site deployment, migration, Auth
+configuration, grant, audience or contractor activation change. This is direct
+RPC evidence as an authorized operator, not a full JWT/browser isolation test.
+`platform_interact` and `platform_set_status` rely on prior gateway membership
+verification; a supplied business UUID alone is not authentication. See
+[tests/ACCESS-BOUNDARIES.md](tests/ACCESS-BOUNDARIES.md) for scope and replay steps.
+
+Next: add isolated coverage for photo-slot capacity/stale reservations and visit
+rate/date/late-pipeline boundaries, then complete full authenticated browser
+walkthroughs when authorized test identities are available. Genuine email
+delivery, actual abuse enforcement and physical-device/screen-reader checks
+remain separate launch gates.
+
 ## Expanded account/contractor access evidence (October 22 update)
 
 Added `tests/access-boundaries.test.mjs`: a synthetic two-homeowner/two-company
