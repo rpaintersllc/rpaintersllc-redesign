@@ -31,3 +31,7 @@ input:focus,textarea:focus,select:focus{outline-color:#e2ecdf}
 
 /* Keep long contact strings inside narrow project panels. */
 .project-layout>div,.project-layout>aside{min-width:0}#contact-details{overflow-wrap:anywhere}
+
+/* Keep account identity inside narrow dashboard headers. */
+#account-dashboard .business-bar>div{min-width:0}
+#account-identity{overflow-wrap:anywhere}

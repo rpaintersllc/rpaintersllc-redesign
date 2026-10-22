@@ -26,7 +26,7 @@ are not a network-isolation boundary. Existing responsive-fixture tests create
 scratch directories under `/workspace/`, so that directory must be writable in
 the current managed test environment.
 
-Evidence: **12 browser modules linked; 187 tests passed**. Five new checker tests
+Evidence: **12 browser modules linked; 190 tests passed**. Five new checker tests
 use temporary broken graphs to prove missing files, invalid exports, syntax
 errors and outside-directory imports fail. A valid cyclic graph containing a
 throwing top-level statement passes, proving application code is not evaluated.
@@ -70,3 +70,9 @@ logout/new login, edited passwords, post-adoption logout, conditional signup
 feedback and ordinary retry. Fifteen fail against the previous account.js. The
 current complete run passes 187 tests. Requests are mocked; no live account or
 email delivery evidence is inferred.
+
+Synthetic browser evidence: `tests/ACCOUNT-BROWSER-QA.md` records account Enter
+submission, recovery focus and error-state checks plus the 320/390/768px signed-in
+layout regression/fix. Three boundary tests validate its network stubs/CSP and
+unchanged application module. The current verifier passes 190 tests. The fixture
+output must never be deployed; production CSS is the only hosted change.

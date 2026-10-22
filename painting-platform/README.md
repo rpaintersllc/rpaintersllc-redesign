@@ -1,5 +1,46 @@
 # Buzzie: owned painting-services platform pilot
 
+## Synthetic account browser review and narrow dashboard fix (October 22 update)
+
+Added a local-only account browser-fixture generator with six labeled scenarios
+and 320/390/768px frames. It copies production application modules unchanged and
+substitutes only declared synthetic responses before account.js loads. CSP blocks
+connections/form submission, unexpected fetch calls reject, and alternative
+network transports are disabled. No real Auth request or customer mutation occurs.
+The generated fixture is never deployed; reproduction and evidence are in
+[tests/ACCOUNT-BROWSER-QA.md](tests/ACCOUNT-BROWSER-QA.md).
+
+The signed-in browser review exposed an account email heading extending to 440px
+inside 375px usable width. Production CSS now allows the account dashboard header
+child to shrink and its identity email to wrap anywhere. After the fix, document
+and usable widths match at 305/375/753px for 320/390/768px frames. Brand, markup,
+account behavior and server access rules are unchanged.
+
+Browser evidence: Enter from the password field opens a synthetic account and
+project card; Enter on Finish password recovery loads the panel and focuses
+new-password. Expired-link, invalid-sign-in and failed-project-list notices were
+also observed without overflow. No password was saved; the signup scenario is
+prepared but its full browser walkthrough was not performed. Narrow Chromium
+frames do not prove physical-mobile, Safari or screen-reader behavior.
+
+Validation: **12 browser modules linked; 190 mocked tests pass**. Three new fixture
+boundary tests check declared operations, rejected origins/methods/transports,
+failure responses, CSP and unchanged copied account.js. `git diff --check` passes.
+No account, password, customer request, photo, visit, message or email was created
+or changed. The managed preview was stopped after review.
+
+Only tested production theme.css was published owner-private after its hosted
+baseline matched GitHub HEAD byte-for-byte. Site source
+`edece578e0dee1807f8db7236bcaa0d36b83559a`; successful deployment
+`appgdep_6ada167d4f308191a8e4a184fffbc2b5`. The fixture, tests and runbook are saved
+in branch code only. No backend, migration, Auth setting, audience or contractor
+changed.
+
+Next: review deliberate dashboard focus after sign-in (the browser currently
+leaves focus on the document when the auth form hides), then extend safe browser
+account evidence. Genuine email delivery, actual abuse enforcement, physical
+devices and screen readers remain separate gates.
+
 ## Sign-in, signup and recovery response isolation (October 22 update)
 
 Homeowner sign-in and signup now adopt a returned session only while the local
