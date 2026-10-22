@@ -1,5 +1,46 @@
 # Buzzie: owned painting-services platform pilot
 
+## Expanded account/contractor access evidence (October 22 update)
+
+Added `tests/access-boundaries.test.mjs`: a synthetic two-homeowner/two-company
+API matrix that checks the gateway's supplied ownership and membership filters.
+Foreign homeowner lookup/upload/conversation/message/visit actions stop with 404
+before private reads, photo reservation/sign/upload or mutation RPCs. Submitted
+owner/account IDs cannot override the verified user. Unconfirmed upload stops
+before database access. Foreign-company selection is rejected for seven contractor
+actions, and approved members cannot use conversation/message/visit decisions on
+another company's project.
+
+Positive controls show that the same fixture permits owning-homeowner read/upload
+and an approved contractor's own list/photo signing; it does not blindly deny all
+requests. Homeowner photo output omits raw storage paths/access hashes. All 20 new
+checks pass. In a separate disposable source copy, removing only the homeowner
+ownership filter causes seven checks to fail, including all six foreign-homeowner
+routes. The weakened copy is not committed, deployed or used against the pilot.
+
+Added the repeatable metadata-only `operations/access-posture.sql` report and
+[tests/ACCESS-BOUNDARIES.md](tests/ACCESS-BOUNDARIES.md). At 15:59 UTC October 22,
+the isolated pilot report showed all six selected private tables with RLS enabled
+and no table-level CRUD grant to anon/authenticated; all seven selected server
+functions had one overload and no client EXECUTE grant. The read-only transaction
+used a five-second timeout and ROLLBACK. No customer rows, Auth users, function
+bodies, storage objects or secrets were read. Existing security-advisor findings
+were reviewed without relaxing permissions.
+
+Validation: **12 browser modules linked; 217 mocked tests pass** through
+`npm run verify`; `git diff --check` passes. These mocks prove gateway dispatch
+boundaries, not live PostgREST/RPC behavior, full JWT/browser isolation or actual
+signed-URL expiration. The metadata report covers selected table/function grants,
+not a complete security audit. Prior rollback SQL evidence remains separate.
+
+Saved in branch tests/documentation/report code only. No Site deployment, backend
+code, migration, Auth setting, grants, audience or contractor changed. No real
+account, lead, photo, message, visit or email was created or modified.
+
+Next: review the live RPC ownership/membership invariants with reproducible
+rollback-only fixtures, while keeping genuine email delivery, actual abuse
+enforcement and physical-device/screen-reader walkthroughs as separate gates.
+
 ## Account keyboard focus after sign-in (October 22 update)
 
 Successful homeowner sign-in and immediate-session signup now move focus from the

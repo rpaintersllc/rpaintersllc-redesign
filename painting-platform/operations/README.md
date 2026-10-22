@@ -79,3 +79,10 @@ launch evidence next; keep genuine email delivery and abuse enforcement gates
 open until independently verified.
 
 Reference checked: https://supabase.com/docs/guides/cron/quickstart
+
+## Selected access posture report
+
+`access-posture.sql` is a separate metadata-only read-only report for selected
+private table RLS/client CRUD and server-function client EXECUTE grants. It does
+not invoke application functions. Run its complete transaction independently;
+interpret both returned arrays using [the access evidence runbook](../tests/ACCESS-BOUNDARIES.md).

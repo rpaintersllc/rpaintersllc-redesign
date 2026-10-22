@@ -26,7 +26,7 @@ are not a network-isolation boundary. Existing responsive-fixture tests create
 scratch directories under `/workspace/`, so that directory must be writable in
 the current managed test environment.
 
-Evidence: **12 browser modules linked; 197 tests passed**. Five new checker tests
+Evidence: **12 browser modules linked; 217 tests passed**. Five new checker tests
 use temporary broken graphs to prove missing files, invalid exports, syntax
 errors and outside-directory imports fail. A valid cyclic graph containing a
 throwing top-level statement passes, proving application code is not evaluated.
@@ -82,3 +82,9 @@ account.js/HTML. Chromium confirmed password Enter at 390px and button Enter at
 320px focus the identity heading and Tab reaches Refresh projects. Recovery at
 390px still focuses new-password. The current verifier passes 197 tests; no real
 Auth request or screen-reader claim is inferred.
+
+Access-boundary evidence: twenty new mocked API cases pass with both authorized
+and unauthorized controls. A separate source copy lacking the ownership filter
+fails seven checks. `tests/ACCESS-BOUNDARIES.md` records the matrix and the live
+read-only selected table/function grant report. The complete run passes 217 tests.
+No application behavior was changed or deployed for this evidence update.
