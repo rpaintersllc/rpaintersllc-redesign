@@ -1,5 +1,40 @@
 # Buzzie: owned painting-services platform pilot
 
+## Conversation access recovery (October 22 update)
+
+The shared homeowner/contractor conversation now keeps the message input/send
+control disabled until its first successful read. A failed initial load cannot
+send a message through a form whose access has not been established. A later
+successful Refresh conversation restores the controls.
+
+A 401/403/404 from a conversation read, message write or visit decision clears the
+private thread, visit controls and unsent draft, disables sends/visit actions and
+invalidates older pending reads. A later network failure cannot restore the
+retired content. A successful fresh read is required to resume. Existing ordinary
+transient failures after a successful read retain their prior recovery behavior;
+saved-message and saved-visit feedback still distinguishes saved writes from a
+failed reload. These changes affect the conversation panel, not server privileges
+or JWT revocation.
+
+Validation: **12 browser modules linked; 138 Node/DOM tests pass** through
+`npm run verify`. Seven new mocked regressions in
+`tests/conversation-access-ui.test.mjs` all fail against the previous module.
+They cover initial-load failure, 401/403/404 read denial plus network failure and
+recovery, denied message/visit writes, and an older read after a newer access
+denial. Existing send/visit retry and concurrency regressions still pass.
+`git diff --check` passes. No real message, visit, account, lead, email or upload
+was created or changed; no new live-provider/browser/device evidence is claimed.
+
+Published owner-private from Site source
+`2c7cd5d02efedf43ffa63eaf817f3e257720f7f2`; successful deployment
+`appgdep_6ad9c254e5e48191adc5b6f50831dec3`. Only production conversation.js was
+copied after matching its existing Site baseline to the branch. No backend,
+schema, Auth setting, audience or contractor changed.
+
+Next: review photo access/recovery and remaining operational launch evidence.
+Genuine account/email delivery, actual abuse enforcement, physical-mobile and
+screen-reader walkthroughs remain separate launch gates.
+
 ## Project access-denial cache retirement (October 22 update)
 
 A current 401/403/404 project lookup now retires the cached project model and
