@@ -1,5 +1,40 @@
 # Buzzie: owned painting-services platform pilot
 
+## Safe notification operations diagnostics (October 22 update)
+
+Added operator-only read-only SQL reports and a runbook in
+[operations/README.md](operations/README.md). They expose aggregate queue and
+retry-scheduler health without dispatching work or reading secrets, customer
+contacts, raw errors, request bodies or scheduler commands. Buzzie projects,
+legacy direct intake and external discovery remain separate channels. Reports
+identify exhausted retries, expired/missing processing leases and missing/inactive
+retry jobs; provider acceptance and SQL success are explicitly not delivery proof.
+
+Validation: both reports executed successfully against isolated project
+`ocmgrgvzhuhyigaddhue` using read-only transactions with a five-second timeout and
+ROLLBACK. At 09:59 UTC October 22, all three queues had zero pending/processing,
+failed, due, exhausted or missing/expired-lease records. Existing provider-accepted
+records were 2 Buzzie projects, 4 other direct-intake and 1 discovery; these are
+queue records, not verified customers. Both retry schedules were active with
+288 SQL successes and zero SQL failures each in the preceding 24 hours. No worker
+was manually invoked and no email delivery was verified.
+
+The synthetic SQL fixture generator embeds the actual report queries and returned
+**five passing checks**, covering retry/time/lease boundaries, channel isolation,
+entirely empty queues, missing schedules and the 24-hour history window. It uses
+only CTEs, with no inserts or real jobs. The existing local verifier still links
+**12 browser modules and passes 142 mocked tests**. `git diff --check` passes.
+
+Saved in branch code/documentation only; no Site deployment, schema migration,
+permissions, Auth settings or notification configuration changed. No lead,
+account, message, visit, photo or email was created or changed. Current advisory
+findings were reviewed; no permissions were relaxed to silence server-only RLS
+notices. These tools add observability, not a public-launch approval.
+
+Next: review account-link recovery and remaining cross-account launch evidence
+without sending emails or creating fake requests. Genuine delivery, actual abuse
+enforcement and physical-device/accessibility walkthroughs remain separate gates.
+
 ## Private photo display recovery (October 22 update)
 
 The shared homeowner/contractor photo renderer now replaces a failed image with

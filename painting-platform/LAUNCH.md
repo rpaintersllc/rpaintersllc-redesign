@@ -12,8 +12,8 @@ participating contractor; external discovery stays a separate channel.
 | New request and company-interest abuse checks | Turnstile frontend and server verification implemented; disabled in the private pilot; mocks cover failures/replay/host/action | Owner configures a widget and secure settings; verify actual widget behavior before activation/public access |
 | Auth sign-in/signup/recovery abuse checks | Homeowner and contractor clients now support native Auth CAPTCHA proof; native settings unchanged and enforcement unverified | Configure the public Auth widget key and native Supabase Auth CAPTCHA; verify server enforcement plus rate limits before launch |
 | Confirmation/recovery email | Code prepared; no real external delivery evidence | Owner approves sender address/domain; configure SMTP and allowed redirects, then verify genuine delivery through an authorized flow |
-| Owner notifications | Existing transactional outbox and generic alerts documented | Verify notification delivery with permitted fixtures; messages/visits do not currently send email/SMS |
-| Operations | One active provider, manual qualification, pause control | Name support contact/process, review retention/privacy copy and coverage before opening |
+| Owner notifications | Read-only queue/scheduler reports verified October 22; five synthetic SQL checks pass; no pending/failed queue records at 09:59 UTC; 288 successful dispatcher SQL runs per retry job over 24h; acceptance/SQL success do not prove delivery | Verify notification delivery with permitted fixtures; messages/visits do not currently send email/SMS |
+| Operations | One active provider, manual qualification, pause control; operator runbook in operations/README.md separates project/direct/discovery counts without customer content or worker dispatch | Name support contact/process, review retention/privacy copy and coverage before opening |
 | Public release | Owner-private Site retained | Close the gates, review evidence and obtain owner's explicit public-release instruction |
 
 Contractor billing, nationwide activation and paid acquisition are outside the

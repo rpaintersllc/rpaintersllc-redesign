@@ -45,3 +45,9 @@ The existing GitHub discovery workflow is separate and performs discovery-source
 checks. This change does not enable or execute any new hosted Actions workflow.
 
 VM API reference: https://nodejs.org/docs/latest-v24.x/api/vm.html
+
+Notification diagnostics have a separate read-only SQL regression described in
+[operations/README.md](operations/README.md). On October 22, its five checks passed
+against synthetic CTE relations in the isolated database; both real aggregate
+reports also executed successfully without dispatch or writes. This SQL check is
+manual and is not run by `npm run verify`; the 142 mocked-test count is unchanged.
