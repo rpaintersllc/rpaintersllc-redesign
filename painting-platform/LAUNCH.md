@@ -1,13 +1,13 @@
 # BUZZIE launch review — target December 1, 2026
 
-Status reviewed October 21, 2026. The target is a review date, not a promise of
+Status reviewed October 22, 2026. The target is a review date, not a promise of
 public availability. Keep the existing Site owner-private until the gates below
 have evidence and the owner authorizes opening it. R Painters remains the sole
 participating contractor; external discovery stays a separate channel.
 
 | Gate | Current evidence | Remaining action |
 | --- | --- | --- |
-| Request, receipt, photos, messages and visits | 112 mocked Node/DOM tests pass; private review saves block repeated submits, distinguish newer unsaved edits and ignore replaced-card responses; Chromium narrow-frame request/project/signed-out account layouts checked at 320/390/768px; long-contact project overflow fixed; message-history region reachable by Tab; project lookups discard stale successes/failures and uploads wait for a current gallery; visit action concurrency, stale reads and saved-change/failed-reload recovery covered; message sends preserve newer drafts, block concurrent sends and distinguish failed reads after a saved write; desktop request-step focus, Enter navigation and required-field checks verified in read-only local browser fixture; prior rollback database checks in README | Physical-mobile, screen-reader and full authenticated project/account walkthroughs; all narrow-frame checks use synthetic read-only data, not live intake |
+| Request, receipt, photos, messages and visits | 121 mocked Node/DOM tests pass; status/availability controls now block repeat events and stale workspace feedback; status display uses the confirmed submitted value; private review saves block repeated submits, distinguish newer unsaved edits and ignore replaced-card responses; Chromium narrow-frame request/project/signed-out account layouts checked at 320/390/768px; long-contact project overflow fixed; message-history region reachable by Tab; project lookups discard stale successes/failures and uploads wait for a current gallery; visit action concurrency, stale reads and saved-change/failed-reload recovery covered; message sends preserve newer drafts, block concurrent sends and distinguish failed reads after a saved write; desktop request-step focus, Enter navigation and required-field checks verified in read-only local browser fixture; prior rollback database checks in README | Physical-mobile, screen-reader and full authenticated project/account walkthroughs; all narrow-frame checks use synthetic read-only data, not live intake |
 | Homeowner access and contractor separation | Account ownership, capability links, membership scope and session-race tests; contractor renewal now coalesces concurrent refreshes and discards late success/failure after logout or a newer login (three UI regressions fail against the old code) | Review full sign-in/recovery journey and cross-account access in a browser |
 | New request and company-interest abuse checks | Turnstile frontend and server verification implemented; disabled in the private pilot; mocks cover failures/replay/host/action | Owner configures a widget and secure settings; verify actual widget behavior before activation/public access |
 | Auth sign-in/signup/recovery abuse checks | Homeowner and contractor clients now support native Auth CAPTCHA proof; native settings unchanged and enforcement unverified | Configure the public Auth widget key and native Supabase Auth CAPTCHA; verify server enforcement plus rate limits before launch |
@@ -124,7 +124,8 @@ identity check. No real account was signed into or out of during verification.
 
 ## Evidence and limits
 
-- `npm test`: 112 tests pass, including five private-review save cases (four fail
+- `npm test`: 121 tests pass, including nine status/availability UI cases (eight
+  fail against the prior code), five private-review save cases (four fail
   against the prior code), six contractor-session helper cases, three
   contractor-refresh UI regressions (all three fail against the prior code), two responsive-fixture network-boundary tests and five project-refresh ordering/gallery regressions
   (all five fail against the prior code), six visit-action regressions, four

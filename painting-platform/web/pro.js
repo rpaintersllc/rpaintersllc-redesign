@@ -11,7 +11,28 @@ const businessToken=()=>contractorSession.token();
 const call=async(action,body)=>{const token=await businessToken();if(token!==contractorSession.peekToken())throw Error('Your contractor sign-in changed. Refresh the workspace.');return api(action,body,token)};
 function clear(){generation++;contractorSession.clear();workspace='';projects=[];coverage=null;role='';$('#workspace').hidden=true;$('#login').hidden=false;$('#projects').replaceChildren();interestPanel.replaceChildren();$('#signin').reset()}
 function metrics(){for(const [id,count]of [['total',projects.length],['new-count',projects.filter(p=>p.lead.status==='new').length],['review-count',projects.filter(p=>p.review.qualification==='unreviewed').length],['won-count',projects.filter(p=>p.lead.status==='won').length]])$('#'+id).textContent=count}
-function renderCoverage(){const target=$('#coverage-panel');target.replaceChildren();el('h3','Your request coverage',target);if(!coverage)return;el('p',coverage.cities.join(', ')+' · '+coverage.state+' · ZIP prefix '+coverage.zip_prefix,target,'small');el('p',!coverage.active?'Provider activation is pending.':coverage.accepting_requests?'Receiving eligible new requests':'New requests paused',target,'badge');el('p','Availability affects new assignments only. Your existing projects remain accessible. Coverage changes and new provider activation are managed by Buzzie during the pilot.',target,'small');if(role==='owner'){const button=el('button',coverage.accepting_requests?'Pause new requests':'Resume new requests',target,'secondary');button.type='button';button.onclick=async()=>{button.disabled=true;try{const result=await call('pro-availability',{business_id:workspace,accepting_requests:!coverage.accepting_requests,expected_current:coverage.accepting_requests});coverage.accepting_requests=result.accepting_requests;renderCoverage();$('#message').textContent=result.accepting_requests?'New requests resumed.':'New requests paused. Existing projects stay in your workspace.'}catch(e){$('#message').textContent=e.message}finally{button.disabled=false}}}else el('p','Only the business owner can pause or resume new requests.',target,'small')}
+function renderCoverage(){
+ const target=$('#coverage-panel');target.replaceChildren();el('h3','Your request coverage',target);if(!coverage)return;
+ el('p',coverage.cities.join(', ')+' · '+coverage.state+' · ZIP prefix '+coverage.zip_prefix,target,'small');
+ el('p',!coverage.active?'Provider activation is pending.':coverage.accepting_requests?'Receiving eligible new requests':'New requests paused',target,'badge');
+ el('p','Availability affects new assignments only. Your existing projects remain accessible. Coverage changes and new provider activation are managed by Buzzie during the pilot.',target,'small');
+ if(role!=='owner'){el('p','Only the business owner can pause or resume new requests.',target,'small');return}
+ const button=el('button',coverage.accepting_requests?'Pause new requests':'Resume new requests',target,'secondary');button.type='button';
+ const snapshot=coverage,business=workspace,version=generation;let savingAvailability=false;
+ const current=()=>version===generation&&workspace===business&&coverage===snapshot&&button.isConnected&&contractorSession.hasSession();
+ button.onclick=async()=>{
+  if(savingAvailability||!current())return;
+  const requested=!snapshot.accepting_requests,expected=snapshot.accepting_requests;
+  savingAvailability=true;button.disabled=true;button.setAttribute('aria-busy','true');
+  try{
+   const result=await call('pro-availability',{business_id:business,accepting_requests:requested,expected_current:expected});
+   if(!current())return;
+   coverage={...snapshot,accepting_requests:result.accepting_requests};renderCoverage();
+   $('#message').textContent=result.accepting_requests?'New requests resumed.':'New requests paused. Existing projects stay in your workspace.';
+  }catch(e){if(current())$('#message').textContent=e.message}
+  finally{savingAvailability=false;button.disabled=false;button.removeAttribute('aria-busy')}
+ };
+}
 function render(){
  const target=$('#projects');target.replaceChildren();const status=$('#status-filter').value,qualification=$('#qualification-filter').value,search=$('#project-search').value.trim().toLowerCase();
  const rows=projects.filter(p=>(!status||p.lead.status===status)&&(!qualification||p.review.qualification===qualification)&&(!search||[p.lead.full_name,p.lead.city,p.lead.zip,p.lead.service,p.lead.email,p.lead.phone,p.lead.details].join(' ').toLowerCase().includes(search))).sort((a,b)=>$('#sort-order').value==='oldest'?new Date(a.created_at)-new Date(b.created_at):new Date(b.created_at)-new Date(a.created_at));
@@ -21,7 +42,17 @@ function render(){
   const access={project_id:project.id,business_id:workspace};const card=el('article',undefined,target,'panel project-card');const statusBadge=el('span',STATUS[project.lead.status]||project.lead.status,card,'badge');el('h3',project.lead.service,card);el('p',project.lead.city+' '+project.lead.zip+' · '+project.property_type+' · '+new Date(project.created_at).toLocaleString('en-US'),card,'small');el('p',project.lead.details,card,'scope');el('p','Timing: '+project.timing+' · Budget: '+(project.budget||'Not specified'),card,'small');el('h3',project.lead.full_name,card);
   const contact=el('p',undefined,card,'small'),phone=el('a',project.lead.phone,contact);phone.href='tel:'+project.lead.phone;el('span',' · ',contact);const email=el('a',project.lead.email,contact);email.href='mailto:'+project.lead.email;el('p','Contact information is supplied by the homeowner. Confirm identity and project scope during follow-up.',card,'small');drawPhotos(project.photos,el('div',undefined,card,'photo-grid'));
   const conversationButton=el('button','Messages & site visit',card,'secondary');conversationButton.type='button';const conversationTarget=el('section',undefined,card,'conversation-panel');conversationTarget.hidden=true;conversationButton.onclick=async()=>{conversationTarget.hidden=!conversationTarget.hidden;if(!conversationTarget.hidden){conversationButton.disabled=true;try{await mountConversation(conversationTarget,access,businessToken,()=>{load().catch(e=>$('#message').textContent=e.message)})}finally{conversationButton.disabled=false}}};
-  const statusLabel=el('label','Homeowner-visible project status',card),select=el('select',undefined,statusLabel);select.setAttribute('aria-label','Status for '+project.lead.full_name);for(const [value,text]of Object.entries(STATUS)){const option=new Option(text,value);option.selected=value===project.lead.status;select.append(option)}select.onchange=async()=>{const previous=project.lead.status;select.disabled=true;try{await call('status',{...access,status:select.value});project.lead.status=select.value;statusBadge.textContent=STATUS[select.value];metrics();$('#message').textContent='Status saved. The homeowner’s project page reflects this change.'}catch(e){select.value=previous;$('#message').textContent=e.message}finally{select.disabled=false}};
+  const statusLabel=el('label','Homeowner-visible project status',card),select=el('select',undefined,statusLabel);select.setAttribute('aria-label','Status for '+project.lead.full_name);for(const [value,text]of Object.entries(STATUS)){const option=new Option(text,value);option.selected=value===project.lead.status;select.append(option)}let savingStatus=false;const statusGeneration=generation;
+  const currentStatus=()=>statusGeneration===generation&&workspace===access.business_id&&card.isConnected&&contractorSession.hasSession();
+  select.onchange=async()=>{
+   if(savingStatus||!currentStatus())return;
+   const previous=project.lead.status,requested=select.value;savingStatus=true;select.disabled=true;select.setAttribute('aria-busy','true');
+   try{
+    await call('status',{...access,status:requested});if(!currentStatus())return;
+    project.lead.status=requested;select.value=requested;statusBadge.textContent=STATUS[requested];metrics();$('#message').textContent='Status saved. The homeowner’s project page reflects this change.';
+   }catch(e){if(currentStatus()){select.value=previous;$('#message').textContent=e.message}}
+   finally{savingStatus=false;select.disabled=false;select.removeAttribute('aria-busy')}
+  };
   const details=el('details',undefined,card,'review-details');el('summary','Private contractor review',details);el('p','Visible only to your business team. Qualification is your assessment, not independent verification or a guarantee of a booked job.',details,'small');const form=el('form',undefined,details),qualLabel=el('label','Lead review',form),qual=el('select',undefined,qualLabel);for(const [value,text]of Object.entries(QUALIFICATION)){const option=new Option(text,value);option.selected=value===project.review.qualification;qual.append(option)}const noteLabel=el('label','Internal notes',form),note=el('textarea',undefined,noteLabel);note.maxLength=4000;note.value=project.review.notes;note.placeholder='Scope check, follow-up details, or why this request is a fit.';const button=el('button','Save private review',form);const saved=el('p',project.review.updated_at?'Last saved '+new Date(project.review.updated_at).toLocaleString('en-US'):'Not reviewed yet.',details,'small');saved.setAttribute('role','status');
   let savingReview=false;const reviewGeneration=generation;
   const currentReview=()=>reviewGeneration===generation&&workspace===access.business_id&&card.isConnected&&contractorSession.hasSession();

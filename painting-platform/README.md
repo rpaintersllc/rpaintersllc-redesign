@@ -1,5 +1,40 @@
 # Buzzie: owned painting-services platform pilot
 
+## Contractor status and availability action guards (October 22 update)
+
+Project status writes now snapshot the requested value, reject repeat change
+events while pending and display exactly the confirmed submitted status. A failed
+current write restores the previous selection and permits a deliberate retry.
+Late success/failure and detached controls cannot update a signed-out or replaced
+card/workspace. Metrics use the confirmed status instead of a value changed in
+the select while its earlier write is pending.
+
+Owner pause/resume controls now snapshot the business and expected availability,
+block repeated clicks and apply results only to the still-current coverage view.
+A response from a previous sign-in or replaced control cannot change the new
+workspace's availability display or feedback. Existing owner-only server checks
+and expected-current concurrency checks are unchanged. These guards do not cancel
+accepted server writes, add cross-tab locking, or replace a fresh server read.
+
+Validation: **121 Node/DOM tests pass**, including nine mocked status/availability
+cases in `tests/contractor-actions-ui.test.mjs`. Eight fail against the previous
+pro.js; the remaining case confirms failed-status retry behavior. Cases include
+double events, a changed select during save, late success/failure after sign-out
+or a newer login, detached actions and current-error recovery. JS syntax checks
+and `git diff --check` pass. No real status, availability, account, lead, message,
+visit, upload or email was changed. These are simulated UI checks, not new live
+server or browser/mobile evidence.
+
+Published owner-private from Site source
+`9337b7755e3142ae893866571e4315a5b21476c9`; successful deployment
+`appgdep_6ad9968a227c81919780d61198ba30f8`. Only production pro.js was copied,
+after matching the Site baseline byte-for-byte to the branch. No backend, schema,
+Auth setting, audience or contractor changed.
+
+Next: account-backed project access review and a repeatable automated validation
+workflow for the growing launch suite. Actual account/email delivery, abuse
+enforcement, physical-mobile and screen-reader walkthroughs remain launch gates.
+
 ## Private review save recovery (October 21 update)
 
 Private contractor reviews now reject concurrent submit events, including when
