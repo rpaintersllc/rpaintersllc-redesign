@@ -1,5 +1,40 @@
 # Buzzie: owned painting-services platform pilot
 
+## Upload failure cleanup fix prepared for review (October 22 update)
+
+Fixed the branch's `platform-api` upload error path: metadata failure no longer
+skips the independent best-effort deletion of the exact reserved object. A lost
+upload response or failed ready-state write may leave an object behind, so the
+502 response now says the upload could not be confirmed and asks the homeowner
+to refresh and retry only missing photos, rather than asserting it was not saved.
+No upload is automatically replayed.
+
+Added **10 synthetic gateway tests** for successful upload, rejected/lost upload
+responses, failed ready writes, failed-state HTTP/transport errors, failed/lost
+delete responses, full capacity and deliberate retry with a fresh reservation.
+Four cases fail against the preceding API source and pass with the fix. The
+fixture permits modeled partial object creation before an upload failure, so it
+can detect skipped cleanup instead of assuming a failed response saved nothing.
+The retry case proves cleanup targets the old reservation, not the successful
+replacement. No live object, account, request or message was created or deleted.
+
+Validation: **12 browser modules linked; 227 mocked Node/DOM tests pass** through
+`npm run verify`; `git diff --check` passes. Current Storage REST documentation
+confirms the existing single-object DELETE route; no endpoint, grants, migration,
+Auth setting, contractor, audience or schema changed. See
+[tests/UPLOAD-CLEANUP.md](tests/UPLOAD-CLEANUP.md) for evidence and limits.
+
+**Saved in branch code/tests/docs only; not deployed to the isolated Edge API or
+Site.** This is a verified source fix, not evidence that live Storage cleanup
+succeeds. Cleanup remains best effort when the provider is unavailable, and the
+current deployed API still has the earlier coupled cleanup behavior.
+
+Next: compare the deployed isolated `platform-api` source/settings to this branch's
+baseline before publishing the tested fix, then verify read-only/early-rejection
+smoke paths without uploading or deleting real objects. Keep genuine Storage
+cleanup, authenticated browser journeys, email delivery and actual CAPTCHA
+verification as separate review evidence.
+
 ## Photo and conversation limit boundaries (October 22 update)
 
 Extended `tests/rpc-isolation.sql` with **31 additional live database checks**.

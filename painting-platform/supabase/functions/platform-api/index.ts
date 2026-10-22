@@ -76,8 +76,11 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
      if(!uploaded.ok)throw Error('upload_error');
      await db('platform_photos?id=eq.'+slot.id,{status:'ready'},'PATCH');return json({ok:true,id:slot.id},201);
     }catch{
-     try{await db('platform_photos?id=eq.'+slot.id,{status:'failed'},'PATCH');await fetcher(path,{method:'DELETE',headers:dbHeaders,signal:AbortSignal.timeout(8000)})}catch{}
-     return json({error:'Photo was not saved. Please retry.'},502);
+     // Metadata and object cleanup are independent best-effort operations.
+     // A failed metadata write must not skip deletion of this reserved object.
+     try{await db('platform_photos?id=eq.'+slot.id,{status:'failed'},'PATCH')}catch{}
+     try{await fetcher(path,{method:'DELETE',headers:dbHeaders,signal:AbortSignal.timeout(8000)})}catch{}
+     return json({error:'Photo upload could not be confirmed. Refresh the project and retry only missing photos.'},502);
     }
    }
    let body={};if(request.method==='POST'){try{body=JSON.parse(new TextDecoder().decode(await boundedBody(request,12000)))}catch(error){if(error.message==='too_large')return json({error:'Request is too large'},413);return json({error:'Invalid request'},400)}}

@@ -106,3 +106,12 @@ The October 22 replay reverted all fixtures; final lead/user/company
 counts were zero. The local verifier still links 12 browser modules and passes
 217 mocked tests. These counts describe separate suites. No parallel race,
 Storage cleanup, native CAPTCHA/rate-limit enforcement or delivery is inferred.
+
+
+Upload cleanup evidence: ten new synthetic gateway tests pass, including partial
+object creation before a failed upload response, independent object cleanup after
+metadata HTTP/transport failure and a deliberate retry with a new reservation.
+Four fail against the prior API source. The current local run links 12 browser
+modules and passes **227 tests**; see tests/UPLOAD-CLEANUP.md. The fix is saved in
+branch source only and has not been deployed. Genuine Storage cleanup remains
+unverified; no live object was uploaded or deleted.
