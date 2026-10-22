@@ -51,3 +51,38 @@ test('invalid selections and the five-photo limit reject before any upload',()=>
 test('account-owned uploads retain bearer access without a guest private key',()=>screen(async({input,calls,submit})=>{
  input.files=[file()];await submit();const upload=calls.find(c=>c.action==='upload');assert.equal(upload.options.headers.authorization,'Bearer mock-session');assert.equal(upload.options.headers['x-project-token'],undefined);assert.equal(upload.options.headers['x-project-id'],id);
 },{account:true}));
+
+for(const stale of ['success','denied','server error'])test('latest project refresh wins over stale '+stale,async()=>{
+ const reply=deferred(),started=deferred();let lookups=0;
+ await screen(async({document})=>{
+  const first=document.querySelector('#refresh').onclick();await started.promise;
+  await document.querySelector('#refresh').onclick();
+  if(stale==='success')reply.resolve(Response.json({project:{lead:{service:'Old project state',status:'new'},business:{phone:'2025550100',website:'https://contractor.invalid'},events:[],photos:[]}}));
+  else reply.resolve(Response.json({error:'Old refresh failure'},{status:stale==='denied'?403:502}));
+  await first;
+  assert.equal(document.querySelector('#project-content').hidden,false);
+  assert.equal(document.querySelector('#project-title').textContent,'Interior painting');
+  assert.equal(document.querySelector('#photo-form').hidden,false);
+  assert.match(document.querySelector('#message').textContent,/Your project is saved/);
+ },{handle:action=>{if(action==='lookup'&&++lookups===2){started.resolve();return reply.promise}}});
+});
+test('a stale successful lookup cannot reopen the project after a newer access denial',async()=>{
+ const reply=deferred(),started=deferred();let lookups=0;
+ await screen(async({document})=>{
+  const first=document.querySelector('#refresh').onclick();await started.promise;
+  await document.querySelector('#refresh').onclick();
+  reply.resolve(Response.json({project:{lead:{service:'Old project state',status:'new'},business:{phone:'2025550100',website:'https://contractor.invalid'},events:[],photos:[]}}));await first;
+  assert.equal(document.querySelector('#project-content').hidden,true);
+  assert.equal(document.querySelector('#photo-form').hidden,true);
+  assert.match(document.querySelector('#message').textContent,/Access denied/);
+ },{handle:action=>{if(action!=='lookup')return;if(++lookups===2){started.resolve();return reply.promise}if(lookups===3)return Response.json({error:'Access denied'},{status:403})}});
+});
+test('uploads wait for an in-flight project refresh to confirm the current gallery',async()=>{
+ const reply=deferred(),started=deferred();let lookups=0;
+ await screen(async({document,input,calls,submit})=>{
+  const pending=document.querySelector('#refresh').onclick();await started.promise;
+  input.files=[file()];await submit();assert.equal(calls.filter(c=>c.action==='upload').length,0);
+  assert.match(document.querySelector('#photo-message').textContent,/Refresh the project/);
+  reply.resolve(Response.json({error:'Try later'},{status:502}));await pending;
+ },{handle:action=>{if(action==='lookup'&&++lookups===2){started.resolve();return reply.promise}}});
+});

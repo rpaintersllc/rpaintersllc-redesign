@@ -1,5 +1,32 @@
 # Buzzie: owned painting-services platform pilot
 
+## Project refresh ordering and gallery safety (October 21 update)
+
+The private project workspace now applies only its newest lookup result. Late
+successes cannot overwrite a newer status/gallery or reopen the workspace after
+a newer access denial; late failures cannot hide a successful newer refresh.
+Starting a lookup also invalidates the photo freshness flag, preventing a new
+upload from using an outdated gallery count while that lookup is pending.
+This protects display ordering within the page; server authorization and photo
+limits remain unchanged. It does not add cross-tab session synchronization.
+
+Validation: **96 Node/DOM tests pass**, including five new deferred-response
+regressions in `tests/project-photos-ui.test.mjs`. All five fail against the
+previous implementation and pass with the fix. They cover stale success, stale
+403/server errors, a newer access denial and uploads during a pending lookup.
+`git diff --check` passes. No real project, message, upload, account or email was
+created; this is mocked evidence, not mobile or screen-reader verification.
+
+Published owner-private from Site source
+`1c7862b5cd7f620a0959c2f6b424d2774d7b5f4f`; successful deployment
+`appgdep_6ad95e4149088191aae11431fc21c23b`. The existing Site project.js matched
+the branch baseline byte-for-byte before the tested change was copied.
+No backend, schema, Auth settings, audience or contractor changed.
+
+Next: mobile/project-workspace accessibility review with read-only fixtures and
+review account-backed workspace session changes. Sender/redirect/delivery and
+actual abuse-enforcement gates remain open for the December 1 review.
+
 ## Visit actions and reload recovery (October 21 update)
 
 The shared conversation now serializes visit requests and decisions within its
