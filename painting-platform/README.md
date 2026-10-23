@@ -1,5 +1,34 @@
 # Buzzie: owned painting-services platform pilot
 
+## Visit decision keyboard continuity published (October 23 update)
+
+Confirm, decline and cancel visit controls now pass their initiating button to
+existing guarded focus restoration. After a successful save and refresh, a
+keyboard user remains at the current Site visit heading instead of losing focus
+when the old control is replaced. A newer focus choice, failed write/read,
+access denial or retired panel suppresses the transfer.
+
+Added 15 mocked decision-focus cases; six fail on baseline `fdeea2f` and all
+pass after the correction. Fresh `npm run verify`: 12 modules linked and 387
+mocked Node/DOM/API tests pass. No live request, visit, message, account or email
+was created. No physical-device, screen-reader or new browser walkthrough is claimed.
+
+Reconciled the existing Site source with GitHub: all other web assets match
+apart from trailing newlines. Published conversation.js, including the previously
+pending retired-panel guards and visit-request focus correction, to the same
+owner-private Site. Native deployment succeeded on October 23 at 16:03:08 UTC:
+`appgdep_6adb8528f50c8191a1e6f98fe445131b`; Site source commit
+`b52546e9d0dd4370894fce08114ed8cc317fca2e`.
+The older publication-pending paragraphs below are historical, not current for
+these conversation changes. Existing Site identity and owner-only access are
+preserved. No Supabase schema/runtime/Auth, Turnstile, spending or provider changes.
+
+Next: verify message-send keyboard continuity and authenticated contractor/homeowner
+journeys without real writes. Turnstile activation is being handled in the owner's
+separate active conversation and was deliberately not duplicated here; this run
+does not verify its completion. External homeowner email/SMTP and actual abuse
+checks remain launch gates. Sender/domain decisions are unchanged.
+
 ## Visit request keyboard continuity corrected (October 23 update)
 
 A successful visit request initiated from its submit button now focuses the

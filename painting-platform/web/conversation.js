@@ -55,12 +55,12 @@ export async function mountConversation(target,access,token,onChange=()=>{}){
    if(restoreFocus&&ownsFocus&&!focusMoved&&active()&&canSend&&!visitNeedsRefresh&&(!accountOnly||viewSession?.isCurrent())&&(document.activeElement===focusFrom||document.activeElement===document.body))visits.querySelector('h3')?.focus();
   }
  }
- async function updateVisit(id,decision){await saveVisit('visit-update',{...access,visit_id:id,decision},'Visit updated.')}
+ async function updateVisit(id,decision,trigger){await saveVisit('visit-update',{...access,visit_id:id,decision},'Visit updated.',trigger)}
  function renderVisits(rows){
   visits.replaceChildren();el('h3','Site visit',visits).tabIndex=-1;el('p','Dates and time windows use Charleston time (Eastern). Confirm the exact arrival time together in the conversation. No calendar is reserved automatically.',visits,'small');
   for(const row of rows){const item=el('article',undefined,visits,'visit-item');const date=new Date(row.preferred_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});el('strong',date+' · '+row.time_window,item);el('p',VISITS[row.status]||row.status,item,'small');
-   if(business&&row.status==='requested')for(const [decision,text] of [['confirmed','Confirm this visit'],['declined','Unable to confirm']]){const button=el('button',text,item,'secondary');button.type='button';button.onclick=()=>{if(active()&&visits.contains(button))return updateVisit(row.id,decision)}}
-   if(!business&&['requested','confirmed'].includes(row.status)){const button=el('button','Cancel visit request',item,'secondary');button.type='button';button.onclick=()=>{if(active()&&visits.contains(button))return updateVisit(row.id,'cancelled')}}
+   if(business&&row.status==='requested')for(const [decision,text] of [['confirmed','Confirm this visit'],['declined','Unable to confirm']]){const button=el('button',text,item,'secondary');button.type='button';button.onclick=()=>{if(active()&&visits.contains(button))return updateVisit(row.id,decision,button)}}
+   if(!business&&['requested','confirmed'].includes(row.status)){const button=el('button','Cancel visit request',item,'secondary');button.type='button';button.onclick=()=>{if(active()&&visits.contains(button))return updateVisit(row.id,'cancelled',button)}}
   }
   if(!rows.length)el('p','No site visit requested yet.',visits,'small');
   if(business||rows.some(v=>['requested','confirmed'].includes(v.status)))return;
@@ -75,3 +75,4 @@ export async function mountConversation(target,access,token,onChange=()=>{}){
 
  messageControls();refresh.onclick=()=>{if(!visitBusy)return load()};await load();
 }
+
