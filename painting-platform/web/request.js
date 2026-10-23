@@ -1,6 +1,6 @@
 import {api,$,randomKey,projectLink,uploadPhoto,validatePhotos,attribution} from './common.js';
 import {createIntakeCheck} from './intake-check.js';
-import {sessionToken,currentUser} from './auth-session.js';
+import {sessionToken,currentUser,sessionVersion} from './auth-session.js';
 const form=$('#request-form'),steps=[...document.querySelectorAll('[data-step]')],message=$('#message');let current=0,loading=false,savedLink='',intakeCheck;
 const accessToken=randomKey(),requestKey=crypto.randomUUID(),source=attribution();
 // Late account hints must not replace a homeowner's edits or a submitted form.
@@ -14,7 +14,7 @@ $('#next').onclick=advance;$('#back').onclick=()=>show(current-1);
 $('#photos').onchange=()=>{try{validatePhotos([...$('#photos').files]);$('#photo-summary').textContent=$('#photos').files.length+' photo(s) selected.';message.textContent=''}catch(e){message.textContent=e.message;$('#photos').value='';$('#photo-summary').textContent=''}};
 try{const data=await api('providers');const provider=data.providers.find(p=>p.slug==='r-painters-llc');if(!provider)throw Error('The local pilot is temporarily unavailable.');const service=form.elements.namedItem('service'),city=form.elements.namedItem('city');for(const name of data.services)service.append(new Option(name,name));city.replaceChildren(new Option('Select your city',''));for(const name of provider.cities)city.append(new Option(name,name));intakeCheck=await createIntakeCheck(data.intake_challenge,$('#intake-check'),'project_request');const params=new URLSearchParams(location.search);if(data.services.includes(params.get('service')))service.value=params.get('service');if(provider.cities.includes(params.get('city')))city.value=params.get('city');if(/^294\d{2}$/.test(params.get('zip')||''))form.elements.namedItem('zip').value=params.get('zip')}catch(e){message.textContent=e.message;$('#next').disabled=true}
 $('#copy-project-link').onclick=async()=>{try{await navigator.clipboard.writeText(savedLink);$('#receipt-message').textContent='Private link copied.'}catch{$('#receipt-message').textContent='Copy the private link shown above and keep it somewhere safe.'}};
-form.onsubmit=async event=>{event.preventDefault();if(loading)return;if(current<steps.length-1){advance();return}for(let i=0;i<steps.length;i++)if(!valid(i,false)){show(i);valid(i);return}const submitButton=$('#submit'),focusFrom=document.activeElement;loading=true;submitButton.disabled=true;$('#back').disabled=true;message.textContent='Saving your project…';
+form.onsubmit=async event=>{event.preventDefault();if(loading)return;if(current<steps.length-1){advance();return}for(let i=0;i<steps.length;i++)if(!valid(i,false)){show(i);valid(i);return}const submitButton=$('#submit'),focusFrom=document.activeElement,claimRevision=sessionVersion();loading=true;submitButton.disabled=true;$('#back').disabled=true;message.textContent='Saving your project…';
  // Disabling the initiating button can blur it; a newer focus choice owns recovery.
  let focusMoved=false;const trackFocus=event=>{if(event.target!==focusFrom)focusMoved=true};
  document.addEventListener('focusin',trackFocus);
@@ -34,8 +34,10 @@ form.onsubmit=async event=>{event.preventDefault();if(loading)return;if(current<
   }
   if(failures){$('#open-project').href=savedLink+'&photos_failed='+failures;$('#upload-status').textContent='Your request is saved. '+failures+' photo(s) could not be confirmed. Open your project to check saved photos before adding any missing ones.'}
   else $('#upload-status').textContent=files.length?'All '+files.length+' photo(s) uploaded.':'You can add photos later from your project.';
-  try{const token=await sessionToken();if(token){await api('claim-project',access,token);$('#account-link-status').textContent='Project linked to your homeowner account.'}}
-  catch{$('#account-link-status').textContent='Your request is saved, but account linking could not be completed. Use the private link to open your project and retry linking from your confirmed account.'}
+  // Automatic linking belongs to the session that started this save.
+  // A refresh or account change requires deliberate linking from the private workspace.
+  try{if(sessionVersion()!==claimRevision)throw Error('changed_session');const token=await sessionToken();if(sessionVersion()!==claimRevision)throw Error('changed_session');if(token){await api('claim-project',access,token);if(sessionVersion()!==claimRevision)throw Error('changed_session');$('#account-link-status').textContent='Project linked to your homeowner account.'}}
+  catch{$('#account-link-status').textContent='Your request is saved, but account linking could not be completed or confirmed for the current session. Use the private link to open your project and check or retry linking from your confirmed account.'}
 
  }catch(e){if(savedLink){$('#upload-status').textContent='Your request is saved. Open your project to check its photos and account access.'}else{const restoreFocus=focusFrom===submitButton&&!focusMoved&&(document.activeElement===focusFrom||document.activeElement===document.body);intakeCheck?.reset();message.textContent=e.message;submitButton.disabled=false;$('#back').disabled=false;loading=false;if(restoreFocus)submitButton.focus()}}finally{document.removeEventListener('focusin',trackFocus)}
 };

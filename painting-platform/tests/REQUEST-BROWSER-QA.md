@@ -124,3 +124,37 @@ appgdep_6adacd0843588191a20989da31ab60f4. Tests/fixtures stay out of the Site.
 No real account, intake, photo, message or email changed. Next review slow-save
 contact edits together with optional account-link feedback, and repeat corrected
 keyboard journeys when supported browser observation is available.
+
+
+## Request account-link session correction — October 22 follow-up
+
+Review found that automatic claim used whichever session was present after
+saving and uploading photos. It could dispatch under a later login, or report
+“Project linked to your homeowner account” after the claim's initiating session
+had already ended. Request.js now snapshots the client session revision at submit,
+checks it before/after token acquisition and after claim completion, and gives
+unconfirmed-link guidance when it changes. The project receipt and photo result
+remain usable. An unchanged valid session retains automatic linking.
+
+This guard intentionally treats token renewal as a session change, even for the
+same account. In that case the homeowner checks or retries linking from the
+private workspace and confirmed account. Server claim ownership/email rules are
+unchanged. Once a claim has been dispatched, the UI cannot undo or cancel it;
+a stale reply is evidence of an uncertain current-session result, not proof that
+no server write happened.
+
+Eight deferred-response tests all fail against preceding request.js and pass
+with the fix: logout/new login during create, login during a guest save, replacement
+session during a photo upload, late claim success after logout/new login, late
+claim failure after replacement login, and token renewal before dispatch. Existing
+positive unchanged-session linking and saved-receipt tests pass. Full verifier:
+294 tests, 12 modules linked. No genuine account/claim/request/photo/email or new
+browser walkthrough was performed. Cross-tab session propagation and real
+server-side claim cancellation are not established by these mocked tests.
+
+Only production request.js was published owner-private: source
+c9357941980f56ee1cef37c3129cc3e7fa962fe4; successful deployment
+appgdep_6adadbea59088191886d7eebe9787f10. Hosted baseline matched GitHub before
+editing; no fixture was published or backend setting/contractor/audience changed.
+Next review project-workspace link/refresh feedback with isolated session races;
+repeat the corrected browser keyboard flows when supported observation is available.

@@ -1,5 +1,41 @@
 # Buzzie: owned painting-services platform pilot
 
+## Request account linking respects the initiating session (October 22 update)
+
+Automatic linking now belongs to the homeowner session that started the save.
+Logout, a different login, guest-to-signed-in changes or token renewal during
+saving/uploads prevent a later automatic claim. The receipt/private link and
+photo results remain available; guidance asks the homeowner to check or retry
+linking deliberately from a confirmed account. An unchanged valid session still
+links normally. This conservatively defers automatic linking even for a renewal
+of the same account; the server's claim permissions are unchanged.
+
+A claim already sent can still complete server-side. If its response arrives
+after a session change, the receipt no longer asserts ownership by the current
+account: it accurately says linking could not be completed or confirmed for that
+session. This is UI dispatch/feedback protection, not cancellation or rollback
+of a previously authorized server write.
+
+Added **eight mocked session/link cases**; all eight fail against preceding
+request.js and pass with the fix. The cases cover changes during create, photo
+upload, pending claim success/failure, guest saves and token renewal. Existing
+unchanged-session linking and saved-receipt/photo cases also pass. Validation:
+**12 browser modules linked; 294 mocked Node/DOM tests pass** via `npm run verify`;
+`git diff --check` passes. No real claim, account, request, photo or email was used.
+No new authenticated/browser walkthrough is claimed.
+
+Published only production request.js after hosted web files matched GitHub's
+baseline byte-for-byte. Owner-private Site source
+`c9357941980f56ee1cef37c3129cc3e7fa962fe4`; successful deployment
+`appgdep_6adadbea59088191886d7eebe9787f10`. No Supabase schema/function/Auth setting,
+real contractor or audience changed. Tests and evidence remain in GitHub.
+
+Next: review project-workspace linking and refresh feedback across session
+changes using isolated responses. Repeat corrected browser keyboard journeys
+when supported observation is available. Genuine delivery, actual abuse
+enforcement, full authenticated isolation and physical-device/screen-reader
+checks remain separate December 1 review gates.
+
 ## Late account hints preserve homeowner contact drafts (October 22 update)
 
 The request page no longer overwrites a homeowner's newer name or email when a

@@ -193,3 +193,15 @@ walkthrough or real Auth/intake/Storage/email operation was performed. Only
 request.js was published owner-private (source d8b0ad36a2a389f7e148e91145c5a13013240b7e,
 deployment appgdep_6adacd0843588191a20989da31ab60f4); no backend/Auth setting or
 contractor/audience changed. Metadata remains a UI hint, not authorization.
+
+
+Request account-link session correction (October 22): eight mocked cases fail
+against prior request.js and pass with the fix. Full verifier: **12 modules and
+294 tests pass**. Session changes during create/upload/token acquisition prevent
+automatic claim; stale pending-claim success/failure uses unconfirmed-link
+guidance. Existing unchanged-session success remains covered. A same-account
+token renewal also defers to deliberate linking; an already dispatched server
+write is not cancelled. No genuine claim/Auth/intake/Storage/email or new browser
+walkthrough was performed. Only production request.js was published owner-private
+(source c9357941980f56ee1cef37c3129cc3e7fa962fe4, deployment
+appgdep_6adadbea59088191886d7eebe9787f10); server permissions and audience unchanged.

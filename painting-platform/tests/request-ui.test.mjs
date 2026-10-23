@@ -107,3 +107,32 @@ test('failed-create focus ownership resets for a deliberate later retry',()=>{
   button.focus();const second=submit();blur();await second;assert.equal(active()===button,true);assert.equal(creates,2);
  },{handle:action=>{if(action==='create'){creates++;if(creates===1){started.resolve();return reply.promise}return Response.json({error:'Synthetic second failure'},{status:503})}}});
 });
+
+
+for(const change of ['logout','new-login'])test(change+' during create prevents automatic account linking',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,submit,calls})=>{
+  const pending=submit();await started.promise;if(change==='logout')clearSession();else saveSession({access_token:'new-login',refresh_token:'new-refresh',expires_in:3600});
+  reply.resolve(Response.json({project_id:project}));await pending;assert.equal(calls.filter(c=>c.action==='claim-project').length,0);assert.match(document.querySelector('#account-link-status').textContent,/could not be completed or confirmed/);assert.equal(document.querySelector('#request-receipt').hidden,false);
+ },{signedIn:true,handle:action=>{if(action==='create'){started.resolve();return reply.promise}}});
+});
+test('signing in during a guest save does not silently claim the new project',()=>{
+ const reply=deferred(),started=deferred();return screen(async({submit,calls})=>{
+  const pending=submit();await started.promise;saveSession({access_token:'later-login',refresh_token:'later-refresh',expires_in:3600});reply.resolve(Response.json({project_id:project}));await pending;assert.equal(calls.filter(c=>c.action==='claim-project').length,0);
+ },{handle:action=>{if(action==='create'){started.resolve();return reply.promise}}});
+});
+test('a different session selected during photo upload cannot receive automatic linking',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,submit,calls})=>{
+  const pending=submit();await started.promise;saveSession({access_token:'later-login',refresh_token:'later-refresh',expires_in:3600});reply.resolve(Response.json({ok:true}));await pending;
+  assert.equal(calls.filter(c=>c.action==='claim-project').length,0);assert.match(document.querySelector('#upload-status').textContent,/All 1 photo/);assert.equal(document.querySelector('#request-receipt').hidden,false);
+ },{signedIn:true,files:[{type:'image/jpeg',size:20}],handle:action=>{if(action==='upload'){started.resolve();return reply.promise}}});
+});
+for(const [change,failed] of [['logout',false],['new-login',false],['new-login',true]])test('pending claim '+(failed?'failure':'success')+' after '+change+' cannot assert current-account ownership',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,submit,calls})=>{
+  const pending=submit();await started.promise;if(change==='logout')clearSession();else saveSession({access_token:'later-login',refresh_token:'later-refresh',expires_in:3600});
+  reply.resolve(failed?Response.json({error:'Synthetic failure'},{status:503}):Response.json({linked:true}));await pending;
+  assert.equal(calls.filter(c=>c.action==='claim-project').length,1);assert.match(document.querySelector('#account-link-status').textContent,/could not be completed or confirmed/);assert.doesNotMatch(document.querySelector('#account-link-status').textContent,/Project linked/);assert.match(document.querySelector('#receipt-link').textContent,/#project=/);
+ },{signedIn:true,handle:action=>{if(action==='claim-project'){started.resolve();return reply.promise}}});
+});
+test('renewing a token during automatic linking asks for deliberate account confirmation',()=>screen(async({document,submit,calls})=>{
+ saveSession({access_token:'expired',refresh_token:'expired-refresh',expires_at:1});await submit();assert.equal(calls.filter(c=>c.action==='claim-project').length,0);assert.match(document.querySelector('#account-link-status').textContent,/could not be completed or confirmed/);
+},{signedIn:true,handle:(action,options)=>{if(!action&&options.body?.includes('expired-refresh'))return Response.json({access_token:'renewed',refresh_token:'renewed-refresh',expires_in:3600})}}));
