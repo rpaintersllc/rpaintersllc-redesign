@@ -182,3 +182,14 @@ rejection; it is not claimed as verified. Only tested production request.js was
 published owner-private (Site source dc90ae7d7994ec7dd618bfece9b4f44bd9888b45,
 deployment appgdep_6adabe552ae48191b445168421b31d8b). No backend setting/data or
 real request/email/upload changed. See tests/REQUEST-BROWSER-QA.md for limits.
+
+
+Request account-prefill correction (October 22): ten new mocked cases pass; six
+fail against preceding request.js. The full verifier links **12 modules and
+passes 286 tests**. Late hints fill only untouched empty fields; newer name/email
+input/change events, deliberate clearing, browser-filled values, logout/new-login,
+pending save, completed receipt and identity failures are covered. No new browser
+walkthrough or real Auth/intake/Storage/email operation was performed. Only
+request.js was published owner-private (source d8b0ad36a2a389f7e148e91145c5a13013240b7e,
+deployment appgdep_6adacd0843588191a20989da31ab60f4); no backend/Auth setting or
+contractor/audience changed. Metadata remains a UI hint, not authorization.

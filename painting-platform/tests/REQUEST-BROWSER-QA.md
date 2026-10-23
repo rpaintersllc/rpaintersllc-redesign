@@ -98,3 +98,29 @@ appgdep_6adabe552ae48191b445168421b31d8b. Baseline hosted web files matched GitH
 before the change; no fixture/network stub was published. Supabase, real data,
 contractors, notifications and audience were unchanged. Next inspect focus and
 newer edits during a slow successful save, after repeating this browser check.
+
+
+## Late account-prefill correction — October 22 follow-up
+
+A code review of pending form edits found unconditional name/email assignment
+when currentUser finished. A slow response could replace a newer contact draft.
+Request.js now records input/change events from initialization and fills only
+untouched empty fields, skipping a saving or saved form. Existing values, including
+browser autofill, are preserved without requiring an event. Per-field listeners
+are removed after lookup completion. Existing session-revision protection in
+currentUser continues to reject identities from logout/replaced sessions.
+
+Ten deferred-response Node/DOM cases pass; six fail against prior request.js:
+normal hints, independent email/name edits, typed-then-cleared fields, browser-
+filled values without events, logout, replacement login, save in progress,
+completed receipt and identity-read failure. Full suite: 286 tests, 12 modules
+linked. These are synthetic tests, not a new Chromium walkthrough or genuine
+Auth request. Metadata is used only as a form hint, not contact verification,
+account ownership, contractor assignment or authorization.
+
+Only production request.js was deployed owner-private after hosted baseline
+comparison: source d8b0ad36a2a389f7e148e91145c5a13013240b7e; successful deployment
+appgdep_6adacd0843588191a20989da31ab60f4. Tests/fixtures stay out of the Site.
+No real account, intake, photo, message or email changed. Next review slow-save
+contact edits together with optional account-link feedback, and repeat corrected
+keyboard journeys when supported browser observation is available.

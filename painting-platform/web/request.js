@@ -3,6 +3,10 @@ import {createIntakeCheck} from './intake-check.js';
 import {sessionToken,currentUser} from './auth-session.js';
 const form=$('#request-form'),steps=[...document.querySelectorAll('[data-step]')],message=$('#message');let current=0,loading=false,savedLink='',intakeCheck;
 const accessToken=randomKey(),requestKey=crypto.randomUUID(),source=attribution();
+// Late account hints must not replace a homeowner's edits or a submitted form.
+const prefillFields=['email','full_name'].map(name=>form.elements.namedItem(name)),editedFields=new Set();
+const markEdited=event=>editedFields.add(event.target);
+for(const field of prefillFields){field.addEventListener('input',markEdited);field.addEventListener('change',markEdited)}
 function show(step){current=step;steps.forEach((el,i)=>el.hidden=i!==step);document.querySelectorAll('.progress span').forEach((el,i)=>el.classList.toggle('active',i<=step));const progress=$('.progress');progress.setAttribute('aria-valuenow',String(step+1));progress.setAttribute('aria-valuetext','Step '+(step+1)+' of 3: '+steps[step].querySelector('h2').textContent);$('#back').hidden=step===0;$('#next').hidden=step===2;$('#submit').hidden=step!==2;message.textContent='';steps[step].querySelector('h2').focus()}
 function valid(step,report=true){for(const field of steps[step].querySelectorAll('input,textarea,select'))if(!field.checkValidity()){if(report){field.focus();field.reportValidity()}return false}try{if(step===1)validatePhotos([...$('#photos').files])}catch(e){if(report){message.textContent=e.message;$('#photos').focus()}return false}return true}
 function advance(){if(valid(current))show(current+1)}
@@ -36,4 +40,4 @@ form.onsubmit=async event=>{event.preventDefault();if(loading)return;if(current<
  }catch(e){if(savedLink){$('#upload-status').textContent='Your request is saved. Open your project to check its photos and account access.'}else{const restoreFocus=focusFrom===submitButton&&!focusMoved&&(document.activeElement===focusFrom||document.activeElement===document.body);intakeCheck?.reset();message.textContent=e.message;submitButton.disabled=false;$('#back').disabled=false;loading=false;if(restoreFocus)submitButton.focus()}}finally{document.removeEventListener('focusin',trackFocus)}
 };
 
-const user=await currentUser();if(user){form.elements.namedItem('email').value=user.email||'';form.elements.namedItem('full_name').value=user.user_metadata?.full_name||''}
+try{const user=await currentUser();if(user&&!loading&&!savedLink&&!form.hidden){const hints={email:user.email||'',full_name:user.user_metadata?.full_name||''};for(const field of prefillFields)if(!editedFields.has(field)&&field.value==='')field.value=hints[field.name]}}finally{for(const field of prefillFields){field.removeEventListener('input',markEdited);field.removeEventListener('change',markEdited)}}

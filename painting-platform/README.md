@@ -1,5 +1,34 @@
 # Buzzie: owned painting-services platform pilot
 
+## Late account hints preserve homeowner contact drafts (October 22 update)
+
+The request page no longer overwrites a homeowner's newer name or email when a
+slow account lookup completes. Account hints fill only empty fields that have
+received neither input nor change events. Deliberately cleared drafts and
+existing browser-filled values remain intact. Hints are skipped during saving
+and after the receipt; edit listeners are removed when the lookup completes.
+Untouched blank fields still receive the current account hints normally.
+
+Added **ten mocked prefill cases**; six fail against the preceding request.js and
+all pass with the fix. Coverage includes independent name/email edits, clearing,
+browser-filled values, logout/new-session races, saving/receipt states and failed
+identity reads. Validation: **12 browser modules linked; 286 mocked Node/DOM tests
+pass** via `npm run verify`; `git diff --check` passes. No new browser walkthrough,
+real account read/write, request, upload or email was performed in these tests.
+
+Published only production request.js after all hosted web files matched the
+GitHub branch baseline byte-for-byte. Owner-private Site source
+`d8b0ad36a2a389f7e148e91145c5a13013240b7e`; successful deployment
+`appgdep_6adacd0843588191a20989da31ab60f4`. Tests remain in GitHub. No Supabase
+schema/function/Auth setting, real contractor or Site audience changed. Metadata
+is still only a contact-field hint, never proof of permission or verified contact.
+
+Next: review slow-save contact edits and optional account-link feedback together;
+repeat the corrected request keyboard journeys when supported browser observation
+is available. Genuine sender/redirect/delivery, actual abuse enforcement, full
+authenticated isolation and physical-device/screen-reader checks remain separate
+December 1 review gates.
+
 ## Failed-request keyboard recovery fixed (October 22 update)
 
 An unsaved create failure now returns focus to the re-enabled submit button when
