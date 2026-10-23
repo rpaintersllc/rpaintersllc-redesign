@@ -186,3 +186,40 @@ test('a same-session account refresh failure keeps its prior view but blocks upl
   await document.querySelector('#refresh').onclick();assert.equal(document.querySelector('#project-content').hidden,false);assert.equal(document.querySelector('#photo-form').hidden,true);assert.match(document.querySelector('#message').textContent,/last loaded project/);
  },{account:true,handle:action=>action==='lookup'&&++reads===2?Response.json({error:'Synthetic temporary failure'},{status:503}):undefined});
 });
+
+
+for(const change of ['logout','new-login'])test('account photo batch stops after '+change+' while the first upload is pending',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,input,submit,calls})=>{
+  input.files=[file(),file()];const pending=submit();await started.promise;if(change==='logout')clearSession();else saveSession({access_token:'other-uploader',refresh_token:'other-refresh',expires_in:3600});reply.resolve(Response.json({ok:true}));await pending;
+  assert.equal(calls.filter(c=>c.action==='upload').length,1);assert.equal(calls.filter(c=>c.action==='lookup').length,1);assert.equal(document.querySelector('#project-content').hidden,true);assert.equal(input.value,'');assert.equal(input.disabled,false);assert.match(document.querySelector('#photo-message').textContent,/already sent may have completed/);
+ },{account:true,handle:action=>{if(action==='upload'){started.resolve();return reply.promise}}});
+});
+test('an old upload failure after another login cannot continue the batch',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,input,submit,calls})=>{
+  input.files=[file(),file()];const pending=submit();await started.promise;saveSession({access_token:'other-uploader',refresh_token:'other-refresh',expires_in:3600});reply.resolve(Response.json({error:'Old upload failure'},{status:503}));await pending;
+  assert.equal(calls.filter(c=>c.action==='upload').length,1);assert.equal(document.querySelector('#project-content').hidden,true);assert.match(document.querySelector('#photo-message').textContent,/Photo uploads stopped/);
+ },{account:true,handle:action=>{if(action==='upload'){started.resolve();return reply.promise}}});
+});
+for(const boundary of ['token','snapshot'])test('account upload logout at '+boundary+' acquisition stops before any upload',()=>screen(async({document,input,submit,calls})=>{
+ input.files=[file()];const pending=submit();if(boundary==='token')clearSession();else queueMicrotask(()=>clearSession());await pending;assert.equal(calls.filter(c=>c.action==='upload').length,0);assert.equal(document.querySelector('#project-content').hidden,true);
+},{account:true}));
+test('a batch cannot start from another account previous gallery',()=>screen(async({document,input,submit,calls})=>{
+ saveSession({access_token:'other-uploader',refresh_token:'other-refresh',expires_in:3600});input.files=[file()];await submit();assert.equal(calls.filter(c=>c.action==='upload').length,0);assert.equal(document.querySelector('#project-content').hidden,true);
+},{account:true}));
+test('private-capability batch remains independent of homeowner login changes',()=>{
+ const reply=deferred(),started=deferred();let uploads=0;return screen(async({document,input,submit,calls})=>{
+  saveSession({access_token:'optional-uploader',refresh_token:'optional-refresh',expires_in:3600});input.files=[file(),file()];const pending=submit();await started.promise;clearSession();reply.resolve(Response.json({ok:true}));await pending;assert.equal(calls.filter(c=>c.action==='upload').length,2);assert.equal(document.querySelector('#project-content').hidden,false);assert.match(document.querySelector('#photo-message').textContent,/2 photo\(s\) confirmed/);
+ },{handle:action=>{if(action==='upload'&&++uploads===1){started.resolve();return reply.promise}}});
+});
+test('unchanged account batch pins both photos to its acquired bearer',()=>screen(async({document,input,submit,calls})=>{
+ input.files=[file(),file()];await submit();const uploads=calls.filter(c=>c.action==='upload');assert.equal(uploads.length,2);assert.deepEqual(uploads.map(c=>c.options.headers.authorization),['Bearer mock-session','Bearer mock-session']);assert.match(document.querySelector('#photo-message').textContent,/2 photo\(s\) confirmed/);
+},{account:true}));
+test('session change during post-upload gallery read cannot show old confirmation feedback',()=>{
+ const reply=deferred(),started=deferred();let reads=0;return screen(async({document,input,submit,calls})=>{
+  input.files=[file()];const pending=submit();await started.promise;clearSession();reply.resolve(Response.json({error:'Old gallery result'},{status:503}));await pending;assert.equal(calls.filter(c=>c.action==='upload').length,1);assert.equal(document.querySelector('#project-content').hidden,true);assert.match(document.querySelector('#photo-message').textContent,/Photo uploads stopped/);assert.doesNotMatch(document.querySelector('#photo-message').textContent,/1 photo\(s\) confirmed/);
+ },{account:true,handle:action=>{if(action==='lookup'&&++reads===2){started.resolve();return reply.promise}}});
+});
+test('account batch can renew its original expired token before acquiring the batch snapshot',()=>screen(async({document,input,submit,calls})=>{
+ const originalNow=Date.now;Date.now=()=>originalNow()+3601000;
+ try{input.files=[file(),file()];await submit();const uploads=calls.filter(c=>c.action==='upload');assert.equal(uploads.length,2);assert.deepEqual(uploads.map(c=>c.options.headers.authorization),['Bearer renewed-batch','Bearer renewed-batch']);assert.match(document.querySelector('#photo-message').textContent,/2 photo\(s\) confirmed/)}finally{Date.now=originalNow}
+},{account:true,handle:(action,model,options)=>{if(!action&&options.body?.includes('mock-refresh'))return Response.json({access_token:'renewed-batch',refresh_token:'renewed-batch-refresh',expires_in:3600})}}));

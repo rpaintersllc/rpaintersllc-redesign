@@ -1,5 +1,37 @@
 # Buzzie: owned painting-services platform pilot
 
+## Account photo batches stop at session changes (October 23 update)
+
+Account-backed uploads now require a current loaded gallery and acquire one
+session snapshot for the batch. All photos use that snapshot's bearer token;
+logout or another login cannot switch the remaining files to a different account.
+A change detected before dispatch, after an upload or during final gallery
+refresh clears the selection and retires the previous private workspace.
+Guidance asks the homeowner to reopen and check saved photos before selecting
+only missing ones. Already-dispatched uploads may still complete server-side.
+
+Normal renewal before snapshot acquisition, unchanged-account batches and
+independent private-capability access remain supported. Later session revision
+changes are conservatively handled as requiring reopening; no mid-batch token
+replacement, automatic replay, server cancellation or cleanup is claimed.
+
+Added **ten mocked photo-session cases**; seven fail against preceding project.js
+and all pass with the correction. Validation: **12 browser modules linked; 323
+mocked Node/DOM tests pass** via `npm run verify`; `git diff --check` passes.
+No actual upload/account/customer write or new browser walkthrough was performed.
+See [tests/PROJECT-UPLOAD-SESSIONS.md](tests/PROJECT-UPLOAD-SESSIONS.md) for limits.
+
+Published only production project.js after hosted web files matched GitHub's
+baseline byte-for-byte. Owner-private Site source
+`b00f42812cd22165b2d01ce0f6649b505a55b1fd`; successful deployment
+`appgdep_6adb05bf58a88191af8ac54da8e65bed`. No Supabase schema/function/Auth setting,
+real contractor or audience changed. Tests/evidence remain in GitHub.
+
+Next: review conversation reads, sends and visits across session changes with
+isolated responses. Genuine delivery, actual abuse enforcement, full authenticated
+browser isolation and physical-device/screen-reader checks remain separate
+December 1 review gates.
+
 ## Account project lookups reject stale sessions (October 23 update)
 
 Account-backed project lookups now acquire a session snapshot, check it before

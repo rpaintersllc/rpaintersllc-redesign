@@ -229,3 +229,16 @@ or live Auth/lookup/Storage/email operation was performed. Only production
 project.js was published owner-private (source 71b6ecea9a74f9a37f84570532a3ca71ded35390,
 deployment appgdep_6adaf717b3988191b476fae88b3f2cbf). See tests/PROJECT-LINKING.md
 for scope; idle logout, conversation and upload session behavior are separate.
+
+
+Account photo-session follow-up (October 23): ten deferred-response cases pass;
+seven fail against prior project.js. Full verifier: **12 modules, 323 tests pass**.
+The batch pins one acquired bearer, blocks old-gallery/new-account starts, stops
+remaining files across logout/new-login at acquisition/upload/gallery boundaries,
+and preserves positive capability/current-account/pre-acquisition-renewal cases.
+Selection and private view retire on change; already-sent uploads may still
+complete. No real upload/Auth/Storage/customer operation or new browser walkthrough.
+Only tested project.js was published owner-private (source
+b00f42812cd22165b2d01ce0f6649b505a55b1fd, deployment
+appgdep_6adb05bf58a88191af8ac54da8e65bed). No backend/Auth/audience change.
+See tests/PROJECT-UPLOAD-SESSIONS.md for proof limits and manual retry guidance.

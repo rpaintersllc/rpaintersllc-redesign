@@ -25,20 +25,28 @@ $('#remember').onclick=()=>{try{remember(access);$('#save-message').textContent=
 $('#photo-form').onsubmit=async event=>{
  event.preventDefault();if(uploading)return;
  const input=$('#photo-input'),button=event.target.querySelector('button');
+ let uploadSession;const accountBatch=!access.access_token;
+ const staleAccount=()=>accountBatch&&(uploadSession?!uploadSession.isCurrent():!!accountAccess&&!accountAccess.isCurrent());
  uploading=true;button.disabled=true;input.disabled=true;
  try{
   if(!photosFresh)throw Error('Refresh the project before adding more photos.');
   const files=[...input.files];if(!files.length)throw Error('Choose at least one photo.');validatePhotos(files);
   if(files.length+(project?.photos.length||0)>5)throw Error('You can save a total of five photos.');
+  if(staleAccount())throw Error('changed_session');
+  if(accountBatch)uploadSession=await sessionSnapshot();
+  if(staleAccount())throw Error('changed_session');
   let confirmed=0,unconfirmed=0;
   for(let i=0;i<files.length;i++){
    $('#photo-message').textContent='Uploading photo '+(i+1)+' of '+files.length+'…';
-   try{await uploadPhoto(files[i],access,await sessionToken());confirmed++}catch{unconfirmed++}
+   if(staleAccount())throw Error('changed_session');
+   try{await uploadPhoto(files[i],access,uploadSession?uploadSession.token:await sessionToken());confirmed++}catch{unconfirmed++}
+   if(staleAccount())throw Error('changed_session');
   }
   // A lost response may still have saved a photo. Never replay the entire selection.
   input.value='';const refreshed=await load();
+  if(staleAccount())throw Error('changed_session');
   $('#photo-message').textContent=confirmed+' photo(s) confirmed.'+(unconfirmed?' '+unconfirmed+' could not be confirmed. Check the saved photos, then select only missing ones.':'')+(!refreshed?' The gallery could not refresh. Refresh the project before adding more photos.':'');
- }catch(e){$('#photo-message').textContent=e.message}
+ }catch(e){if(staleAccount()){input.value='';forgetProject();$('#project-content').hidden=true;$('#missing').hidden=false;$('#message').textContent='Your account session changed. Sign in and reopen this project from My account.';$('#photo-message').textContent='Photo uploads stopped. An upload already sent may have completed. Check saved photos before selecting only missing ones.'}else $('#photo-message').textContent=e.message}
  finally{uploading=false;button.disabled=false;input.disabled=false}
 };
 if(!access.project_id){$('#message').textContent='Open a private link or sign in to your Buzzie account.';$('#missing').hidden=false}else{await load();await openConversation();if(new URLSearchParams(location.hash.slice(1)).get('photos_failed'))$('#photo-message').textContent='Some photo uploads could not be confirmed. Check the saved photos below, then add only missing ones.'}
