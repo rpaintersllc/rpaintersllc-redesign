@@ -1,5 +1,32 @@
 # Buzzie: owned painting-services platform pilot
 
+## Synthetic project/conversation browser journey (October 23 update)
+
+Added an isolated local project fixture with seeded synthetic account access,
+independent private-key access and access-denied scenarios. Five boundary tests
+verify its route/identity restrictions, synthetic message/visit state, payload-free
+counters, blocked Auth/Storage/other transports and unchanged production modules.
+
+Desktop Chromium at **390 px** verified account-only project copy, an Enter-sent
+synthetic message, a visit request still awaiting company confirmation and the
+visit-success project refresh. Simulated denial on Refresh project status removed
+the private workspace, contact details and conversation controls, leaving account
+recovery guidance. A separate **320 px** key-based view retained private-link
+controls. Document/scroll widths matched: 375 px in the loaded account view,
+390 px in the short denied view and 305 px in the capability view.
+
+Found a bounded accessibility follow-up: after Enter requests a visit and its
+form is replaced, focus is BODY. This is recorded, **not fixed** here. No claim
+of keyboard-complete conversation journeys is made. Next correct post-visit focus
+with ownership guards/race tests and repeat this isolated browser path.
+
+Verification: **12 modules linked; 356 mocked tests pass**; diff check passes.
+Tooling, captures and evidence are saved in GitHub only. Production modules,
+Site source/audience, Supabase schema/runtime/Auth and real data are unchanged.
+This proves selected UI paths with synthetic replies, not genuine sign-in/JWT,
+server access isolation, delivery, Storage or physical-device/screen-reader behavior.
+See [tests/PROJECT-BROWSER-QA.md](tests/PROJECT-BROWSER-QA.md).
+
 ## Corrected request keyboard retry verified in Chromium (October 23 update)
 
 Repeated the previously blocked browser check using a freshly generated local

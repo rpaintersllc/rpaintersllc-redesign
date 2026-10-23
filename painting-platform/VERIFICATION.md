@@ -286,3 +286,18 @@ Full local verifier still links 12 modules and passes 351 tests; diff check pass
 Evidence-only GitHub update, no production source, Site, Supabase or permission
 change. tests/REQUEST-BROWSER-QA.md links captured failure and receipt screenshots.
 Narrow desktop frames do not prove physical-mobile or screen-reader behavior.
+
+
+Synthetic project browser fixture (October 23): five new boundary tests pass;
+full verifier links 12 modules and passes **356 tests**. Fixture routes require
+synthetic account bearer or independent key/project identity, keep message/visit
+state in memory, log no payloads and block Auth/Storage/contractor/other transports.
+CSP precedes its stub and production modules remain byte-identical. Chromium
+verified account-only project -> message -> requested visit -> project refresh ->
+denied lookup/private DOM retirement at 390px, plus independent-key read at 320px.
+Loaded account/capability document widths equal scroll widths (375/305px); denied
+short view equals 390px. After Enter requests the visit, BODY owns focus: confirmed
+next accessibility correction, not fixed here. Screenshots/replay/limits are in
+PROJECT-BROWSER-QA.md. No real sign-in/JWT, server isolation, customer/message/visit,
+Storage, email, configuration or Site publication was performed. Tooling/evidence
+are code-only; preview stopped after review.
