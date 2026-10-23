@@ -158,3 +158,15 @@ changed-coverage retries retained assignment, and new denials did not fall back.
 See [tests/ROUTING.md](tests/ROUTING.md) for safe replay and proof limits. Tests/docs
 only: no application, migration, runtime or Site deployment. Full JWT/browser,
 actual abuse enforcement, delivery and device gates remain separate.
+
+
+Request browser-fixture follow-up (October 22): five new fixture checks pass;
+full verifier links **12 modules and passes 268 tests**. Desktop Chromium used
+synthetic provider/create/upload replies to verify partial photos at 320px,
+failed-create/no-photo retry at 390px and successful photos at 768px. Receipt focus,
+Tab to Open project, copy manual fallback and matching document/scroll widths
+at 375/753px were observed. The failed-create state exposed a BODY-focus recovery
+gap, recorded as the next correction, not fixed here. See
+[tests/REQUEST-BROWSER-QA.md](tests/REQUEST-BROWSER-QA.md). No application code,
+Supabase state or Site source/audience changed; fixture output is never deployed.
+No real intake/Auth/Storage/worker operation was called.

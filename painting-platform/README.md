@@ -1,5 +1,36 @@
 # Buzzie: owned painting-services platform pilot
 
+## Request receipt browser journeys verified (October 22 update)
+
+Added a local-only request browser fixture for successful uploads, partial photos
+and a failed create followed by retry. It copies production modules unchanged,
+uses synthetic provider/create/upload replies, blocks undeclared endpoints and
+network transports, and sets connect/form CSP restrictions before the stub.
+A fixture-only button selects two browser File objects through the real input
+change handler. No real request, photo, account, email or notification is created.
+
+Desktop Chromium verified partial photos at **320 px** (receipt retained, accurate
+missing-photo guidance, receipt focus and Tab to Open project), failed-create/
+no-photo retry at **390 px**, and two successful synthetic uploads at **768 px**.
+Receipt document/scroll widths matched at 375 and 753 px for the latter frames.
+Copy-link manual fallback was also observed. This is synthetic narrow-frame QA,
+not actual Storage upload, physical-mobile or screen-reader evidence.
+
+The failure scenario exposed a keyboard-recovery gap: after an unsaved create
+failure the submit button is re-enabled, but focus is BODY. Click retry succeeds
+and preserves the fields. This gap is documented, **not fixed by this follow-up**.
+See [tests/REQUEST-BROWSER-QA.md](tests/REQUEST-BROWSER-QA.md) for replay and limits.
+
+Validation: five new fixture-boundary tests pass; **12 browser modules linked and
+268 mocked Node/DOM tests pass** via `npm run verify`; `git diff --check` passes.
+Saved as tests/documentation only; no application, Supabase or Site deployment,
+real contractor or audience change. The local preview was stopped after review.
+
+Next: fix failed-create keyboard recovery with focus-ownership/race tests and
+repeat the synthetic browser check. Real sender/redirect/delivery, actual abuse
+enforcement, full authenticated isolation and device/screen-reader review remain
+separate December 1 gates.
+
 ## Coverage and assignment boundaries verified (October 22 update)
 
 Added ten mocked gateway cases and a self-contained live SQL rollback fixture
