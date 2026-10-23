@@ -1,5 +1,35 @@
 # Buzzie: owned painting-services platform pilot
 
+## Failed-request keyboard recovery fixed (October 22 update)
+
+An unsaved create failure now returns focus to the re-enabled submit button when
+that button initiated the request and no newer focus choice occurred. Disabling
+the button can blur it to BODY; this no longer strands the keyboard there.
+Choosing another field or link during the wait prevents the transfer, including
+when that newer control later blurs. Enter from an editable field keeps its focus.
+A per-attempt focus listener is removed on completion; later retries get fresh
+ownership. Successful receipts retain their existing focus behavior.
+
+Added **eight mocked request focus cases**; three fail against the preceding
+request.js and all pass with the correction. Validation: **12 browser modules
+linked; 276 mocked Node/DOM tests pass** via `npm run verify`; `git diff --check`
+passes. Fresh synthetic Chromium repetition was not completed: the first preview
+connection was refused before startup finished, then the browser policy rejected
+observation of the error-page tab. No workaround was used. This release has mocked
+regression evidence; prior browser findings remain historical, not a new pass.
+
+Published only production request.js after all hosted web files matched the
+GitHub baseline byte-for-byte. Owner-private Site source
+`dc90ae7d7994ec7dd618bfece9b4f44bd9888b45`; successful deployment
+`appgdep_6adabe552ae48191b445168421b31d8b`. Tests/fixtures stay out of the Site.
+No Supabase function/schema/Auth setting, real request, photo, email, contractor
+or audience changed. See [tests/REQUEST-BROWSER-QA.md](tests/REQUEST-BROWSER-QA.md).
+
+Next: repeat the corrected failed-create keyboard journey when managed browser
+observation is available, then review focus/edits during a slow successful save.
+Genuine delivery, actual CAPTCHA enforcement, full authenticated isolation and
+physical-device/screen-reader checks remain separate December 1 review gates.
+
 ## Request receipt browser journeys verified (October 22 update)
 
 Added a local-only request browser fixture for successful uploads, partial photos

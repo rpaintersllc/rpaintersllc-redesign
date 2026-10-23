@@ -170,3 +170,15 @@ gap, recorded as the next correction, not fixed here. See
 [tests/REQUEST-BROWSER-QA.md](tests/REQUEST-BROWSER-QA.md). No application code,
 Supabase state or Site source/audience changed; fixture output is never deployed.
 No real intake/Auth/Storage/worker operation was called.
+
+
+Failed-request focus correction (October 22): eight new request UI focus cases
+pass; three fail against prior request.js. The verifier links **12 modules and
+passes 276 tests**. Re-enabled submit recovers from disabled-button blur only
+without a newer focus choice; editable-field Enter and later retry ownership
+are covered. Successful receipt focus stays intact. Fresh Chromium repetition
+was blocked by preview startup timing followed by a browser observation-policy
+rejection; it is not claimed as verified. Only tested production request.js was
+published owner-private (Site source dc90ae7d7994ec7dd618bfece9b4f44bd9888b45,
+deployment appgdep_6adabe552ae48191b445168421b31d8b). No backend setting/data or
+real request/email/upload changed. See tests/REQUEST-BROWSER-QA.md for limits.

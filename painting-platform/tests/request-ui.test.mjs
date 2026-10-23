@@ -10,6 +10,8 @@ async function screen(run,{files=[],signedIn=false,step=2,handle=()=>{}}={}){
  const old=Object.fromEntries(['document','fetch','location','Option','FormData','sessionStorage'].map(k=>[k,globalThis[k]]));
  const {document}=parseHTML(await readFile(new URL('../web/request.html',import.meta.url),'utf8'));globalThis.document=document;globalThis.location=new URL('https://r-painters-projects.jessicuriel27.chatgpt.site/request.html');
  const store=new Map();globalThis.sessionStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)};
+ let active=document.body;const focusCalls=[];Object.defineProperty(document,'activeElement',{get:()=>active});
+ for(const node of document.querySelectorAll('input,textarea,select,button,a,section,h2'))node.focus=()=>{active=node;focusCalls.push(node.id||node.name||node.tagName);node.dispatchEvent(new document.defaultView.Event('focusin',{bubbles:true}))};
  const form=document.querySelector('#request-form');Object.defineProperty(form,'elements',{value:{namedItem:name=>form.querySelector('[name="'+name+'"]')}});
  for(const field of form.querySelectorAll('input,textarea,select')){field.checkValidity=()=>true;field.reportValidity=()=>true}
  document.querySelector('#photos').files=files;form.elements.namedItem('contact_consent').checked=true;
@@ -17,7 +19,7 @@ async function screen(run,{files=[],signedIn=false,step=2,handle=()=>{}}={}){
  globalThis.FormData=class{*[Symbol.iterator](){yield* Object.entries(values)}};
  const calls=[];globalThis.fetch=async(url,options={})=>{const action=new URL(url).searchParams.get('action');calls.push({url,action,options});const custom=await handle(action,options);if(custom)return custom;if(action==='providers')return Response.json({providers:[{slug:'r-painters-llc',cities:['Summerville']}],services:['Interior painting']});if(url.endsWith('/user'))return Response.json({email:values.email,user_metadata:{full_name:values.full_name}});if(action==='create')return Response.json({project_id:project});return Response.json({ok:true})};
  clearSession();if(signedIn)saveSession({access_token:'mock-session',refresh_token:'mock-refresh',expires_in:3600});
- try{await import('../web/request.js?test='+crypto.randomUUID());for(let i=0;i<step;i++)document.querySelector('#next').onclick();await run({document,form,calls,store,submit:()=>form.onsubmit({preventDefault(){}})})}finally{clearSession();Object.assign(globalThis,old)}
+ try{await import('../web/request.js?test='+crypto.randomUUID());for(let i=0;i<step;i++)document.querySelector('#next').onclick();await run({document,form,calls,store,active:()=>active,blur:()=>{active=document.body},focusCalls,submit:()=>form.onsubmit({preventDefault(){}})})}finally{clearSession();Object.assign(globalThis,old)}
 }
 test('saved receipt and private link appear before a slow photo finishes',async()=>{
  const photo=deferred(),started=deferred();
@@ -70,3 +72,38 @@ test('final validation reveals an earlier step before focusing and reporting its
  field.checkValidity=()=>false;field.focus=()=>{assert.equal(step.hidden,false);focused=true};field.reportValidity=()=>{assert.equal(step.hidden,false);reports++;return false};
  await submit();assert.equal(focused,true);assert.equal(reports,1);assert.equal(calls.filter(c=>c.action==='create').length,0);assert.equal(document.querySelector('.progress').getAttribute('aria-valuenow'),'1');
 }));
+
+
+test('failed create restores a focused submit button after it is enabled',()=>screen(async({document,submit,active,focusCalls})=>{
+ const button=document.querySelector('#submit');button.focus();await submit();assert.equal(button.disabled,false);assert.equal(active()===button,true);assert.equal(focusCalls.filter(x=>x==='submit').length,2);
+},{handle:action=>action==='create'?Response.json({error:'Synthetic retry'},{status:503}):undefined}));
+test('failed create restores the submit button after disabled-button blur',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,submit,active,blur})=>{
+  const button=document.querySelector('#submit');button.focus();const pending=submit();await started.promise;blur();reply.resolve(Response.json({error:'Synthetic retry'},{status:503}));await pending;assert.equal(active()===button,true);assert.equal(button.disabled,false);
+ },{handle:action=>{if(action==='create'){started.resolve();return reply.promise}}});
+});
+test('failed create preserves a different field selected while pending',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,form,submit,active})=>{
+  document.querySelector('#submit').focus();const pending=submit();await started.promise;const phone=form.elements.namedItem('phone');phone.focus();reply.resolve(Response.json({error:'Synthetic retry'},{status:503}));await pending;assert.equal(active()===phone,true);
+ },{handle:action=>{if(action==='create'){started.resolve();return reply.promise}}});
+});
+test('failed create does not reclaim focus after a newer control later blurs',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,form,submit,active,blur})=>{
+  document.querySelector('#submit').focus();const pending=submit();await started.promise;form.elements.namedItem('phone').focus();blur();reply.resolve(Response.json({error:'Synthetic retry'},{status:503}));await pending;assert.equal(active()===document.body,true);
+ },{handle:action=>{if(action==='create'){started.resolve();return reply.promise}}});
+});
+test('failed Enter submission preserves its original editable field',()=>screen(async({form,submit,active})=>{
+ const phone=form.elements.namedItem('phone');phone.focus();await submit();assert.equal(active()===phone,true);
+},{handle:action=>action==='create'?Response.json({error:'Synthetic retry'},{status:503}):undefined}));
+test('an unfocused failed submission does not manufacture button focus',()=>screen(async({document,submit,active,blur,focusCalls})=>{
+ blur();await submit();assert.equal(active()===document.body,true);assert.equal(focusCalls.includes('submit'),false);
+},{handle:action=>action==='create'?Response.json({error:'Synthetic retry'},{status:503}):undefined}));
+test('successful request retains receipt focus instead of focusing hidden submit',()=>screen(async({document,submit,active})=>{
+ document.querySelector('#submit').focus();await submit();assert.equal(active()?.id,'request-receipt');assert.equal(document.querySelector('#request-form').hidden,true);
+}));
+test('failed-create focus ownership resets for a deliberate later retry',()=>{
+ let creates=0;const reply=deferred(),started=deferred();return screen(async({document,form,submit,active,blur})=>{
+  const button=document.querySelector('#submit');button.focus();const pending=submit();await started.promise;form.elements.namedItem('phone').focus();reply.resolve(Response.json({error:'Synthetic first failure'},{status:503}));await pending;
+  button.focus();const second=submit();blur();await second;assert.equal(active()===button,true);assert.equal(creates,2);
+ },{handle:action=>{if(action==='create'){creates++;if(creates===1){started.resolve();return reply.promise}return Response.json({error:'Synthetic second failure'},{status:503})}}});
+});

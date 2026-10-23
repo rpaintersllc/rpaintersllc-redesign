@@ -70,3 +70,31 @@ No real request, upload, account, email, contractor, Supabase schema/runtime or
 Site source/audience changed. Email delivery, real Storage failure/cleanup,
 actual CAPTCHA enforcement, authenticated browser isolation and physical-device/
 screen-reader evidence remain separate December 1 review gates in LAUNCH.md.
+
+
+## Failed-create focus correction — October 22 follow-up
+
+The preceding BODY-focus finding is now fixed in production request.js. A failed
+unsaved request restores the re-enabled submit button only if it initiated the
+operation and no newer focus choice occurred. A document focusin listener tracks
+choices during the attempt and is removed in finally. Another field/link, or a
+newer control that later blurs, keeps ownership; Enter from an editable field
+stays there. Successful receipts still focus the receipt normally.
+
+Eight mocked request UI cases cover retained submit focus, disabled-button blur,
+a newer field, newer-field-then-blur, editable-field Enter, no initial focus,
+successful receipt and a later deliberate retry. Three fail with the previous
+module; all pass with the fix. Full verifier: 12 modules linked, 276 tests pass.
+
+No fresh browser success is claimed: the first managed preview navigation ran
+before startup finished and was refused; after startup the browser rejected
+observation of the error-page tab under its URL policy. No alternative browser
+surface or bypass was attempted. The preview was stopped. Repeat the corrected
+390px failure/retry keyboard path when supported observation is available.
+
+Only production request.js was deployed to the existing owner-private Site:
+source dc90ae7d7994ec7dd618bfece9b4f44bd9888b45; successful deployment
+appgdep_6adabe552ae48191b445168421b31d8b. Baseline hosted web files matched GitHub
+before the change; no fixture/network stub was published. Supabase, real data,
+contractors, notifications and audience were unchanged. Next inspect focus and
+newer edits during a slow successful save, after repeating this browser check.
