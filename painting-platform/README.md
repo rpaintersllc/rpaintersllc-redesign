@@ -1,5 +1,24 @@
 # Buzzie: owned painting-services platform pilot
 
+## Contractor database acceptance journey verified (October 23 update)
+
+Added a reusable operator-only [22-check acceptance journey](tests/CONTRACTOR-JOURNEY.md)
+and [rollback SQL fixture](tests/contractor-journey.sql). It runs the deployed
+database functions for actual pilot assignment, duplicate rejection, contractor
+qualification, visit confirmation, quoted/won and an independent lost path,
+status histories and direct client RPC restrictions. All 22 checks passed.
+A complete rollback left zero fixture leads, projects or outbox rows.
+
+This is new database-level verification, not new application functionality or
+end-to-end browser/JWT acceptance. No endpoint submissions, emails, messages,
+real project updates, provider activation or schema changes occurred. The Site
+was not republished because only test/evidence files changed.
+
+Next: authenticated API/browser acceptance, approved SMTP and external homeowner
+email verification. Turnstile's separately active configuration was not modified.
+See the linked evidence for test safety, the corrected write/read assertion
+sequencing and limits; monetary estimate records were not added.
+
 ## Visit decision keyboard continuity published (October 23 update)
 
 Confirm, decline and cancel visit controls now pass their initiating button to
