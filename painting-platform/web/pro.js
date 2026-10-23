@@ -11,8 +11,23 @@ let linkedProject=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a
 const contractorSession=createContractorSession(body=>authCall('token?grant_type=refresh_token',body),clear);
 const interestPanel=el('section',undefined,$('#workspace'),'panel');interestPanel.hidden=true;
 const businessToken=()=>contractorSession.token();
-const call=async(action,body)=>{const token=await businessToken();if(token!==contractorSession.peekToken())throw Error('Your contractor sign-in changed. Refresh the workspace.');return api(action,body,token)};
-function clear(){generation++;contractorSession.clear();workspace='';projects=[];coverage=null;role='';$('#workspace').hidden=true;$('#login').hidden=false;$('#projects').replaceChildren();interestPanel.replaceChildren();$('#signin').reset()}
+const call=async(action,body)=>{
+ const version=generation,token=await businessToken();
+ if(token!==contractorSession.peekToken())throw Error('Your contractor sign-in changed. Refresh the workspace.');
+ try{return await api(action,body,token)}catch(error){
+  if(version===generation&&token===contractorSession.peekToken()&&[401,403].includes(error.status)&&action.split('&')[0]!=='interest-list'){
+   clear();$('#message').textContent='Contractor access is unavailable. Sign in again to verify your current permissions.';
+  }
+  throw error;
+ }
+};
+function clear(){
+ generation++;contractorSession.clear();workspace='';projects=[];coverage=null;role='';
+ $('#workspace').hidden=true;$('#login').hidden=false;$('#projects').replaceChildren();
+ $('#coverage-panel').replaceChildren();$('#business-select').replaceChildren();$('#business-title').textContent='';
+ interestPanel.replaceChildren();interestPanel.hidden=true;$('#project-search').value='';
+ $('#linked-request').hidden=true;$('#result-count').textContent='';metrics();$('#signin').reset();
+}
 function metrics(){for(const [id,count]of [['total',projects.length],['new-count',projects.filter(p=>p.lead.status==='new').length],['review-count',projects.filter(p=>p.review.qualification==='unreviewed').length],['won-count',projects.filter(p=>p.lead.status==='won').length]])$('#'+id).textContent=count}
 function renderCoverage(){
  const target=$('#coverage-panel');target.replaceChildren();el('h3','Your request coverage',target);if(!coverage)return;
@@ -75,9 +90,31 @@ function render(){
   };
  }
 }
-async function load(){const version=++generation;const result=await call('pro-list'+(workspace?'&business_id='+workspace:''));if(version!==generation||!contractorSession.hasSession())return;workspace=result.business.id;coverage=result.coverage;role=result.role;projects=result.projects.map(p=>({...p,review:p.review||{qualification:'unreviewed',notes:'',revision:0}}));$('#login').hidden=true;$('#workspace').hidden=false;$('#business-title').textContent=result.business.name;$('#business-select').replaceChildren();for(const m of result.memberships){const option=new Option(m.name,m.business_id);option.selected=m.business_id===workspace;$('#business-select').append(option)}metrics();renderCoverage();render();interestPanel.hidden=!result.can_review_interest;if(result.can_review_interest){try{const data=await call('interest-list');if(version!==generation||!contractorSession.hasSession())return;interestPanel.replaceChildren();el('h2','Business expansion interest',interestPanel);if(!data.applications.length)el('p','No painting businesses have registered interest yet.',interestPanel,'small');for(const row of data.applications){const item=el('div',undefined,interestPanel);el('h3',row.business_name,item);el('p',row.city+', '+row.state+' · '+row.email,item,'small')}}catch(e){el('p',e.message,interestPanel,'small')}}}
-$('#signin').onsubmit=async event=>{event.preventDefault();if(signingIn)return;signingIn=true;const button=event.target.querySelector('button');button.disabled=true;try{const result=await authCall('token?grant_type=password',authPayload(Object.fromEntries(new FormData(event.target)),authCheck));contractorSession.save(result);await load();event.target.reset();$('#message').textContent='Contractor workspace loaded.'}catch(e){clear();$('#message').textContent=e.message}finally{signingIn=false;authCheck?.reset();button.disabled=!authCheck}};
-$('#refresh').onclick=async()=>{try{await load();$('#message').textContent='Projects refreshed.'}catch(e){$('#message').textContent=e.message}};
+async function load(){
+ const version=++generation;let result;
+ try{result=await call('pro-list'+(workspace?'&business_id='+workspace:''))}
+ catch(error){if(version!==generation||!contractorSession.hasSession())return false;throw error}
+ if(version!==generation||!contractorSession.hasSession())return false;
+ workspace=result.business.id;coverage=result.coverage;role=result.role;
+ projects=result.projects.map(p=>({...p,review:p.review||{qualification:'unreviewed',notes:'',revision:0}}));
+ $('#login').hidden=true;$('#workspace').hidden=false;$('#business-title').textContent=result.business.name;$('#business-select').replaceChildren();
+ for(const m of result.memberships){const option=new Option(m.name,m.business_id);option.selected=m.business_id===workspace;$('#business-select').append(option)}
+ metrics();renderCoverage();render();interestPanel.replaceChildren();interestPanel.hidden=!result.can_review_interest;
+ if(result.can_review_interest){
+  try{
+   const data=await call('interest-list');if(version!==generation||!contractorSession.hasSession())return false;
+   el('h2','Business expansion interest',interestPanel);
+   if(!data.applications.length)el('p','No painting businesses have registered interest yet.',interestPanel,'small');
+   for(const row of data.applications){const item=el('div',undefined,interestPanel);el('h3',row.business_name,item);el('p',row.city+', '+row.state+' · '+row.email,item,'small')}
+  }catch(error){
+   if(version!==generation||!contractorSession.hasSession())return false;
+   interestPanel.replaceChildren();if([401,403].includes(error.status))interestPanel.hidden=true;else el('p',error.message,interestPanel,'small');
+  }
+ }
+ return true;
+}
+$('#signin').onsubmit=async event=>{event.preventDefault();if(signingIn)return;signingIn=true;const button=event.target.querySelector('button');button.disabled=true;try{const result=await authCall('token?grant_type=password',authPayload(Object.fromEntries(new FormData(event.target)),authCheck));contractorSession.save(result);if(!await load())return;event.target.reset();$('#message').textContent='Contractor workspace loaded.'}catch(e){clear();$('#message').textContent=e.message}finally{signingIn=false;authCheck?.reset();button.disabled=!authCheck}};
+$('#refresh').onclick=async()=>{try{if(await load())$('#message').textContent='Projects refreshed.'}catch(e){$('#message').textContent=e.message}};
 for(const id of ['status-filter','qualification-filter','sort-order'])$('#'+id).onchange=render;$('#project-search').oninput=render;
 $('#show-all-projects').onclick=()=>{linkedProject='';render()};
 $('#business-select').onchange=async()=>{workspace=$('#business-select').value;projects=[];render();try{await load()}catch(e){$('#message').textContent=e.message}};

@@ -1,5 +1,29 @@
 # Buzzie: owned painting-services platform pilot
 
+## Contractor access rejection clears private workspace (October 23 update)
+
+Current project-list and contractor-write 401/403 rejections now retire the
+session and remove cached/visible contacts, notes, estimates, photos, company
+controls, applicant data and private search text. Metrics reset and sign-in
+recovery is shown. Stale responses cannot clear a newer login or overwrite its
+feedback. Ordinary network failures alone do not discard authorized project data.
+
+Applicant-list access is handled separately: old entries are cleared while loading;
+a current denial hides only that list, preserving approved project access.
+A stale applicant error cannot alter a newer successfully loaded list.
+
+Validation: **13 linked modules, 419 mocked tests**. All 13 new cases pass;
+12 fail against the previous production source. Published only pro.js to the
+existing owner-private Site; deployment
+`appgdep_6adbadd2492481919e328999a148fb35` succeeded. No backend, account,
+membership or real project changes occurred.
+
+This is simulated-response UI verification, not a real access-revocation/JWT
+walkthrough. Already-sent writes and existing signed image URLs are not cancelled.
+See [tests/CONTRACTOR-ACCESS.md](tests/CONTRACTOR-ACCESS.md) for evidence and limits.
+Next: authenticated browser isolation and estimate save/reload acceptance;
+external delivery/SMTP and Turnstile enforcement remain separate gates.
+
 ## Private contractor estimate amounts published (October 23 update)
 
 The contractor workspace now saves the latest private USD estimate per assigned
