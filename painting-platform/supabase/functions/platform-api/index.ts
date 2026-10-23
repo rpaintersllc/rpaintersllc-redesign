@@ -27,13 +27,13 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
   const db=async(path,body,method)=>{const res=await fetcher(base+'/rest/v1/'+path,{method:method||(body===undefined?'GET':'POST'),headers:{...dbHeaders,prefer:'return=representation'},...(body!==undefined?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(12000)});if(!res.ok)throw Error('storage_error');if(res.status===204)return null;return res.json()};
   const rpc=(name,body)=>db('rpc/'+name,body);
   const challengeRequired=env('PLATFORM_REQUIRE_CHALLENGE')==='true';
-  const challengeConfig=()=>({required:challengeRequired,site_key:challengeRequired?(env('TURNSTILE_SITE_KEY')||''):'',available:!challengeRequired||!!(env('TURNSTILE_SITE_KEY')&&env('TURNSTILE_SECRET_KEY'))});
+  const challengeConfig=()=>({required:challengeRequired,site_key:challengeRequired?(env('PLATFORM_TURNSTILE_SITE_KEY')||''):'',available:!challengeRequired||!!(env('PLATFORM_TURNSTILE_SITE_KEY')&&env('PLATFORM_TURNSTILE_SECRET_KEY'))});
   async function challenge(token,action){
    if(!challengeRequired)return null;
    if(!challengeConfig().available)return json({error:'Request verification is temporarily unavailable. Please try later.'},503);
    if(typeof token!=='string'||!token.trim()||token.length>2048)return json({error:'Complete the security check before submitting.'},400);
    try{
-    const response=await fetcher('https://challenges.cloudflare.com/turnstile/v0/siteverify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({secret:env('TURNSTILE_SECRET_KEY'),response:token}),signal:AbortSignal.timeout(8000)});
+    const response=await fetcher('https://challenges.cloudflare.com/turnstile/v0/siteverify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({secret:env('PLATFORM_TURNSTILE_SECRET_KEY'),response:token}),signal:AbortSignal.timeout(8000)});
     if(!response.ok)return json({error:'Request verification is temporarily unavailable. Please try again.'},503);
     const result=await response.json();
     if(result.success!==true||result.hostname!==new URL(origin).hostname||result.action!==action)return json({error:'The security check expired or could not be verified. Please complete it again.'},403);

@@ -34,13 +34,22 @@ Contractor billing, nationwide activation and paid acquisition are outside the
 initial one-contractor pilot. No plan, domain purchase or new paid service is
 required or authorized by this document.
 
+## Activation progress — October 23
+
+A dedicated BUZZIE widget has been created (Managed, one Buzzie hostname, no
+pre-clearance). Its public key is stored as `PLATFORM_TURNSTILE_SITE_KEY`.
+platform-api v10 now uses isolated `PLATFORM_TURNSTILE_*` names; the existing
+Lead Engine secret remains unchanged. 372 tests pass. The new secret transfer
+and enablement are pending specific browser authorization. Intake and native Auth
+are still unprotected. See `operations/TURNSTILE-ACTIVATION.md`.
+
 ## Activate request verification safely
 
 1. In the owner's Cloudflare account, create a Turnstile widget restricted to
    `r-painters-projects.jessicuriel27.chatgpt.site` (and only other explicitly
    approved Buzzie hostnames). Do not change DNS or buy a domain.
 2. In the isolated Supabase project's Edge Function secure settings, enter
-   `TURNSTILE_SITE_KEY` (public widget key) and `TURNSTILE_SECRET_KEY` (secret).
+   `PLATFORM_TURNSTILE_SITE_KEY` (public widget key) and `PLATFORM_TURNSTILE_SECRET_KEY` (secret).
    Enter the secret only in the provider's secure settings; never paste it into
    chat, a repository, shell arguments or an issue. Do not retrieve/export an
    existing secret. These settings are separate from the Site's runtime settings.

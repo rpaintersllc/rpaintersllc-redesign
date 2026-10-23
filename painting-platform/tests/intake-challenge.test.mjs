@@ -6,7 +6,7 @@ import {createIntakeCheck} from '../web/intake-check.js';
 const source=await readFile(new URL('../supabase/functions/platform-api/index.ts',import.meta.url),'utf8');
 const {makePlatformHandler}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 const origin='https://r-painters-projects.jessicuriel27.chatgpt.site',hostname=new URL(origin).hostname;
-const env=overrides=>k=>({SUPABASE_URL:'https://database.invalid',SUPABASE_SERVICE_ROLE_KEY:'server-only',PLATFORM_REQUIRE_CHALLENGE:'true',TURNSTILE_SITE_KEY:'public-widget',TURNSTILE_SECRET_KEY:'mock-secret',...overrides}[k]);
+const env=overrides=>k=>({SUPABASE_URL:'https://database.invalid',SUPABASE_SERVICE_ROLE_KEY:'server-only',PLATFORM_REQUIRE_CHALLENGE:'true',PLATFORM_TURNSTILE_SITE_KEY:'public-widget',PLATFORM_TURNSTILE_SECRET_KEY:'mock-secret',...overrides}[k]);
 const interest={business_name:'Example Painter',email:'test@example.invalid',state:'SC',city:'Summerville',consent:true};
 const project={request_key:'11111111-1111-4111-8111-111111111111',access_token:'a'.repeat(64),full_name:'Test homeowner',email:'test@example.invalid',phone:'2025550190',city:'Summerville',state:'SC',zip:'29483',service:'Interior painting',property_type:'Home',timing:'Within a month',details:'Paint living room walls',contact_consent:true,provider_slug:'r-painters-llc'};
 const req=(action,body)=>new Request('https://api.invalid/?action='+action,{method:body?'POST':'GET',headers:{origin,'content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
@@ -22,7 +22,7 @@ test('invalid, wrong-host, wrong-action and replayed challenges cannot reach sto
  }
 });
 test('verification outages and missing configuration fail closed',async()=>{
- for(const mode of ['missing-secret','missing-site-key','network','http','json']){let writes=0;const h=makePlatformHandler(env(mode==='missing-secret'?{TURNSTILE_SECRET_KEY:''}:mode==='missing-site-key'?{TURNSTILE_SITE_KEY:''}:{}),async url=>{if(!url.includes('siteverify')){writes++;return Response.json({})}if(mode==='http')return new Response('',{status:503});if(mode==='json')return new Response('not-json');throw Error('Unavailable')});assert.equal((await h(req('create',{...project,challenge_token:'token'}))).status,503);assert.equal(writes,0)}
+ for(const mode of ['missing-secret','missing-site-key','network','http','json']){let writes=0;const h=makePlatformHandler(env(mode==='missing-secret'?{PLATFORM_TURNSTILE_SECRET_KEY:''}:mode==='missing-site-key'?{PLATFORM_TURNSTILE_SITE_KEY:''}:{}),async url=>{if(!url.includes('siteverify')){writes++;return Response.json({})}if(mode==='http')return new Response('',{status:503});if(mode==='json')return new Response('not-json');throw Error('Unavailable')});assert.equal((await h(req('create',{...project,challenge_token:'token'}))).status,503);assert.equal(writes,0)}
 });
 test('oversized or non-string tokens are rejected without a verification call',async()=>{
  for(const token of ['x'.repeat(2049),{},'   ']){let calls=0;const h=makePlatformHandler(env(),async()=>{calls++;return Response.json({})});assert.equal((await h(req('create',{...project,challenge_token:token}))).status,400);assert.equal(calls,0)}
@@ -48,4 +48,12 @@ test('widget tokens clear on expiry, error and deliberate retry',async()=>{
 });
 test('Auth widget configuration uses a separate public key and never reveals a secret',async()=>{
  const h=makePlatformHandler(env({AUTH_TURNSTILE_SITE_KEY:'public-auth-widget'}),async()=>Response.json([]));const response=await h(req('providers'));const data=await response.json();assert.deepEqual(data.auth_challenge,{required:true,site_key:'public-auth-widget',available:true});assert.equal(data.intake_challenge.site_key,'public-widget');assert.doesNotMatch(JSON.stringify(data),/mock-secret|server-only/);
+});
+
+// The shared project's legacy Lead Engine key must never protect Buzzie by accident.
+test('legacy Lead Engine keys cannot satisfy Buzzie configuration or reach siteverify',async()=>{
+ let calls=0;const values={SUPABASE_URL:'https://database.invalid',SUPABASE_SERVICE_ROLE_KEY:'server-only',PLATFORM_REQUIRE_CHALLENGE:'true',TURNSTILE_SITE_KEY:'legacy-public',TURNSTILE_SECRET_KEY:'legacy-secret'};
+ const handler=makePlatformHandler(k=>values[k],async()=>{calls++;return Response.json([])});
+ const blocked=await handler(req('create',{...project,challenge_token:'token'}));assert.equal(blocked.status,503);assert.equal(calls,0);
+ const discovery=await handler(req('providers'));const data=await discovery.json();assert.deepEqual(data.intake_challenge,{required:true,site_key:'',available:false});assert.doesNotMatch(JSON.stringify(data),/legacy-public|legacy-secret/);
 });
