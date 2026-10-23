@@ -1,5 +1,34 @@
 # Buzzie: owned painting-services platform pilot
 
+## Manual project linking protects session feedback (October 23 update)
+
+Save project to my account now rejects repeated handler events while pending
+and uses a current session snapshot for dispatch and feedback. Logout or another
+login during token acquisition prevents dispatch; changes after a claim was sent
+show check-your-account recovery guidance instead of asserting current-account
+ownership or showing an old-account failure. Normal token renewal remains
+supported for this deliberate action. The private workspace stays available.
+
+Added **eight mocked manual-link cases**; six fail against preceding project.js
+and all pass with the correction. Current valid and normally renewed session
+positive controls also pass. Validation: **12 browser modules linked; 302 mocked
+Node/DOM tests pass** via `npm run verify`; `git diff --check` passes. No real
+claim, Auth request, project, photo, message or email was performed, and no new
+browser walkthrough is claimed. See [tests/PROJECT-LINKING.md](tests/PROJECT-LINKING.md).
+
+Published only production project.js after hosted web files matched GitHub's
+baseline byte-for-byte. Owner-private Site source
+`6c806b850fc90f2293758b7cf8d72cba04ea0e9a`; successful deployment
+`appgdep_6adae94568008191883961978c5a1d5d`. No Supabase schema/function/Auth setting,
+real contractor or audience changed. A dispatched server claim may still finish;
+this is dispatch/feedback protection, not cancellation or rollback. Private-key
+project access remains independent of the homeowner login session.
+
+Next: review account-backed project lookup and photo-refresh results across
+session changes using isolated responses. Genuine email delivery, actual abuse
+enforcement, full authenticated browser isolation and physical-device/screen-
+reader checks remain separate December 1 review gates.
+
 ## Request account linking respects the initiating session (October 22 update)
 
 Automatic linking now belongs to the homeowner session that started the save.

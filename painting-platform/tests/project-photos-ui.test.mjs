@@ -18,7 +18,7 @@ async function screen(run,{handle=()=>{},photos=[],account=false}={}){
   if(action==='lookup')return Response.json({project:{lead:{service:'Interior painting',status:'new',city:'Summerville',zip:'29483',details:'Test project',full_name:'Homeowner',email:'test@example.invalid',phone:'2025550190'},business:{phone:'2025550100',website:'https://contractor.invalid'},property_type:'Home',timing:'Within a month',events:[],photos:model.photos}});
   return Response.json({ok:true});
  };
- try{await import('../web/project.js?test='+crypto.randomUUID());const form=document.querySelector('#photo-form'),input=document.querySelector('#photo-input');input.files=[];await run({document,input,form,calls,model,submit:()=>form.onsubmit({preventDefault(){},target:form})})}finally{clearSession();Object.assign(globalThis,old)}
+ try{await import('../web/project.js?test='+crypto.randomUUID());const form=document.querySelector('#photo-form'),input=document.querySelector('#photo-input');input.files=[];const claim=[...document.querySelectorAll('button')].find(button=>button.textContent==='Save project to my account');await run({document,input,form,calls,model,claim,submit:()=>form.onsubmit({preventDefault(){},target:form})})}finally{clearSession();Object.assign(globalThis,old)}
 }
 test('partial uploads continue, refresh the gallery and clear the full selection',()=>{
  let uploads=0;
@@ -116,3 +116,33 @@ test('account project recovery links to My account without manufacturing a guest
  assert.equal(missing.querySelector('a').getAttribute('href'),'account.html');
  const lookup=calls.find(c=>c.action==='lookup');assert.equal(lookup.options.headers.authorization,'Bearer mock-session');assert.equal(JSON.parse(lookup.options.body).access_token,'');
 },{account:true}));
+
+
+test('manual project linking uses the current valid account and preserves private access',()=>screen(async({document,claim,calls})=>{
+ saveSession({access_token:'manual-account',refresh_token:'manual-refresh',expires_in:3600});await claim.onclick();assert.equal(calls.filter(c=>c.action==='claim-project').length,1);assert.equal(calls.find(c=>c.action==='claim-project').options.headers.authorization,'Bearer manual-account');assert.match(document.querySelector('#save-message').textContent,/Project linked/);assert.equal(claim.disabled,false);
+}));
+test('pending manual project link rejects repeat handler events',()=>{
+ const reply=deferred(),started=deferred();return screen(async({claim,calls})=>{
+  saveSession({access_token:'manual-account',refresh_token:'manual-refresh',expires_in:3600});const pending=claim.onclick();await started.promise;const duplicate=claim.onclick();reply.resolve(Response.json({linked:true}));await Promise.all([pending,duplicate]);assert.equal(calls.filter(c=>c.action==='claim-project').length,1);assert.equal(claim.disabled,false);
+ },{handle:action=>{if(action==='claim-project'){started.resolve();return reply.promise}}});
+});
+for(const change of ['logout','new-login'])test('manual link success after '+change+' does not assert current account ownership',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,claim})=>{
+  saveSession({access_token:'manual-account',refresh_token:'manual-refresh',expires_in:3600});const pending=claim.onclick();await started.promise;if(change==='logout')clearSession();else saveSession({access_token:'later-account',refresh_token:'later-refresh',expires_in:3600});reply.resolve(Response.json({linked:true}));await pending;
+  assert.match(document.querySelector('#save-message').textContent,/session changed/);assert.doesNotMatch(document.querySelector('#save-message').textContent,/Project linked/);assert.equal(document.querySelector('#project-content').hidden,false);assert.equal(claim.disabled,false);
+ },{handle:action=>{if(action==='claim-project'){started.resolve();return reply.promise}}});
+});
+test('manual link failure after a newer login keeps session-change recovery guidance',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,claim})=>{
+  saveSession({access_token:'manual-account',refresh_token:'manual-refresh',expires_in:3600});const pending=claim.onclick();await started.promise;saveSession({access_token:'later-account',refresh_token:'later-refresh',expires_in:3600});reply.resolve(Response.json({error:'Old account failure'},{status:503}));await pending;assert.match(document.querySelector('#save-message').textContent,/session changed/);assert.doesNotMatch(document.querySelector('#save-message').textContent,/Old account failure/);
+ },{handle:action=>{if(action==='claim-project'){started.resolve();return reply.promise}}});
+});
+test('logout at token acquisition prevents a manual claim dispatch',()=>screen(async({document,claim,calls})=>{
+ saveSession({access_token:'manual-account',refresh_token:'manual-refresh',expires_in:3600});const pending=claim.onclick();clearSession();await pending;assert.equal(calls.filter(c=>c.action==='claim-project').length,0);assert.match(document.querySelector('#save-message').textContent,/Sign in/);
+}));
+test('logout after snapshot acquisition but before dispatch prevents a manual claim',()=>screen(async({document,claim,calls})=>{
+ saveSession({access_token:'manual-account',refresh_token:'manual-refresh',expires_in:3600});const pending=claim.onclick();queueMicrotask(()=>clearSession());await pending;assert.equal(calls.filter(c=>c.action==='claim-project').length,0);assert.match(document.querySelector('#save-message').textContent,/session changed|Sign in/);
+}));
+test('deliberate manual linking permits a normal token renewal before dispatch',()=>screen(async({document,claim,calls})=>{
+ saveSession({access_token:'expired-manual',refresh_token:'expired-refresh',expires_at:1});await claim.onclick();const claims=calls.filter(c=>c.action==='claim-project');assert.equal(claims.length,1);assert.equal(claims[0].options.headers.authorization,'Bearer renewed-manual');assert.match(document.querySelector('#save-message').textContent,/Project linked/);
+},{handle:(action,model,options)=>{if(!action&&options.body?.includes('expired-refresh'))return Response.json({access_token:'renewed-manual',refresh_token:'renewed-refresh',expires_in:3600})}}));

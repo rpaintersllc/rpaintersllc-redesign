@@ -205,3 +205,15 @@ write is not cancelled. No genuine claim/Auth/intake/Storage/email or new browse
 walkthrough was performed. Only production request.js was published owner-private
 (source c9357941980f56ee1cef37c3129cc3e7fa962fe4, deployment
 appgdep_6adadbea59088191886d7eebe9787f10); server permissions and audience unchanged.
+
+
+Manual project-link follow-up (October 23): eight new isolated cases pass, six
+fail against preceding project.js. Full verifier: **12 modules, 302 tests pass**.
+Cases cover repeated claim events, unchanged/current and normally renewed token
+positive controls, both token-acquisition/dispatch boundaries, and late claim
+success/failure across logout/new login. See [tests/PROJECT-LINKING.md](tests/PROJECT-LINKING.md).
+Only production project.js was published owner-private (source
+6c806b850fc90f2293758b7cf8d72cba04ea0e9a, successful deployment
+appgdep_6adae94568008191883961978c5a1d5d). No new browser journey or live
+Auth/claim/intake/Storage/email operation; server permissions/audience unchanged.
+Already-dispatched claims can still complete server-side.
