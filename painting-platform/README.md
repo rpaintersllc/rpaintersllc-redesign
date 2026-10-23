@@ -1,5 +1,35 @@
 # Buzzie: owned painting-services platform pilot
 
+## Retired conversation panels stop acting (October 23 update)
+
+Detached panels and panels replaced in the same target now reject retained
+message, refresh and visit handlers. Reads/writes check that their original
+panel is still connected and owns its status node before dispatch and before
+accepting responses. The guard also runs after asynchronous token acquisition.
+Late success/error results do not reload the retired conversation, change its
+private nodes or invoke its visit-success callback. Old visit forms/buttons
+replaced by a fresh read cannot issue changes against the previous visit list.
+
+Validation: **12 browser modules linked; 351 mocked Node/DOM tests pass** via
+`npm run verify`. All **15 new lifecycle cases fail against preceding
+conversation.js**, and all pass with the correction. `git diff --check` passes.
+No genuine request, Auth action, message, visit, upload or email occurred; no new
+browser or device walkthrough is claimed. See
+[tests/CONVERSATION-LIFECYCLE.md](tests/CONVERSATION-LIFECYCLE.md) for evidence.
+
+This improvement is **saved in GitHub only**, not published. The existing Site's
+latest saved version remains 40 (source 3347f75518c5dd107333f3865cf3098a24b9cdfc),
+with the previously reported publishing authorization failure; that archive does
+not include this new lifecycle correction. No duplicate save/deployment or
+permission workaround was attempted. Supabase/schema/Auth settings are unchanged.
+
+Next: after publishing authorization is restored, reconcile all pending GitHub
+web changes with saved Site source before packaging a complete new version;
+version 40 alone omits this fix. Repeat the corrected request keyboard check and
+full authenticated project/account/conversation journeys when browser access
+permits. Idle logout observation, genuine email delivery, actual abuse enforcement
+and physical-device/screen-reader checks remain separate December 1 gates.
+
 ## Account conversation session boundaries (October 23 update)
 
 Account-only conversations now acquire a session snapshot before reads, messages

@@ -259,3 +259,18 @@ initial request timed out. No successful publication is claimed. Owner-only
 access was rechecked unchanged. Restore publishing authorization, then deploy
 the existing saved version (do not re-save). No Supabase/runtime/Auth change.
 See tests/CONVERSATION-SESSIONS.md for limits and the next lifecycle review.
+
+
+Conversation panel lifecycle (October 23): all 15 new mocked lifecycle cases pass
+with corrected conversation.js and fail against preceding bd59b24 conversation.js.
+Full verifier links **12 modules; 351 tests pass**. Detached/replaced panels cannot
+issue retained message/read/visit actions; stale success/failure cannot reload,
+change retired nodes or run visit-success callbacks. Dispatch is checked after
+contractor token acquisition too; stale visit controls from an older list are
+blocked. Existing session, send/retry, capability, contractor and visit tests pass.
+`git diff --check` passes. No live Auth/customer/message/visit/Storage/email or
+new browser/device walkthrough was used. Code-only: latest Site saved version
+remains 40 and does not include this correction; no publication retry or access
+change occurred. Reconcile pending GitHub web changes before the next packaging.
+No server cancellation, idle logout observer or complete JWT isolation is claimed.
+See tests/CONVERSATION-LIFECYCLE.md for reproducible evidence and limits.
