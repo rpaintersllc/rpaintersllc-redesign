@@ -217,3 +217,15 @@ Only production project.js was published owner-private (source
 appgdep_6adae94568008191883961978c5a1d5d). No new browser journey or live
 Auth/claim/intake/Storage/email operation; server permissions/audience unchanged.
 Already-dispatched claims can still complete server-side.
+
+
+Account-backed lookup follow-up (October 23): eleven new deferred-response cases
+pass; eight fail against preceding project.js. Full verifier: **12 modules and
+313 tests pass**. Coverage includes stale success/network errors across logout/
+new login, cached-view retirement before a new-account refresh completes, both
+token/snapshot dispatch boundaries, authorized recovery, normal renewal,
+same-session temporary fallback and independent capability access. No new browser
+or live Auth/lookup/Storage/email operation was performed. Only production
+project.js was published owner-private (source 71b6ecea9a74f9a37f84570532a3ca71ded35390,
+deployment appgdep_6adaf717b3988191b476fae88b3f2cbf). See tests/PROJECT-LINKING.md
+for scope; idle logout, conversation and upload session behavior are separate.

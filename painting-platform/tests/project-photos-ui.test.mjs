@@ -146,3 +146,43 @@ test('logout after snapshot acquisition but before dispatch prevents a manual cl
 test('deliberate manual linking permits a normal token renewal before dispatch',()=>screen(async({document,claim,calls})=>{
  saveSession({access_token:'expired-manual',refresh_token:'expired-refresh',expires_at:1});await claim.onclick();const claims=calls.filter(c=>c.action==='claim-project');assert.equal(claims.length,1);assert.equal(claims[0].options.headers.authorization,'Bearer renewed-manual');assert.match(document.querySelector('#save-message').textContent,/Project linked/);
 },{handle:(action,model,options)=>{if(!action&&options.body?.includes('expired-refresh'))return Response.json({access_token:'renewed-manual',refresh_token:'renewed-refresh',expires_in:3600})}}));
+
+
+for(const change of ['logout','new-login'])for(const outcome of ['success','network failure'])test('account lookup '+outcome+' after '+change+' cannot expose cached private data',()=>{
+ const reply=deferred(),started=deferred();let reads=0;return screen(async({document})=>{
+  const pending=document.querySelector('#refresh').onclick();await started.promise;
+  if(change==='logout')clearSession();else saveSession({access_token:'new-reader',refresh_token:'new-reader-refresh',expires_in:3600});
+  reply.resolve(outcome==='success'?Response.json({project:{lead:{service:'Old private result',status:'new',details:'Old private scope'},business:{phone:'2025550149',website:'https://example.invalid'},events:[],photos:[photo(9)]}}):Response.json({error:'Old network failure'},{status:503}));await pending;
+  assert.equal(document.querySelector('#project-content').hidden,true);assert.equal(document.querySelector('#photos').children.length,0);assert.equal(document.querySelector('#contact-details').textContent,'');assert.equal(document.querySelector('#project-scope').textContent,'');assert.match(document.querySelector('#message').textContent,/account session changed|Sign in/);
+ },{account:true,handle:action=>{if(action==='lookup'&&++reads===2){started.resolve();return reply.promise}}});
+});
+test('a new account refresh retires the prior account view before its lookup finishes',()=>{
+ const reply=deferred(),started=deferred();let reads=0;return screen(async({document})=>{
+  saveSession({access_token:'new-reader',refresh_token:'new-reader-refresh',expires_in:3600});const pending=document.querySelector('#refresh').onclick();await started.promise;
+  const hidden=document.querySelector('#project-content').hidden,contact=document.querySelector('#contact-details').textContent;
+  reply.resolve(Response.json({error:'Synthetic network failure'},{status:503}));await pending;assert.equal(hidden,true);assert.equal(contact,'');assert.equal(document.querySelector('#project-content').hidden,true);
+ },{account:true,handle:action=>{if(action==='lookup'&&++reads===2){started.resolve();return reply.promise}}});
+});
+for(const boundary of ['token','snapshot'])test('account lookup logout at '+boundary+' acquisition cannot dispatch a stale bearer read',()=>screen(async({document,calls})=>{
+ const pending=document.querySelector('#refresh').onclick();if(boundary==='token')clearSession();else queueMicrotask(()=>clearSession());await pending;
+ assert.equal(calls.filter(c=>c.action==='lookup').length,1);assert.equal(document.querySelector('#project-content').hidden,true);
+},{account:true}));
+test('capability lookup remains authorized independently of a changed homeowner login',()=>{
+ const reply=deferred(),started=deferred();let reads=0;return screen(async({document})=>{
+  saveSession({access_token:'optional-reader',refresh_token:'optional-refresh',expires_in:3600});const pending=document.querySelector('#refresh').onclick();await started.promise;clearSession();reply.resolve(Response.json({project:{lead:{service:'Capability-authorized project',status:'new'},business:{phone:'2025550149',website:'https://example.invalid'},events:[],photos:[]}}));await pending;assert.equal(document.querySelector('#project-content').hidden,false);assert.equal(document.querySelector('#project-title').textContent,'Capability-authorized project');
+ },{handle:action=>{if(action==='lookup'&&++reads===2){started.resolve();return reply.promise}}});
+});
+test('account lookup supports normal token renewal with the renewed bearer',()=>screen(async({document,calls})=>{
+ saveSession({access_token:'expired-read',refresh_token:'expired-read-refresh',expires_at:1});await document.querySelector('#refresh').onclick();const reads=calls.filter(c=>c.action==='lookup');assert.equal(reads.length,2);assert.equal(reads[1].options.headers.authorization,'Bearer renewed-read');assert.equal(document.querySelector('#project-content').hidden,false);
+},{account:true,handle:(action,model,options)=>{if(!action&&options.body?.includes('expired-read-refresh'))return Response.json({access_token:'renewed-read',refresh_token:'renewed-read-refresh',expires_in:3600})}}));
+test('a fresh authorized account lookup restores a retired project and conversation',()=>{
+ const reply=deferred(),started=deferred();let reads=0;return screen(async({document,calls})=>{
+  const pending=document.querySelector('#refresh').onclick();await started.promise;clearSession();reply.resolve(Response.json({error:'Synthetic old-session failure'},{status:503}));await pending;const retired=document.querySelector('#project-content').hidden;
+  saveSession({access_token:'recovery-reader',refresh_token:'recovery-refresh',expires_in:3600});await document.querySelector('#refresh').onclick();assert.equal(retired,true);assert.equal(document.querySelector('#project-content').hidden,false);assert.equal(document.querySelector('#photo-form').hidden,false);assert.equal(calls.filter(c=>c.action==='conversation').length,2);
+ },{account:true,handle:action=>{if(action==='lookup'&&++reads===2){started.resolve();return reply.promise}}});
+});
+test('a same-session account refresh failure keeps its prior view but blocks uploads',()=>{
+ let reads=0;return screen(async({document})=>{
+  await document.querySelector('#refresh').onclick();assert.equal(document.querySelector('#project-content').hidden,false);assert.equal(document.querySelector('#photo-form').hidden,true);assert.match(document.querySelector('#message').textContent,/last loaded project/);
+ },{account:true,handle:action=>action==='lookup'&&++reads===2?Response.json({error:'Synthetic temporary failure'},{status:503}):undefined});
+});

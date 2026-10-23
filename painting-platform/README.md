@@ -1,5 +1,37 @@
 # Buzzie: owned painting-services platform pilot
 
+## Account project lookups reject stale sessions (October 23 update)
+
+Account-backed project lookups now acquire a session snapshot, check it before
+sending the read and again before rendering. A success or temporary failure from
+an ended/replaced session clears the cached project, contact details, scope,
+photos and conversation rather than showing an old account's data. Starting a
+refresh under a different session retires the previous view before the new read
+finishes. Only the newest lookup can change the workspace.
+
+Normal token renewal and same-session temporary-error fallback remain supported;
+a fresh authorized lookup restores the view/gallery/conversation. Links containing
+a private capability key retain their independent authorization across login
+changes. This does not add global logout observation while a page is idle or
+prove conversation/upload session safety outside the lookup path.
+
+Added **eleven mocked lookup cases**; eight fail against preceding project.js
+and all pass with the correction. Validation: **12 browser modules linked; 313
+mocked Node/DOM tests pass** via `npm run verify`; `git diff --check` passes.
+No real account read, request, photo, message or email was used. No new browser
+or full JWT walkthrough is claimed. See [tests/PROJECT-LINKING.md](tests/PROJECT-LINKING.md).
+
+Published only production project.js after hosted web files matched GitHub's
+baseline byte-for-byte. Owner-private Site source
+`71b6ecea9a74f9a37f84570532a3ca71ded35390`; successful deployment
+`appgdep_6adaf717b3988191b476fae88b3f2cbf`. No Supabase schema/function/Auth setting,
+real contractor or audience changed. Tests/evidence remain in GitHub.
+
+Next: review account-owned photo-upload batches and conversation reads across
+session changes with isolated responses. Genuine delivery, actual abuse
+enforcement, full authenticated browser isolation and physical-device/screen-
+reader checks remain separate December 1 review gates.
+
 ## Manual project linking protects session feedback (October 23 update)
 
 Save project to my account now rejects repeated handler events while pending
