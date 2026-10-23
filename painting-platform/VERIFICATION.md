@@ -301,3 +301,16 @@ next accessibility correction, not fixed here. Screenshots/replay/limits are in
 PROJECT-BROWSER-QA.md. No real sign-in/JWT, server isolation, customer/message/visit,
 Storage, email, configuration or Site publication was performed. Tooling/evidence
 are code-only; preview stopped after review.
+
+
+Visit-request focus correction (October 23): 14 new mocked cases pass; four fail
+against preceding conversation.js. Full verifier links 12 modules and passes
+370 tests. Successful button-initiated requests focus the current Site visit
+heading after conversation/project refresh, preserving later control choices
+and suppressing transfer on failures, detached/replaced panels or changed account
+sessions. Date-field submits and existing decision controls are unchanged.
+Chromium 390px confirms Enter -> requested visit -> focused Site visit heading
+(tabIndex=-1) -> Tab to Cancel visit request; loaded document/scroll widths 375px,
+two synthetic lookups, one visit, zero messages. No genuine Auth/visit/customer/
+email operation. Only code/evidence saved in GitHub; no publication, Supabase,
+permission or runtime change. PROJECT-BROWSER-QA.md records capture and limits.

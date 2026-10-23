@@ -66,3 +66,42 @@ real Storage cleanup, physical devices or screen readers. Existing Node/SQL
 checks remain distinct evidence. Site publication is unchanged; pending tested
 conversation corrections still require source reconciliation after publishing
 authorization recovery. No migration, runtime, real contractor or audience change.
+
+
+## Visit-request focus correction — October 23 follow-up
+
+The preceding BODY-focus gap is now corrected in conversation.js for successful
+requests initiated from their submit button. After the conversation reload and
+project callback settle, the current Site visit heading receives focus. It has
+tabIndex -1 so normal Tab continues to the requested-visit Cancel button.
+
+The action tracks focusin only while pending, removes its listener in finally,
+and transfers only if the initiating button still owns focus (or its disabled/
+removed state left BODY), no newer control was chosen, the panel remains current,
+refresh succeeded and the account session remains current. Another choice that
+later blurs still suppresses transfer. Failure/denial and detached/replaced panels
+never transfer. Already-dispatched writes are not cancelled. This change does not
+add focus behavior to cancellation, contractor decisions or message sends.
+
+`visit-focus.test.mjs` adds 14 cases: capability/account success, disabled-button
+blur, newer choice/choice-then-blur, date-field submit, write/read/denial errors,
+detach/replacement/logout, newer focus during project callback and ordinary callback
+completion. Four fail with only conversation.js restored to preceding 6a49511;
+all pass with the correction. Fresh full verifier: 12 modules / 370 mocked tests.
+
+Fresh Chromium review used a newly generated local synthetic project fixture,
+account mode at 390px: November 10 / Afternoon, Enter on Request a site visit,
+saved/awaiting-confirmation feedback, Site visit heading focused (DOM assertion
+true, tabIndex -1), then Tab reached Cancel visit request (DOM assertion true).
+Final counters: two synthetic lookups, one visit, zero messages. Document and
+scroll widths both 375px. No cancel action, genuine Auth/account/visit/message/
+customer/email or backend operation occurred; preview was stopped afterward.
+
+![Site visit heading receives focus after a synthetic request](evidence/visit-request-focus-390.jpg)
+
+Production conversation.js, tests and evidence are saved in GitHub only. The
+pilot was not republished; publishing authorization/source reconciliation remains
+pending. No Supabase setting, migration, real contractor or audience change.
+Physical devices, screen readers, genuine JWT/browser/server isolation and real
+delivery/abuse enforcement remain separate. Next inspect keyboard continuity
+after message sends and visit decisions; this correction covers request success.

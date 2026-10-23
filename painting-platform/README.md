@@ -1,5 +1,32 @@
 # Buzzie: owned painting-services platform pilot
 
+## Visit request keyboard continuity corrected (October 23 update)
+
+A successful visit request initiated from its submit button now focuses the
+current Site visit heading after conversation and project refresh complete.
+The heading is programmatically focusable; Tab continues to Cancel visit request.
+A newer focus choice, failed refresh/access denial, detached/replaced panel or
+changed account session prevents the transfer. The focusin listener exists only
+during that initiating operation and is removed in finally. Requests submitted
+from the date field and existing visit-decision controls keep their behavior.
+
+Added **14 mocked focus cases**; four fail against preceding conversation.js.
+Fresh verification: **12 modules linked; 370 mocked tests pass**; diff check passes.
+Chromium at **390 px** confirmed Enter -> requested visit -> Site visit heading
+focused (`tabIndex=-1`) -> Tab -> Cancel visit request. Two synthetic lookups,
+one visit, zero messages; document and scroll widths both 375 px. No real visit,
+message, account, Auth, email or customer operation occurred.
+
+Implementation, tests and browser capture are saved **in GitHub only**; not
+published to the pilot. Existing publishing authorization remains a separate
+pending item; reconcile all pending web changes before the next Site package.
+No Supabase schema/runtime/Auth, contractor or audience change. See
+[tests/PROJECT-BROWSER-QA.md](tests/PROJECT-BROWSER-QA.md) for evidence and limits.
+
+Next: review keyboard continuity after message sends and visit decisions using
+isolated responses. Genuine browser/JWT isolation, delivery, abuse enforcement,
+physical devices and screen readers remain separate December 1 gates.
+
 ## Synthetic project/conversation browser journey (October 23 update)
 
 Added an isolated local project fixture with seeded synthetic account access,
