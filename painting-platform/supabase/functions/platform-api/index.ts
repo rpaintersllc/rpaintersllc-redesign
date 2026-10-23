@@ -166,11 +166,11 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
    if(action==='pro-list'&&request.method==='GET'){
     const chosen=new URL(request.url).searchParams.get('business_id');if(chosen&&!UUID.test(chosen))return json({error:'Invalid workspace'},400);
     const access=await member(chosen);if(!access)return json({error:'An approved business account is required'},403);
-    const projects=await db('platform_projects?select='+selection+'&business_id=eq.'+access.business_id+'&order=created_at.desc&limit=100');
+    const projects=await db('platform_projects?select='+selection+',latest_message:platform_messages(author,created_at)&business_id=eq.'+access.business_id+'&order=created_at.desc&limit=100&latest_message.order=created_at.desc,id.desc&latest_message.limit=1');
     const [reviews,profile,estimates]=await Promise.all([db('platform_project_reviews?select=project_id,qualification,notes,revision,updated_at&business_id=eq.'+access.business_id),db('platform_businesses?select=id,name,state,cities,zip_prefix,active,accepting_requests&id=eq.'+access.business_id),db('platform_project_estimates?select=project_id,amount_cents,currency,revision,updated_at&business_id=eq.'+access.business_id)]);
     const byProject=new Map(reviews.map(r=>[r.project_id,r]));
     const byEstimate=new Map(estimates.map(row=>[row.project_id,row]));
-    for(const project of projects){project.photos=await signedPhotos(project.photos);project.review=byProject.get(project.id)||{qualification:'unreviewed',notes:'',revision:0};project.estimate=byEstimate.get(project.id)||null;}
+    for(const project of projects){project.photos=await signedPhotos(project.photos);project.review=byProject.get(project.id)||{qualification:'unreviewed',notes:'',revision:0};project.estimate=byEstimate.get(project.id)||null;const latest=Array.isArray(project.latest_message)?project.latest_message[0]:null;project.message_activity=latest&&['homeowner','business'].includes(latest.author)&&typeof latest.created_at==='string'&&Number.isFinite(Date.parse(latest.created_at))?{author:latest.author,created_at:latest.created_at}:null;delete project.latest_message;}
     return json({business:access.business,coverage:profile[0],role:access.role,memberships:access.memberships.map(m=>({business_id:m.business_id,name:m.business.name})),projects,can_review_interest:(env('ADMIN_USER_IDS')||'').split(',').includes(access.user.id)});
    }
    if(action==='interest-list'&&request.method==='GET'){

@@ -1,5 +1,30 @@
 # Buzzie: owned painting-services platform pilot
 
+## Latest-message summaries published in contractor inbox (October 23 update)
+
+Assigned project cards now show the latest message's author/date, with a
+Conversation filter for latest-from-homeowner, latest-from-team and no messages.
+The copy explains manual Refresh and that this is not unread tracking.
+No message text is loaded into the project listing, and projects without
+messages remain in the default view.
+
+The existing business-scoped pro-list read embeds only one author/timestamp
+row per project; homeowner queries and access controls remain unchanged.
+Validation: **13 modules, 431 mocked tests**, including 12 new API/UI cases.
+Read-only database checks confirmed the existing relation/index and found
+three projects, one with message metadata. No real messages were sent.
+
+Platform-api v13 read-back matches the tested source. The same owner-private
+Site is published with pro.html/pro.js; deployment
+appgdep_6adbbdd025608191bc5a0f28ee24793d succeeded. No migration, runtime
+secret, membership, provider, spending or audience change occurred.
+
+Authenticated HTTP/browser acceptance remains unverified: Browser bootstrap
+returned Unknown tool (browser.js) before establishing a local connection.
+See [tests/CONTRACTOR-ACTIVITY.md](tests/CONTRACTOR-ACTIVITY.md) for evidence
+and exact limits. Next restore that connection and review the signed-in
+dashboard; delivery/SMTP and Turnstile enforcement remain independent gates.
+
 ## Contractor access rejection clears private workspace (October 23 update)
 
 Current project-list and contractor-write 401/403 rejections now retire the
