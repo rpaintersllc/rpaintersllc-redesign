@@ -1,5 +1,40 @@
 # Buzzie: owned painting-services platform pilot
 
+## Account conversation session boundaries (October 23 update)
+
+Account-only conversations now acquire a session snapshot before reads, messages
+and visit changes, then check it before dispatch and before accepting responses.
+Refreshing under a changed session retires the previous thread first; stale
+successes/errors clear private messages, drafts and visit controls and require a
+fresh authorized read. A message or visit already sent may still be saved; the
+recovery text asks the homeowner to check before retrying.
+
+Normal renewal before acquisition, fresh-session recovery, private-capability
+links and the contractor token provider have positive controls. This does not
+add idle logout observation, cancel server writes or prove full browser/JWT
+isolation. See [tests/CONVERSATION-SESSIONS.md](tests/CONVERSATION-SESSIONS.md).
+
+Validation: **12 browser modules linked; 336 mocked Node/DOM tests pass** through
+`npm run verify`. Thirteen new cases pass; ten fail against preceding
+conversation.js. `git diff --check` passes. No real Auth, message, visit, customer
+request or email was sent, and no new browser walkthrough is claimed.
+
+Only conversation.js was pushed to the existing owner-private Site source
+`3347f75518c5dd107333f3865cf3098a24b9cdfc`, after all hosted assets matched the
+GitHub baseline. Version **40** was saved, but deployment
+`appgdep_6adb150b47d481918e108d94872018a6` failed with **Unauthorized** after the
+initial call timed out. This change is **not confirmed published**. Existing
+owner-only access remains unchanged. Owner action: restore/verify Sites publishing
+authorization, then deploy saved version 40; do not create a duplicate Site or
+save the version again. Tests/evidence are in GitHub; Supabase settings and
+runtime were not changed.
+
+Next: review responses/actions from detached or replaced conversation panels,
+then repeat the corrected request keyboard walkthrough when browser access
+permits. Genuine email delivery, actual abuse enforcement, full authenticated
+browser isolation and physical-device/screen-reader checks remain separate
+December 1 review gates.
+
 ## Account photo batches stop at session changes (October 23 update)
 
 Account-backed uploads now require a current loaded gallery and acquire one

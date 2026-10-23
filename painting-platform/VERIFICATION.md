@@ -242,3 +242,20 @@ Only tested project.js was published owner-private (source
 b00f42812cd22165b2d01ce0f6649b505a55b1fd, deployment
 appgdep_6adb05bf58a88191af8ac54da8e65bed). No backend/Auth/audience change.
 See tests/PROJECT-UPLOAD-SESSIONS.md for proof limits and manual retry guidance.
+
+
+Account conversation sessions (October 23): 13 new mocked cases pass; ten fail
+against preceding conversation.js. Full verifier: **12 modules, 336 tests pass**;
+`git diff --check` passes. Session snapshots guard account-only reads, messages
+and visit requests/updates at dispatch and response acceptance, and a stale loaded
+view cannot issue a new write. Fresh authorized reads restore controls; renewal,
+capability links and the contractor token provider have positive controls.
+Already-dispatched writes may still save; recovery requires checking before retry.
+No real Auth/message/visit/intake/email or new browser walkthrough occurred.
+Only conversation.js was pushed to Site source
+3347f75518c5dd107333f3865cf3098a24b9cdfc; saved version 40, deployment
+appgdep_6adb150b47d481918e108d94872018a6 **failed: Unauthorized** after the
+initial request timed out. No successful publication is claimed. Owner-only
+access was rechecked unchanged. Restore publishing authorization, then deploy
+the existing saved version (do not re-save). No Supabase/runtime/Auth change.
+See tests/CONVERSATION-SESSIONS.md for limits and the next lifecycle review.

@@ -1,9 +1,19 @@
 import {api,el} from './common.js';
+import {sessionSnapshot} from './auth-session.js';
 const VISITS={requested:'Awaiting company confirmation',confirmed:'Visit confirmed',declined:'Company could not confirm',cancelled:'Cancelled by homeowner'};
 export async function mountConversation(target,access,token,onChange=()=>{}){
  target.replaceChildren();
- const business=!!access.business_id;
- const call=async(action,body)=>api(action,body,typeof token==='function'?await token():token);
+ const business=!!access.business_id,accountOnly=!business&&!access.access_token;let viewSession;
+ const changedSession=()=>Object.assign(Error('Account session changed'),{status:401,sessionChanged:true});
+ const call=async(action,body)=>{
+  if(accountOnly&&action!=='conversation'&&viewSession&&!viewSession.isCurrent())throw changedSession();
+  let snapshot;try{
+   if(accountOnly)snapshot=await sessionSnapshot();
+   const assertCurrent=()=>{if(snapshot&&!snapshot.isCurrent())throw changedSession()};assertCurrent();
+   const data=await api(action,body,snapshot?snapshot.token:typeof token==='function'?await token():token);assertCurrent();
+   return {data,snapshot,assertCurrent};
+  }catch(error){if(accountOnly&&(!snapshot||!snapshot.isCurrent()))throw changedSession();throw error}
+ };
  el('h2','Project conversation',target);
  el('p','Messages stay in this workspace. Refresh to check for replies. Email and text notifications are not active for these updates.',target,'small');
  const message=el('p','Loading conversation…',target,'message');message.setAttribute('role','status');
@@ -19,7 +29,7 @@ export async function mountConversation(target,access,token,onChange=()=>{}){
   if(![401,403,404].includes(error.status))return false;
   ++loadRevision;canSend=false;visitNeedsRefresh=true;input.value='';thread.replaceChildren();visits.replaceChildren();
   messageKey='';lastText='';visitKey='';lastVisit='';messageControls();visitControls();
-  message.textContent='Conversation access is unavailable. Refresh to verify access or sign in again.';return true;
+  message.textContent=error.sessionChanged?'Your account session changed. Sign in and refresh before continuing. A change already sent may have been saved; check before retrying.':'Conversation access is unavailable. Refresh to verify access or sign in again.';return true;
  }
  function visitControls(){for(const control of visits.querySelectorAll('button,input,select'))control.disabled=visitBusy||visitNeedsRefresh||!canSend;visits.setAttribute('aria-busy',String(visitBusy));refresh.disabled=visitBusy}
  async function saveVisit(action,body,success){
@@ -27,8 +37,10 @@ export async function mountConversation(target,access,token,onChange=()=>{}){
   if(visitNeedsRefresh||!canSend){message.textContent='Refresh the conversation before changing a visit again.';return}
   visitBusy=true;++loadRevision;visitControls();message.textContent='Saving visit…';
   try{
-   await call(action,body);visitNeedsRefresh=true;
+   const result=await call(action,body);result.assertCurrent();visitNeedsRefresh=true;
    const refreshed=await load();
+   if(accountOnly&&viewSession&&!viewSession.isCurrent())throw changedSession();
+   if(!canSend)return;
    message.textContent=refreshed?success:'Visit change saved, but the conversation could not refresh. Refresh before changing the visit again.';
    try{await onChange()}catch{message.textContent+=' Project status could not refresh.'}
   }catch(e){if(!retireAccess(e))message.textContent=e.message}
@@ -49,8 +61,8 @@ export async function mountConversation(target,access,token,onChange=()=>{}){
   el('p','This is a request, not a booking. The company must confirm availability.',visitForm,'small');const button=el('button','Request a site visit',visitForm);button.type='submit';
   visitForm.onsubmit=async event=>{event.preventDefault();if(visitBusy||visitNeedsRefresh)return;const signature=dateInput.value+'|'+timeInput.value;if(signature!==lastVisit){visitKey=crypto.randomUUID();lastVisit=signature}await saveVisit('visit-request',{...access,request_key:visitKey,preferred_date:dateInput.value,time_window:timeInput.value},'Visit preference saved. Awaiting company confirmation.')};
  }
- async function load(){const revision=++loadRevision;refresh.disabled=true;try{const data=await call('conversation',access);if(revision!==loadRevision)return false;thread.replaceChildren();el('h3','Messages',thread);if(!data.messages.length)el('p','Start the conversation about your project.',thread,'small');for(const row of data.messages){const item=el('article',undefined,thread,'chat-message '+(row.author==='business'?'from-company':'from-homeowner'));el('strong',row.author==='business'?'Painting company':'Homeowner',item);el('p',row.body,item,'scope');el('small',new Date(row.created_at).toLocaleString('en-US'),item)}if(data.messages.length>=100)el('p','Showing the latest 100 messages.',thread,'small');renderVisits(data.visits);visitNeedsRefresh=false;canSend=true;messageControls();visitControls();message.textContent='Conversation up to date.';return true}catch(e){if(revision===loadRevision&&!retireAccess(e))message.textContent=e.message;return false}finally{if(revision===loadRevision)refresh.disabled=visitBusy}}
- form.onsubmit=async event=>{event.preventDefault();if(sending)return;if(!canSend){message.textContent='Refresh the conversation to verify access before sending a message.';return}const draft=input.value,text=draft.trim();if(!text){message.textContent='Write a message first.';return}if(text!==lastText){messageKey=crypto.randomUUID();lastText=text}sending=true;send.disabled=true;form.setAttribute('aria-busy','true');message.textContent='Saving message…';try{await call('message',{...access,request_key:messageKey,message:text});if(input.value===draft)input.value='';messageKey='';lastText='';const refreshed=await load();message.textContent=refreshed?'Message saved to the project.':'Message saved, but the conversation could not refresh. Refresh to check replies. Do not resend the saved message.'}catch(e){if(!retireAccess(e))message.textContent=e.message}finally{sending=false;messageControls();form.removeAttribute('aria-busy')}};
+ async function load(){if(accountOnly&&viewSession&&!viewSession.isCurrent())retireAccess(changedSession());const revision=++loadRevision;refresh.disabled=true;try{const result=await call('conversation',access);if(revision!==loadRevision)return false;result.assertCurrent();const data=result.data;viewSession=result.snapshot;thread.replaceChildren();el('h3','Messages',thread);if(!data.messages.length)el('p','Start the conversation about your project.',thread,'small');for(const row of data.messages){const item=el('article',undefined,thread,'chat-message '+(row.author==='business'?'from-company':'from-homeowner'));el('strong',row.author==='business'?'Painting company':'Homeowner',item);el('p',row.body,item,'scope');el('small',new Date(row.created_at).toLocaleString('en-US'),item)}if(data.messages.length>=100)el('p','Showing the latest 100 messages.',thread,'small');renderVisits(data.visits);visitNeedsRefresh=false;canSend=true;messageControls();visitControls();message.textContent='Conversation up to date.';return true}catch(e){if(revision===loadRevision&&!retireAccess(e))message.textContent=e.message;return false}finally{if(revision===loadRevision)refresh.disabled=visitBusy}}
+ form.onsubmit=async event=>{event.preventDefault();if(sending)return;if(!canSend){message.textContent='Refresh the conversation to verify access before sending a message.';return}const draft=input.value,text=draft.trim();if(!text){message.textContent='Write a message first.';return}if(text!==lastText){messageKey=crypto.randomUUID();lastText=text}sending=true;send.disabled=true;form.setAttribute('aria-busy','true');message.textContent='Saving message…';try{const result=await call('message',{...access,request_key:messageKey,message:text});result.assertCurrent();if(input.value===draft)input.value='';messageKey='';lastText='';const refreshed=await load();if(accountOnly&&viewSession&&!viewSession.isCurrent())throw changedSession();if(!canSend)return;message.textContent=refreshed?'Message saved to the project.':'Message saved, but the conversation could not refresh. Refresh to check replies. Do not resend the saved message.'}catch(e){if(!retireAccess(e))message.textContent=e.message}finally{sending=false;messageControls();form.removeAttribute('aria-busy')}};
 
  messageControls();refresh.onclick=()=>{if(!visitBusy)return load()};await load();
 }
