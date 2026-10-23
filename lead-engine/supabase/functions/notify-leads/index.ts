@@ -34,7 +34,17 @@ export function makeNotifyHandler(env, fetcher=fetch) {
    const job=await claim.json();if(!job)return json({ok:true,processed:0});
    let accepted=false,providerReference=null,errorCode='provider_unavailable',permanent=false;
    try{
-    const response=await fetcher('https://api.resend.com/emails',{method:'POST',headers:{authorization:'Bearer '+apiKey,'content-type':'application/json','Idempotency-Key':'lead-alert/'+job.id},body:JSON.stringify({from,to:['rpaintersinsc@gmail.com'],subject:'New R Painters estimate request',text:'A new estimate request was saved in R Painters Lead Engine.\n\nOpen your private dashboard:\nhttps://rpainters-lead-engine.jessicuriel27.chatgpt.site/admin\n\nReference: '+job.lead_id+'\n\nThis email contains no customer contact details.'}),signal:AbortSignal.timeout(8000)});
+    // Resolve the destination from the saved project, never from request input.
+    // Keep this inside the lease's completion path so lookup failures are retried.
+    const lookup=await fetcher(base+'/rest/v1/platform_projects?select=id&lead_id=eq.'+encodeURIComponent(job.lead_id)+'&limit=1',{headers:dbheaders,signal:AbortSignal.timeout(8000)});
+    if(!lookup.ok)throw Error('destination_lookup_failed');
+    const projects=await lookup.json();
+    if(!Array.isArray(projects)||projects.length>1||projects.some(p=>typeof p.id!=='string'||!/^[0-9a-f-]{36}$/i.test(p.id)))throw Error('invalid_destination');
+    const project=projects[0];
+    const subject=project?'New BUZZIE painting request':'New R Painters estimate request';
+    const destination=project?'https://r-painters-projects.jessicuriel27.chatgpt.site/pro.html?project='+encodeURIComponent(project.id):'https://rpainters-lead-engine.jessicuriel27.chatgpt.site/admin.html';
+    const text=(project?'A new painting request was saved in BUZZIE.':'A new estimate request was saved in R Painters Lead Engine.')+'\n\nOpen your private contractor dashboard:\n'+destination+'\n\nReference: '+(project?project.id:job.lead_id)+'\n\nThis email contains no homeowner contact details. Sign in with your approved business account.';
+    const response=await fetcher('https://api.resend.com/emails',{method:'POST',headers:{authorization:'Bearer '+apiKey,'content-type':'application/json','Idempotency-Key':'lead-alert/'+job.id},body:JSON.stringify({from,to:['rpaintersinsc@gmail.com'],subject,text}),signal:AbortSignal.timeout(8000)});
     if(response.ok){const data=await response.json();if(typeof data.id==='string'&&data.id){accepted=true;providerReference=data.id}else errorCode='invalid_provider_response'}
     else{errorCode='provider_http_'+response.status;permanent=response.status>=400&&response.status<500&&![408,409,429].includes(response.status)}
    }catch{errorCode='provider_network_error'}

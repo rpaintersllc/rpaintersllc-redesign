@@ -5,6 +5,8 @@ import {createContractorSession} from './contractor-session.js';
 const QUALIFICATION={unreviewed:'Needs review',qualified:'Qualified by your team',not_fit:'Not a fit'};
 let authCheck,signingIn=false;$('#signin button').disabled=true;
 let workspace='',projects=[],coverage=null,role='',generation=0;
+const linkedId=new URLSearchParams(globalThis.location?.search||'').get('project')||'';
+let linkedProject=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(linkedId)?linkedId:'';
 const contractorSession=createContractorSession(body=>authCall('token?grant_type=refresh_token',body),clear);
 const interestPanel=el('section',undefined,$('#workspace'),'panel');interestPanel.hidden=true;
 const businessToken=()=>contractorSession.token();
@@ -35,9 +37,10 @@ function renderCoverage(){
 }
 function render(){
  const target=$('#projects');target.replaceChildren();const status=$('#status-filter').value,qualification=$('#qualification-filter').value,search=$('#project-search').value.trim().toLowerCase();
- const rows=projects.filter(p=>(!status||p.lead.status===status)&&(!qualification||p.review.qualification===qualification)&&(!search||[p.lead.full_name,p.lead.city,p.lead.zip,p.lead.service,p.lead.email,p.lead.phone,p.lead.details].join(' ').toLowerCase().includes(search))).sort((a,b)=>$('#sort-order').value==='oldest'?new Date(a.created_at)-new Date(b.created_at):new Date(b.created_at)-new Date(a.created_at));
+ const rows=projects.filter(p=>(!linkedProject||p.id===linkedProject)&&(!status||p.lead.status===status)&&(!qualification||p.review.qualification===qualification)&&(!search||[p.lead.full_name,p.lead.city,p.lead.zip,p.lead.service,p.lead.email,p.lead.phone,p.lead.details].join(' ').toLowerCase().includes(search))).sort((a,b)=>$('#sort-order').value==='oldest'?new Date(a.created_at)-new Date(b.created_at):new Date(b.created_at)-new Date(a.created_at));
+ $('#linked-request').hidden=!linkedProject;
  $('#result-count').textContent=rows.length+' of '+projects.length+' loaded projects';
- if(!rows.length){el('p',projects.length?'No projects match these filters.':'Your assigned homeowner requests will appear here.',target,'empty');return}
+ if(!rows.length){el('p',linkedProject?'This request is not in this workspace’s latest 100 projects, or is hidden by your filters. Check the workspace and filters, or show all projects.':projects.length?'No projects match these filters.':'Your assigned homeowner requests will appear here.',target,'empty');return}
  for(const project of rows){
   const access={project_id:project.id,business_id:workspace};const card=el('article',undefined,target,'panel project-card');const statusBadge=el('span',STATUS[project.lead.status]||project.lead.status,card,'badge');el('h3',project.lead.service,card);el('p',project.lead.city+' '+project.lead.zip+' · '+project.property_type+' · '+new Date(project.created_at).toLocaleString('en-US'),card,'small');el('p',project.lead.details,card,'scope');el('p','Timing: '+project.timing+' · Budget: '+(project.budget||'Not specified'),card,'small');el('h3',project.lead.full_name,card);
   const contact=el('p',undefined,card,'small'),phone=el('a',project.lead.phone,contact);phone.href='tel:'+project.lead.phone;el('span',' · ',contact);const email=el('a',project.lead.email,contact);email.href='mailto:'+project.lead.email;el('p','Contact information is supplied by the homeowner. Confirm identity and project scope during follow-up.',card,'small');drawPhotos(project.photos,el('div',undefined,card,'photo-grid'));
@@ -74,6 +77,7 @@ async function load(){const version=++generation;const result=await call('pro-li
 $('#signin').onsubmit=async event=>{event.preventDefault();if(signingIn)return;signingIn=true;const button=event.target.querySelector('button');button.disabled=true;try{const result=await authCall('token?grant_type=password',authPayload(Object.fromEntries(new FormData(event.target)),authCheck));contractorSession.save(result);await load();event.target.reset();$('#message').textContent='Contractor workspace loaded.'}catch(e){clear();$('#message').textContent=e.message}finally{signingIn=false;authCheck?.reset();button.disabled=!authCheck}};
 $('#refresh').onclick=async()=>{try{await load();$('#message').textContent='Projects refreshed.'}catch(e){$('#message').textContent=e.message}};
 for(const id of ['status-filter','qualification-filter','sort-order'])$('#'+id).onchange=render;$('#project-search').oninput=render;
+$('#show-all-projects').onclick=()=>{linkedProject='';render()};
 $('#business-select').onchange=async()=>{workspace=$('#business-select').value;projects=[];render();try{await load()}catch(e){$('#message').textContent=e.message}};
 $('#signout').onclick=async()=>{const previous=contractorSession.peekToken();clear();$('#message').textContent='Signed out.';if(previous)try{await authCall('logout',undefined,previous)}catch{}};
 
