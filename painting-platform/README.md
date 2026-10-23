@@ -1,5 +1,35 @@
 # Buzzie: owned painting-services platform pilot
 
+## Coverage and assignment boundaries verified (October 22 update)
+
+Added ten mocked gateway cases and a self-contained live SQL rollback fixture
+for the pilot's coverage and assignment rules. The gateway rejects another
+provider/state, malformed ZIP and missing consent before network calls, and
+ignores client-submitted company/account/verification/source fields. RPC coverage
+requires the selected active, accepting company plus state, city list and ZIP
+prefix; it never falls back to an alternate company. Existing receipts keep their
+assignment across pause, deactivation and coverage edits; a different private key
+cannot replay them. Contact verification and account ownership are not implied.
+
+All **16 live SQL assertions passed** in isolated Supabase. Synthetic companies
+were active only inside the uncommitted transaction; the one synthetic project,
+lead and unclaimed outbox row were rolled back. Final fixture lead/company/project
+counts were **0/0/0**. Reviewed function-body hashes and a trigger guard fail closed
+before fixture inserts. No public intake, Auth, Storage or dispatcher was called;
+no real contractor was activated or changed. These are operator RPC checks, not
+full browser/JWT proof. See [tests/ROUTING.md](tests/ROUTING.md) for replay and limits.
+
+Validation: **12 browser modules linked; 263 mocked Node/DOM tests pass** through
+`npm run verify`; `git diff --check` passes. Tests and evidence are saved in code
+only. No production application source, migration, runtime setting or Site
+source/audience changed; no deployment was needed. Coverage is city-list/prefix
+matching, not address geocoding; external discovery remains separate.
+
+Next: verify request receipt and photo failure/retry states with the local-only
+browser fixture, including narrow-frame and keyboard behavior. Real email
+sender/redirect/delivery, actual abuse enforcement, full authenticated isolation
+and physical-device/screen-reader review remain December 1 launch gates.
+
 ## Recovery preserves a newer keyboard choice (October 22 update)
 
 Recovery completion now uses the same focus-ownership guard as email confirmation.

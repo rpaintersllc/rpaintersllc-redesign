@@ -146,3 +146,15 @@ the initiating focused control. Current verifier: 12 linked browser modules,
 **253 passing tests**. Only production account.js was published owner-private.
 This is mocked focus evidence, not a new browser/device walkthrough or genuine
 recovery/email/password verification.
+
+
+Coverage/assignment follow-up (October 22): `routing.test.mjs` adds ten injected-
+fetch gateway cases; the full command links **12 modules and passes 263 tests**.
+Separately, all **16 operator SQL routing assertions** passed in isolated Supabase;
+ROLLBACK left **0 fixture leads, 0 companies and 0 projects**. RPC/trigger hash and
+trigger-inventory guards ran before insertion; no real company row or public
+intake/Auth/Storage/worker endpoint was changed or called. Paused/deactivated/
+changed-coverage retries retained assignment, and new denials did not fall back.
+See [tests/ROUTING.md](tests/ROUTING.md) for safe replay and proof limits. Tests/docs
+only: no application, migration, runtime or Site deployment. Full JWT/browser,
+actual abuse enforcement, delivery and device gates remain separate.
