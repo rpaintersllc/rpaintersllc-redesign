@@ -2,6 +2,7 @@ import {api,$,STATUS,el,drawPhotos} from './common.js';
 import {authCall,prepareAuthCheck,authPayload} from './auth-session.js';
 import {mountConversation} from './conversation.js';
 import {createContractorSession} from './contractor-session.js';
+import {mountEstimate} from './estimates.js';
 const QUALIFICATION={unreviewed:'Needs review',qualified:'Qualified by your team',not_fit:'Not a fit'};
 let authCheck,signingIn=false;$('#signin button').disabled=true;
 let workspace='',projects=[],coverage=null,role='',generation=0;
@@ -56,6 +57,7 @@ function render(){
    }catch(e){if(currentStatus()){select.value=previous;$('#message').textContent=e.message}}
    finally{savingStatus=false;select.disabled=false;select.removeAttribute('aria-busy')}
   };
+  const estimateGeneration=generation;mountEstimate(card,{access,estimate:project.estimate,call,isCurrent:()=>estimateGeneration===generation&&workspace===access.business_id&&contractorSession.hasSession(),onSaved:value=>{project.estimate=value}});
   const details=el('details',undefined,card,'review-details');el('summary','Private contractor review',details);el('p','Visible only to your business team. Qualification is your assessment, not independent verification or a guarantee of a booked job.',details,'small');const form=el('form',undefined,details),qualLabel=el('label','Lead review',form),qual=el('select',undefined,qualLabel);for(const [value,text]of Object.entries(QUALIFICATION)){const option=new Option(text,value);option.selected=value===project.review.qualification;qual.append(option)}const noteLabel=el('label','Internal notes',form),note=el('textarea',undefined,noteLabel);note.maxLength=4000;note.value=project.review.notes;note.placeholder='Scope check, follow-up details, or why this request is a fit.';const button=el('button','Save private review',form);const saved=el('p',project.review.updated_at?'Last saved '+new Date(project.review.updated_at).toLocaleString('en-US'):'Not reviewed yet.',details,'small');saved.setAttribute('role','status');
   let savingReview=false;const reviewGeneration=generation;
   const currentReview=()=>reviewGeneration===generation&&workspace===access.business_id&&card.isConnected&&contractorSession.hasSession();

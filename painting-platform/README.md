@@ -1,5 +1,33 @@
 # Buzzie: owned painting-services platform pilot
 
+## Private contractor estimate amounts published (October 23 update)
+
+The contractor workspace now saves the latest private USD estimate per assigned
+project. Amounts use exact integer cents; membership/scope checks and optimistic
+revisions protect edits. The UI preserves newer input and requires refresh after
+an uncertain save or concurrent edit. Saving does not send a quote, charge anyone
+or alter the homeowner-visible project status.
+
+Added the server-only RLS table, invoker RPC, scoped API and project-card editor.
+The reviewed migration is `20261023180143_contractor_estimate_amounts.sql`.
+Platform-api v12 read-back matches the tested source. Published only pro.js and
+estimates.js to the same owner-private Site; deployment
+`appgdep_6adba2ad1c848191923f25f657c37c7c` succeeded. All other hosted assets
+match the branch baseline.
+
+Validation: **13 linked modules, 406 mocked tests, 20 live-database rollback
+checks**. All synthetic records were reverted; zero estimates are persisted.
+A 390 px Chromium fixture verified save/conflict UI with mocked transport.
+Unauthenticated live HTTP save rejected with 403; an authenticated live HTTP
+save, physical devices and screen readers remain unverified. No homeowner email,
+quote, payment, real project update, secret or Turnstile change occurred.
+
+Open contractor workspace → project → **Private estimate** to review.
+See [tests/ESTIMATES.md](tests/ESTIMATES.md) for evidence, synthetic capture,
+reproduction and remaining gates. Next: authenticated save/reload acceptance and
+homeowner privacy through the full UI; external delivery/SMTP and abuse gates
+remain independent.
+
 ## Contractor database acceptance journey verified (October 23 update)
 
 Added a reusable operator-only [22-check acceptance journey](tests/CONTRACTOR-JOURNEY.md)

@@ -32,6 +32,7 @@ function fixture(){
   if(url.pathname==='/storage/v1/object/platform-project-photos/synthetic/photo.jpg')return Response.json({});
   if(url.pathname==='/rest/v1/platform_photos'&&options.method==='PATCH')return Response.json([]);
   if(url.pathname==='/rest/v1/platform_project_reviews')return Response.json([]);
+  if(url.pathname==='/rest/v1/platform_project_estimates'){assert.equal(url.searchParams.get('business_id'),'eq.'+businessA);return Response.json([])}
   if(url.pathname==='/rest/v1/platform_businesses')return Response.json([{id:businessA}]);
   throw Error('Unexpected downstream operation: '+url.pathname);
  };
@@ -53,7 +54,7 @@ for(const action of homeownerActions)test('foreign homeowner cannot '+action+' o
 test('unconfirmed homeowner upload stops before database, reservation or storage',async()=>{
  const {handler,calls}=fixture();assert.equal((await handler(request('upload',{token:'unconfirmed',upload:true}))).status,404);assert.equal(calls.length,1);assert.equal(calls[0].path,'/auth/v1/user');
 });
-for(const action of ['pro-list','status','pro-review','pro-availability','conversation','message','visit-update'])test('membership cannot be replaced by a submitted foreign business for '+action,async()=>{
+for(const action of ['pro-list','status','pro-review','pro-availability','pro-estimate','conversation','message','visit-update'])test('membership cannot be replaced by a submitted foreign business for '+action,async()=>{
  const {handler,calls}=fixture();assert.equal((await handler(request(action,{token:'member-A',business:businessB}))).status,403);assert.equal(calls.length,2);assert.equal(calls[1].path,'/rest/v1/platform_business_members');
 });
 for(const action of ['conversation','message','visit-update'])test('approved member cannot use '+action+' on another company project',async()=>{

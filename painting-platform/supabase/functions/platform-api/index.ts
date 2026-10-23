@@ -86,11 +86,14 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
    let body={};if(request.method==='POST'){try{body=JSON.parse(new TextDecoder().decode(await boundedBody(request,12000)))}catch(error){if(error.message==='too_large')return json({error:'Request is too large'},413);return json({error:'Invalid request'},400)}}
    if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'Invalid request'},400);
    const text=k=>typeof body[k]==='string'?body[k].trim():'';
-   if(['pro-review','pro-availability'].includes(action)&&request.method==='POST'){
+   if(['pro-review','pro-availability','pro-estimate'].includes(action)&&request.method==='POST'){
     if(!UUID.test(text('business_id')))return json({error:'Workspace access required'},403);
     const access=await member(text('business_id'));if(!access)return json({error:'Workspace access required'},403);
     let result;
-    if(action==='pro-review'){
+    if(action==='pro-estimate'){
+     if(!UUID.test(text('project_id'))||!Number.isInteger(body.expected_revision)||body.expected_revision<0||body.expected_revision>=2147483647||!Number.isSafeInteger(body.amount_cents)||body.amount_cents<1||body.amount_cents>999999999)return json({error:'Enter a valid estimate amount and refresh the workspace before saving'},400);
+     result=await rpc('platform_save_estimate',{project:text('project_id'),business:access.business_id,actor:access.user.id,expected_revision:body.expected_revision,amount_value:body.amount_cents});
+    }else if(action==='pro-review'){
      if(!UUID.test(text('project_id'))||!Number.isInteger(body.expected_revision)||body.expected_revision<0||!['unreviewed','qualified','not_fit'].includes(text('qualification'))||typeof body.notes!=='string'||body.notes.length>4000)return json({error:'Check the review and notes (up to 4,000 characters)'},400);
      result=await rpc('platform_save_review',{project:text('project_id'),business:access.business_id,actor:access.user.id,expected_revision:body.expected_revision,qualification_value:text('qualification'),note_value:body.notes.trim()});
     }else{
@@ -164,9 +167,10 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
     const chosen=new URL(request.url).searchParams.get('business_id');if(chosen&&!UUID.test(chosen))return json({error:'Invalid workspace'},400);
     const access=await member(chosen);if(!access)return json({error:'An approved business account is required'},403);
     const projects=await db('platform_projects?select='+selection+'&business_id=eq.'+access.business_id+'&order=created_at.desc&limit=100');
-    const [reviews,profile]=await Promise.all([db('platform_project_reviews?select=project_id,qualification,notes,revision,updated_at&business_id=eq.'+access.business_id),db('platform_businesses?select=id,name,state,cities,zip_prefix,active,accepting_requests&id=eq.'+access.business_id)]);
+    const [reviews,profile,estimates]=await Promise.all([db('platform_project_reviews?select=project_id,qualification,notes,revision,updated_at&business_id=eq.'+access.business_id),db('platform_businesses?select=id,name,state,cities,zip_prefix,active,accepting_requests&id=eq.'+access.business_id),db('platform_project_estimates?select=project_id,amount_cents,currency,revision,updated_at&business_id=eq.'+access.business_id)]);
     const byProject=new Map(reviews.map(r=>[r.project_id,r]));
-    for(const project of projects){project.photos=await signedPhotos(project.photos);project.review=byProject.get(project.id)||{qualification:'unreviewed',notes:'',revision:0};}
+    const byEstimate=new Map(estimates.map(row=>[row.project_id,row]));
+    for(const project of projects){project.photos=await signedPhotos(project.photos);project.review=byProject.get(project.id)||{qualification:'unreviewed',notes:'',revision:0};project.estimate=byEstimate.get(project.id)||null;}
     return json({business:access.business,coverage:profile[0],role:access.role,memberships:access.memberships.map(m=>({business_id:m.business_id,name:m.business.name})),projects,can_review_interest:(env('ADMIN_USER_IDS')||'').split(',').includes(access.user.id)});
    }
    if(action==='interest-list'&&request.method==='GET'){
