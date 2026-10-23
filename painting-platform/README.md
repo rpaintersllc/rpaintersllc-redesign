@@ -1,5 +1,31 @@
 # Buzzie: owned painting-services platform pilot
 
+## Corrected request keyboard retry verified in Chromium (October 23 update)
+
+Repeated the previously blocked browser check using a freshly generated local
+synthetic fixture from GitHub baseline `815ca90`. At a **390 px desktop frame**,
+Enter on submit produced the simulated unsaved-create failure; submit became
+enabled and retained focus. A second Enter reached the saved receipt, and Tab
+reached Open project. Document and scroll widths were both **375 px**; counters
+showed **two synthetic create calls and zero uploads**. No Open project navigation
+or genuine intake/Auth/email call was made.
+
+This closes the specific pending browser repeat for the earlier request-focus
+correction. Production source is unchanged; this run adds review evidence only.
+The fixture's production JS/CSS/assets matched the branch byte-for-byte; its
+network stub and CSP prevented external connections. Captures and detailed steps
+are in [tests/REQUEST-BROWSER-QA.md](tests/REQUEST-BROWSER-QA.md).
+
+Fresh verification: **12 browser modules linked; 351 mocked tests pass**;
+`git diff --check` passes. Documentation and captures are saved in GitHub only;
+no Site publication, Supabase/configuration or audience change occurred.
+
+Next: review authenticated account/project/conversation browser journeys with
+isolated fixtures; physical devices, screen readers, real email delivery and
+actual abuse enforcement remain separate December 1 gates. Publishing pending
+conversation changes still requires source reconciliation after authorization
+recovery, as documented below.
+
 ## Retired conversation panels stop acting (October 23 update)
 
 Detached panels and panels replaced in the same target now reject retained

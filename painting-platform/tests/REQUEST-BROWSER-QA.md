@@ -158,3 +158,48 @@ appgdep_6adadbea59088191886d7eebe9787f10. Hosted baseline matched GitHub before
 editing; no fixture was published or backend setting/contractor/audience changed.
 Next review project-workspace link/refresh feedback with isolated session races;
 repeat the corrected browser keyboard flows when supported observation is available.
+
+
+## Corrected failure/retry browser repeat — October 23
+
+The previously blocked browser repeat is now completed in desktop Chromium.
+A fresh checkout of GitHub `815ca90` generated a fresh local-only fixture; Sites
+preview was fully started before the tab opened. Production JS/CSS/assets were
+compared byte-for-byte with that checkout; HTML retained only the documented
+fixture CSP/stub/control additions. The preview was stopped after review.
+
+At `create-retry` / **390 px**, the production form was completed with synthetic
+example.invalid contact data, no photos and the local consent checkbox. Actions
+and observations:
+
+1. Selected service and filled scope, city, ZIP and timing. Enter on the second
+   Continue button moved to the contact-step heading.
+2. Enter on Request my free estimate produced the synthetic unsaved-create 503.
+   The error became visible, Back/submit re-enabled and submit held keyboard
+   focus (`activeElement === submit`, `disabled === false`). Fields/consent were
+   retained. Counters: one synthetic create, zero uploads.
+3. A second Enter reached the saved receipt. Its copy accurately identifies
+   R Painters as the participating pilot company and says this is not a booking.
+4. Tab from the focused receipt reached Open project, confirmed with a read-only
+   DOM focus assertion. Final counters: two synthetic creates, zero uploads.
+   Document/scroll widths both measured **375 px**, without horizontal overflow.
+
+This verifies the earlier production focus correction in a real browser. It
+adds evidence, not another implementation change. The full verifier remains
+**12 modules / 351 mocked tests passing**; `git diff --check` passes.
+
+![Enabled submit receives focus after synthetic failure](evidence/request-retry-focus-390.jpg)
+
+![Tab reaches Open project from the synthetic receipt](evidence/request-retry-receipt-390.jpg)
+
+Both screenshots contain synthetic data only; their project/key URL has no
+corresponding backend project. The fixture never forwarded fetch and blocked
+external connections with CSP. No Open project navigation, genuine request,
+upload, account, email or notification was made. Fixture/screenshots were not
+published to the Site. Physical devices, screen readers, delayed focus-choice
+races (covered by existing mocked tests), full authenticated browser isolation,
+real delivery and abuse enforcement remain separate launch evidence.
+
+Next: authenticated account/project/conversation browser journeys with isolated
+fixtures, plus reconciliation/publication of pending production conversation
+changes after Sites publishing authorization recovers.

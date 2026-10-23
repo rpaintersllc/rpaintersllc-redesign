@@ -274,3 +274,15 @@ remains 40 and does not include this correction; no publication retry or access
 change occurred. Reconcile pending GitHub web changes before the next packaging.
 No server cancellation, idle logout observer or complete JWT isolation is claimed.
 See tests/CONVERSATION-LIFECYCLE.md for reproducible evidence and limits.
+
+
+Request retry browser repeat (October 23): fresh Chromium review of baseline
+815ca90 at 390px passed the previously blocked corrected failure/retry keyboard
+path. Enter on submit -> synthetic 503 -> enabled/focused submit -> second Enter
+-> focused receipt -> Tab -> Open project. Document and scroll widths: 375px;
+two synthetic create calls, zero uploads. Fixture JS/CSS/assets matched the
+production baseline; no live intake/Auth/Storage/email or Open project navigation.
+Full local verifier still links 12 modules and passes 351 tests; diff check passes.
+Evidence-only GitHub update, no production source, Site, Supabase or permission
+change. tests/REQUEST-BROWSER-QA.md links captured failure and receipt screenshots.
+Narrow desktop frames do not prove physical-mobile or screen-reader behavior.
