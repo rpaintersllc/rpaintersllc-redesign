@@ -61,9 +61,10 @@ document.addEventListener('click', event => {
 
 // Conversion measurement: record useful lead actions without personal information.
 document.addEventListener('DOMContentLoaded', () => {
-  if (typeof window.gtag === 'function') {
+  const estimatePage = document.querySelector('main.estimate-page');
+  if (estimatePage && typeof window.gtag === 'function') {
     window.gtag('event', 'lead_page_view', {
-      page_type: document.querySelector('main.estimate-page') ? 'estimate' : 'marketing',
+      page_type: 'estimate',
       page_path: window.location.pathname
     });
   }
