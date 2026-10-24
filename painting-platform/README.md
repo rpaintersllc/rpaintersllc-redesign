@@ -1,5 +1,25 @@
 # Buzzie: owned painting-services platform pilot
 
+## Session revocation prerequisite applied; API integration pending
+
+The isolated database now has a narrow server-only active-session lookup,
+preserved in migration 20261023210328_active_account_session_gate.sql.
+Read-back confirmed its definition and EXECUTE restricted to service_role,
+with anon/authenticated denied. It checks session ownership, presence and
+explicit not_after expiry without exposing authentication rows.
+
+**This does not yet change application authorization.** Deployed platform-api
+remains v13 and does not call the lookup. The rollback SQL fixture is prepared
+but has no completed result; no passing database journey is claimed.
+The local runtime became unavailable before tested API changes could be
+durably recovered. No API or Site publication was performed for this step.
+
+Next: restore Node 24 execution, inspect any incomplete fixture transaction,
+complete the shared Auth-plus-session gate and its mocked/rollback tests,
+then save with a branch-head lease before isolated API deployment.
+See [tests/SESSION-REVOCATION.md](tests/SESSION-REVOCATION.md) for evidence,
+exact implementation steps and the remaining signed-URL/capability limits.
+
 ## Latest-message summaries published in contractor inbox (October 23 update)
 
 Assigned project cards now show the latest message's author/date, with a
