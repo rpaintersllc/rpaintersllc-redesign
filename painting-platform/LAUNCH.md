@@ -1,3 +1,14 @@
+# Verified progress — October 28, 2026: shared account compatibility
+
+Lead Engine private sign-in now supports the dedicated two-host account widget
+and native CAPTCHA payload. 43 mocked Lead Engine tests pass, including 7 new
+cases. Its owner-private Site publication succeeded. Existing intake widgets and
+the Buzzie Site were unchanged. Native Auth CAPTCHA is NOT active: the connected
+browser stopped responding before Buzzie public-key/native configuration.
+See operations/ACCOUNT-CAPTCHA-COMPATIBILITY-2026-10-28.md for publication evidence,
+remaining activation order and rollback source. No genuine new login or email
+verification is claimed in this run.
+
 # Verified progress — October 28, 2026: intake Turnstile active
 
 Turnstile is now enforced for Buzzie painting requests and company-interest

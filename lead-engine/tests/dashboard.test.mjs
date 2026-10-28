@@ -2,8 +2,9 @@ import {test} from 'node:test';import assert from 'node:assert/strict';import {r
 const require=createRequire(new URL('../discovery/package.json',import.meta.url));const {parseHTML}=require('linkedom');
 test('dashboard wires sign-in, discovery view, source setup, scan and sign-out with mocked services',async()=>{
  const html=await readFile(new URL('../web/admin.html',import.meta.url),'utf8');const {document}=parseHTML(html);
- const originals={document:globalThis.document,fetch:globalThis.fetch,FormData:globalThis.FormData,Option:globalThis.Option};
+ const originals={window:globalThis.window,document:globalThis.document,fetch:globalThis.fetch,FormData:globalThis.FormData,Option:globalThis.Option};
  globalThis.document=document;
+ globalThis.window={turnstile:{render(_target,options){options.callback("synthetic-proof");return 1},reset(){}}};
  globalThis.Option=function(text,value){const el=document.createElement('option');el.textContent=text;el.value=value;return el};
  globalThis.FormData=class{constructor(form){this.entries=[...form.querySelectorAll('input[name]')].map(el=>[el.name,el.value])}*[Symbol.iterator](){yield* this.entries}};
  let connected=false;const calls=[];

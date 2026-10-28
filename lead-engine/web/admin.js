@@ -1,6 +1,11 @@
 import {config} from './config.js';
+import {createAccountCheck} from './auth-check.js';
 import {showDiscoveryStatus,showDiscoveryEvidence} from './discovery.js';
 const $=s=>document.querySelector(s),message=$('#message');let accessToken='',rows=[];
+let accountCheck,signingIn=false;
+const signinButton=$('#signin button');
+signinButton.disabled=true;
+createAccountCheck(config.accountTurnstileSiteKey,$('#account-check')).then(check=>{accountCheck=check;signinButton.disabled=false}).catch(()=>{message.textContent='Security check could not load. Refresh before signing in.'});
 const discoveryStatus=document.createElement('div');discoveryStatus.id='discovery-status';discoveryStatus.setAttribute('role','status');$('#opportunity-tools').prepend(discoveryStatus);
 const labels={new:'New',contacted:'Contacted',visit_scheduled:'Visit scheduled',quoted:'Quoted',won:'Won',lost:'Lost'};
 function node(tag,text,parent){const el=document.createElement(tag);el.textContent=text;parent.append(el);return el}
@@ -11,7 +16,21 @@ async function load(){message.textContent='Loading…';$('#opportunity-tools').h
  const cards=$('#records').querySelectorAll('article');rows.forEach((row,index)=>{if(cards[index])showDiscoveryEvidence(row,cards[index])});
  await showDiscoveryStatus(async()=>{const response=await fetch(config.supabaseUrl+'/functions/v1/admin-leads?action=discovery-status',{headers:{apikey:config.publishableKey,authorization:'Bearer '+accessToken},signal:AbortSignal.timeout(20000)});const result=await response.json();if(!response.ok)throw Error(result.error||'Unable to load discovery status');return result},$('#discovery-status'));
 }message.textContent='Records updated.'}catch(e){$('#records').replaceChildren();message.textContent=e.message}}
-$('#signin').onsubmit=async event=>{event.preventDefault();const button=event.target.querySelector('button');button.disabled=true;try{if(!config.publishableKey)throw Error('Project configuration is incomplete.');const response=await fetch(config.supabaseUrl+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:config.publishableKey,'content-type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(event.target)))});const data=await response.json();if(!response.ok)throw Error('Check your email and password.');accessToken=data.access_token;event.target.reset();await api();$('#login').hidden=true;$('#controls').hidden=false;await load()}catch(e){clear();message.textContent=e.message}finally{button.disabled=false}};
+$('#signin').onsubmit=async event=>{
+ event.preventDefault();if(signingIn)return;
+ const button=event.target.querySelector('button');signingIn=true;button.disabled=true;
+ try{
+  if(!config.publishableKey)throw Error('Project configuration is incomplete.');
+  if(!accountCheck)throw Error('Security check is still loading. Refresh before signing in.');
+  const captchaToken=accountCheck.token();
+  const response=await fetch(config.supabaseUrl+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:config.publishableKey,'content-type':'application/json'},body:JSON.stringify({...Object.fromEntries(new FormData(event.target)),gotrue_meta_security:{captcha_token:captchaToken}}),signal:AbortSignal.timeout(15000)});
+  const data=await response.json();
+  if(!response.ok)throw Error(data.error_code==='captcha_failed'?'Complete the security check again before signing in.':'Check your email and password.');
+  if(typeof data.access_token!=='string'||!data.access_token)throw Error('Sign-in could not be confirmed. Please try again.');
+  accessToken=data.access_token;event.target.reset();await api();$('#login').hidden=true;$('#controls').hidden=false;await load();
+ }catch(e){clear();message.textContent=e.message}
+ finally{accountCheck?.reset();signingIn=false;button.disabled=!accountCheck}
+};
 $('#logout').onclick=async()=>{const token=accessToken;clear();message.textContent='Signed out.';try{await fetch(config.supabaseUrl+'/auth/v1/logout',{method:'POST',headers:{apikey:config.publishableKey,authorization:'Bearer '+token}})}catch{}};
 $('#refresh').onclick=load;$('#kind').onchange=()=>{$('#filter').hidden=$('#kind').value!=='leads';$('#opportunity-tools').hidden=$('#kind').value!=='opportunities';load()};$('#filter').onchange=render;
 // Tokens stay in memory and disappear on reload; never persist credentials locally.
