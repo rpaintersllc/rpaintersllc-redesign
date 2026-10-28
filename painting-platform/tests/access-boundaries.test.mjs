@@ -1,9 +1,12 @@
+import {jwt} from './session-fixture.mjs';
 // Synthetic API access matrix: never connects to Supabase or real storage.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 const source=await readFile(new URL('../supabase/functions/platform-api/index.ts',import.meta.url),'utf8');
-const {makePlatformHandler}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {makePlatformHandler:rawHandler}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const makePlatformHandler=(env,fetcher)=>rawHandler(env,(url,options)=>url.endsWith('/rpc/platform_active_session')?Response.json(true):fetcher(url,options));
+
 const id=n=>`${String(n).padStart(8,'0')}-1111-4111-8111-111111111111`;
 const ownerA=id(1),ownerB=id(2),businessA=id(3),businessB=id(4),projectA=id(5),projectB=id(6),memberA=id(7),photo=id(8),requestKey=id(9);
 const origin='https://r-painters-projects.jessicuriel27.chatgpt.site',base='https://fixture.invalid';
@@ -14,7 +17,7 @@ function fixture(){
  const fetcher=async(raw,options={})=>{
   const url=new URL(raw);assert.equal(url.origin,base);calls.push({path:url.pathname,params:url.searchParams,method:options.method||'GET'});
   if(url.pathname==='/auth/v1/user'){
-   const token=options.headers.authorization?.slice(7),id=token==='member-A'?memberA:token==='owner-A'?ownerA:ownerB;
+   const token=JSON.parse(Buffer.from(options.headers.authorization.split('.')[1],'base64url')).label,id=token==='member-A'?memberA:token==='owner-A'?ownerA:ownerB;
    return Response.json({id,email:'synthetic@example.invalid',...(token==='unconfirmed'?{}:{email_confirmed_at:'2026-10-22'})});
   }
   if(url.pathname==='/rest/v1/platform_business_members'){
@@ -39,7 +42,7 @@ function fixture(){
  return {handler:makePlatformHandler(env,fetcher),calls};
 }
 function request(action,{token='owner-B',project=projectA,business,upload=false}={}){
- const headers={origin,authorization:'Bearer '+token,'content-type':upload?'image/jpeg':'application/json'};
+ const headers={origin,authorization:'Bearer e30.'+Buffer.from(JSON.stringify({sub:token==='member-A'?memberA:token==='owner-A'?ownerA:ownerB,session_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',label:token})).toString('base64url')+'.synthetic','content-type':upload?'image/jpeg':'application/json'};
  if(upload){headers['x-project-id']=project;return new Request('https://api.invalid/?action=upload',{method:'POST',headers,body:new Uint8Array([255,216,255,0])})}
  const body={project_id:project,owner_user_id:ownerA,account_id:ownerA,actor:ownerA,...(business?{business_id:business}:{}),request_key:requestKey,message:'Synthetic message',preferred_date:'2026-11-02',time_window:'Morning',visit_id:id(10),decision:business?'confirmed':'cancelled',status:'quoted',qualification:'qualified',notes:'Synthetic private note',expected_revision:0,accepting_requests:false,expected_current:true};
  return new Request('https://api.invalid/?action='+action+(action==='pro-list'?'&business_id='+business:''),{method:action==='pro-list'?'GET':'POST',headers,...(action==='pro-list'?{}:{body:JSON.stringify(body)})});

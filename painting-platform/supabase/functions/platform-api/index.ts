@@ -41,8 +41,20 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
    }catch{return json({error:'Request verification is temporarily unavailable. Please try again.'},503)}
   }
 
-  let userPromise;
-  const user=()=>userPromise||(userPromise=(async()=>{const authorization=request.headers.get('authorization')||'';if(!authorization.startsWith('Bearer '))return null;const response=await fetcher(base+'/auth/v1/user',{headers:{apikey:key,authorization},signal:AbortSignal.timeout(8000)});if(!response.ok)return null;const result=await response.json();return result?.id&&result?.email_confirmed_at?result:null})());
+  // Decode session identity only after Auth has verified this exact bearer.
+  let identityPromise;
+  const identity=()=>identityPromise||(identityPromise=(async()=>{
+   const authorization=request.headers.get('authorization')||'';
+   if(!authorization.startsWith('Bearer '))return null;
+   const response=await fetcher(base+'/auth/v1/user',{headers:{apikey:key,authorization},signal:AbortSignal.timeout(8000)});
+   if(!response.ok)return null;
+   const account=await response.json();if(!account?.id)return null;
+   let claims;try{const parts=authorization.slice(7).split('.');if(parts.length!==3)return null;claims=JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')))}catch{return null}
+   const sessionId=claims?.session_id;
+   if(claims?.sub!==account.id||typeof sessionId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId))return null;
+   return await rpc('platform_active_session',{account_id:account.id,session:sessionId})===true?account:null;
+  })());
+  const user=async()=>{const account=await identity();return account?.email_confirmed_at?account:null};
   async function homeProject(projectId,token){
    if(!UUID.test(projectId))return null;
    let filter;if(TOKEN.test(token||''))filter='&access_hash=eq.'+await digest(token);else{const account=await user();if(!account)return null;filter='&owner_user_id=eq.'+encodeURIComponent(account.id)}
@@ -52,8 +64,7 @@ export function makePlatformHandler(env,fetcher=fetch,defer=p=>p.catch(()=>{})){
    try{const res=await fetcher(base+'/storage/v1/object/sign/platform-project-photos/'+p.storage_path,{method:'POST',headers:dbHeaders,body:JSON.stringify({expiresIn:1800}),signal:AbortSignal.timeout(8000)});if(!res.ok)return {id:p.id,unavailable:true};const data=await res.json();const path=data.signedURL||data.signedUrl;return {id:p.id,url:path?.startsWith('/')?base+'/storage/v1'+path:path}}catch{return {id:p.id,unavailable:true}}
   }));
   async function member(businessId){
-   const authorization=request.headers.get('authorization')||'';if(!authorization.startsWith('Bearer '))return null;
-   const response=await fetcher(base+'/auth/v1/user',{headers:{apikey:key,authorization},signal:AbortSignal.timeout(8000)});if(!response.ok)return null;const user=await response.json();
+   const user=await identity();if(!user)return null;
    const memberships=await db('platform_business_members?select=business_id,role,business:platform_businesses(id,slug,name)&user_id=eq.'+encodeURIComponent(user.id));
    const membership=businessId?memberships.find(m=>m.business_id===businessId):memberships[0];return membership?{...membership,user,memberships}:null;
   }

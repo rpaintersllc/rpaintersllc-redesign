@@ -1,9 +1,12 @@
+import {jwt} from './session-fixture.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
 const source=await readFile(new URL('../supabase/functions/platform-api/index.ts',import.meta.url),'utf8');
-const {makePlatformHandler}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {makePlatformHandler:rawHandler}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const makePlatformHandler=(env,fetcher)=>rawHandler(env,(url,options)=>url.endsWith('/rpc/platform_active_session')?Response.json(true):fetcher(url,options));
+
 const project='11111111-1111-4111-8111-111111111111',business='22222222-2222-4222-8222-222222222222',actor='33333333-3333-4333-8333-333333333333',foreign='44444444-4444-4444-8444-444444444444';
 const env=k=>({SUPABASE_URL:'https://test.invalid',SUPABASE_SERVICE_ROLE_KEY:'server-only'}[k]);
-const request=(action,body,token='test')=>new Request('https://api.invalid/?action='+action,{method:body?'POST':'GET',headers:{origin:'https://r-painters-projects.jessicuriel27.chatgpt.site','content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});
+const request=(action,body,token=jwt(actor))=>new Request('https://api.invalid/?action='+action,{method:body?'POST':'GET',headers:{origin:'https://r-painters-projects.jessicuriel27.chatgpt.site','content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});
 function handler(run,roleBusiness=business){return makePlatformHandler(env,async(url,options)=>{if(url.includes('/auth/'))return Response.json({id:actor,email_confirmed_at:'2026-10-01'});if(url.includes('platform_business_members'))return Response.json([{business_id:roleBusiness,role:'owner',business:{id:roleBusiness,name:'Synthetic company'}}]);return run(url,options)})}
 const body={project_id:project,business_id:business,amount_cents:250001,expected_revision:0};
 test('estimate save requires business sign-in',async()=>{let calls=0;const h=handler(()=>{calls++;return Response.json({})});const r=await h(request('pro-estimate',body,''));assert.equal(r.status,403);assert.equal(calls,0)});

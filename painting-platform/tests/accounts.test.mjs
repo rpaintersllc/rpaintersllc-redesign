@@ -1,12 +1,15 @@
+import {jwt} from './session-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {emailConfirmation} from '../web/auth-session.js';
 const source=await readFile(new URL('../supabase/functions/platform-api/index.ts',import.meta.url),'utf8');
-const {makePlatformHandler}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {makePlatformHandler:rawHandler}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const makePlatformHandler=(env,fetcher)=>rawHandler(env,(url,options)=>url.endsWith('/rpc/platform_active_session')?Response.json(true):fetcher(url,options));
+
 const env=k=>({SUPABASE_URL:'https://db.invalid',SUPABASE_SERVICE_ROLE_KEY:'server-only'}[k]);
 const project='11111111-1111-4111-8111-111111111111',account='22222222-2222-4222-8222-222222222222';
-function request(action,body,token='test-jwt'){return new Request('https://api.invalid/?action='+action,{method:body?'POST':'GET',headers:{origin:'https://r-painters-projects.jessicuriel27.chatgpt.site','content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})})}
+function request(action,body,token=jwt(account)){return new Request('https://api.invalid/?action='+action,{method:body?'POST':'GET',headers:{origin:'https://r-painters-projects.jessicuriel27.chatgpt.site','content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})})}
 test('homeowner project list rejects unconfirmed emails and missing sessions',async()=>{for(const token of ['', 'jwt']){let reads=0;const h=makePlatformHandler(env,async()=>{reads++;return Response.json({id:account,email:'test@example.invalid'})});assert.equal((await h(request('home-projects',undefined,token))).status,401);assert.equal(reads,token?1:0)}});
 test('account project lists use the server-verified user id',async()=>{let query;const h=makePlatformHandler(env,async url=>{if(url.includes('/auth/'))return Response.json({id:account,email:'test@example.invalid',email_confirmed_at:'2026-10-20'});query=url;return Response.json([])});assert.equal((await h(request('home-projects'))).status,200);assert.match(query,new RegExp('owner_user_id=eq.'+account));assert.doesNotMatch(query,/access_hash/)});
 test('another account cannot open a project by guessing its id',async()=>{let calls=0;const h=makePlatformHandler(env,async url=>{calls++;return Response.json(url.includes('/auth/')?{id:account,email_confirmed_at:'2026-10-20'}:[])});assert.equal((await h(request('lookup',{project_id:project}))).status,404);assert.equal(calls,2)});
