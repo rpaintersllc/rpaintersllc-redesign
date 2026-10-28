@@ -1,3 +1,18 @@
+# Verified progress — October 28, 2026: intake Turnstile active
+
+Turnstile is now enforced for Buzzie painting requests and company-interest
+submissions. Missing tokens returned 400 and invalid tokens returned 403 on both
+API paths. A genuine Edge request with automatic Turnstile verification was saved,
+its project/conversation opened, and its owner alert reached Gmail at 2:39:04 PM
+Eastern. The retained test project is 72cbf1f5-34f7-4af1-8270-c5cc00aeb62a.
+See operations/TURNSTILE-ACTIVATION-2026-10-28.md for evidence and limits.
+
+Native Auth CAPTCHA remains disabled because this Supabase Auth service is shared
+with the Lead Engine admin, whose current sign-in lacks captcha proof. Do not
+enable it until that compatibility/isolation is resolved. The Lead Engine widget
+and secret were unchanged. Custom SMTP and external homeowner account delivery
+remain launch blockers. The Site remains private; billing remains off.
+
 # Verified progress — October 28, 2026
 
 The pending server session gate is now deployed as ACTIVE platform-api v14.
