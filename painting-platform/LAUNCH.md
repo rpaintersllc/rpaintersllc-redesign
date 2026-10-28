@@ -1,3 +1,21 @@
+# Verified progress — October 28, 2026
+
+The pending server session gate is now deployed as ACTIVE platform-api v14.
+Read-back exactly matches the tested source. The existing contractor session
+refreshed the project list and loaded the labelled test conversation in Edge.
+Four genuine HTTP smoke checks passed (200/401/403/403). The earlier 458 mocked
+checks and 11 rollback SQL assertions are supporting evidence, not a new full
+login/logout browser walkthrough. See tests/SESSION-REVOCATION.md for scope,
+rollback source and limitations.
+
+Remaining launch blockers confirmed today: intake Turnstile and native Auth
+CAPTCHA are disabled; Cloudflare requires the owner to sign in again before
+secret configuration can continue. Supabase custom SMTP is disabled. A sender
+address/provider and external homeowner confirmation/recovery delivery remain
+unconfigured/unverified. No public access, billing, lead status or real message
+was changed. An attempted viewport override did not resize the contractor tab;
+no new mobile acceptance is claimed.
+
 ## Verified progress — October 23, 2026
 
 The request-to-owner-email path now has genuine delivery evidence, separate from
