@@ -1,8 +1,8 @@
 # Server session-revocation gate
 
-## Prepared October 28, 2026 — deployment blocked
+## Active October 28, 2026 — platform-api v14
 
-The tested replacement for platform-api verifies the exact bearer with Supabase Auth, checks that
+The deployed platform-api verifies the exact bearer with Supabase Auth, checks that
 its decoded sub matches the verified account, and passes its UUID session_id
 and verified account ID to the existing service-only platform_active_session RPC.
 Both homeowner and contractor authorization share this check per request.
@@ -32,13 +32,10 @@ No real account, password, message, visit or customer record was modified.
 Before replacement, live platform-api v13 read-back matched the prior baseline.
 Deploy only this isolated project's platform-api, preserving verify_jwt=false
 because it authenticates requests itself and supports public/guest routes.
-The automatic approval reviewer rejected deployment because replacing the live API
-changes authentication behavior and it did not recognize explicit authorization
-for that deployment. No workaround was attempted. Live v13 is unchanged and does
-not yet invoke this gate. User approval for that exact replacement is pending.
+After explicit user authorization, deployment succeeded: platform-api v14 is ACTIVE.\nA fresh get_edge_function read-back matched the tested GitHub source exactly.\nRollback source remains in GitHub at commit\n914bc829f3e9566efe641b5f3e988a18f04dc226 (platform-api/index.ts); the prior\nlive v13 files were also retained in session memory before replacement.\n\nFour genuine post-deploy HTTP checks passed: providers 200, unauthenticated\nhome-projects 401, unauthenticated pro-list 403, foreign Origin providers 403.\nIn the connected Edge browser, the existing authorized contractor session\nsuccessfully refreshed projects (Projects refreshed.) and read the labelled\nOctober 23 test conversation (Conversation up to date.). No message, visit,\nestimate, status, password or customer data was changed.\n\nTurnstile remains off: providers reports intake/auth required=false and blank\npublic keys; native Auth CAPTCHA is visibly disabled. Cloudflare requires a\nfresh user sign-in, so no secret transfer or activation was attempted. Custom\nSMTP is visibly disabled in Supabase; sender and external delivery remain gates.\nThe attempted 390px viewport override did not apply to the contractor tab\n(measured 1528px); it was reset. No new mobile verification is claimed.
 Site files, audience, billing, Turnstile and email settings are unchanged.
 
-Real login/logout browser acceptance remains pending. Successful server logout
+A fresh login/logout and revoked-token browser acceptance remain pending. Successful server logout
 must remove the session before later requests are denied. A request already
 in progress can finish, signed photo URLs remain valid up to 30 minutes, and
 guest capability links remain a separate access mechanism. Session presence does
