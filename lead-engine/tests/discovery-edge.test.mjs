@@ -68,3 +68,7 @@ test('opportunity notification uses separate queue and idempotency key with fixe
  let sent;const fetcher=async(url,o)=>{if(url.endsWith('claim_opportunity_notification'))return Response.json({id:'job',opportunity_id:'opportunity',lease_token:'lease'});if(url==='https://api.resend.com/emails'){sent=o;return Response.json({id:'provider'})}if(url.endsWith('finish_opportunity_notification'))return Response.json(true);throw Error('Unexpected endpoint')};
  const result=await (await makeOpportunityNotifyHandler(env,fetcher)(req())).json();assert.equal(result.status,'accepted');assert.equal(sent.headers['Idempotency-Key'],'opportunity-alert/job');assert.deepEqual(JSON.parse(sent.body).to,['rpaintersinsc@gmail.com']);assert.match(JSON.parse(sent.body).text,/Review the original source/);
 });
+test('Spanish homeowner intent is eligible while ads, closed work and other cities remain excluded',()=>{
+ for(const title of ['Busco un pintor en Summerville','¿Alguien que recomienda para pintar mi casa en Charleston?','Necesito reparar drywall en Goose Creek'])assert.ok(qualify({...item,title,summary:''},'homeowner_request',clock).row,title);
+ for(const title of ['Ofrecemos pintura en Summerville. Presupuestos gratis','Busco pintor Charleston, ya encontré uno','Necesito pintor en Boston','Se solicitan pintores en Summerville','Necesito instalar gabinetes en Summerville'])assert.ok(qualify({...item,title,summary:''},'homeowner_request',clock).reason,title);
+});

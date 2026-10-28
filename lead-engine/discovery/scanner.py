@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import unicodedata
 from urllib import error, parse, request, robotparser
 import xml.etree.ElementTree as ET
 from zoneinfo import ZoneInfo
@@ -26,15 +27,15 @@ LOCATIONS = ('charleston', 'summerville', 'mount pleasant', 'north charleston',
              'johns island', 'daniel island', 'cane bay', 'isle of palms',
              "sullivan's island", 'folly beach', 'moncks corner', 'kiawah', 'seabrook')
 SERVICE = re.compile(r'\b(paint(?:er|ers|ing|ed|s)?|repaint(?:ing|ed)?|drywall|sheetrock|'
-                     r'cabinet refinishing|popcorn (?:ceiling|removal)|(?:deck|fence) stain(?:ing)?)\b', re.I)
+                     r'cabinet refinishing|pint(?:or(?:es)?|ura|ar)|yeso|popcorn (?:ceiling|removal)|(?:deck|fence) stain(?:ing)?)\b', re.I)
 INTENT = re.compile(r'\b(looking for|need(?:ing)?|seeking|recommend(?:ation|ations)?|'
                     r'can anyone|iso|in search of|request(?:ing)? (?:a )?(?:quote|estimate)|'
-                    r'who (?:can|does)|wanted|solicit(?:ing)?)\b', re.I)
+                    r'who (?:can|does)|wanted|solicit(?:ing)?|busco|buscando|necesito|necesitamos|recomienda(?:n)?|recomendaciones|alguien que)\b', re.I)
 ADVERTISEMENT = re.compile(r'\b(we (?:offer|provide|specialize)|our (?:painting|services|company)|'
                             r'call (?:us|today)|free estimates|now hiring|painters? wanted|'
-                            r'jobs? available|join our (?:team|crew))\b', re.I)
+                            r'jobs? available|join our (?:team|crew)|ofrecemos|nuestros servicios|estimados gratis|presupuestos gratis|se solicita(?:n)? pintor(?:es)?)\b', re.I)
 NEGATIVE = re.compile(r'\b(no longer (?:need|looking)|found (?:a|our) painter|'
-                       r'position filled|bid (?:closed|cancelled|canceled)|already hired)\b', re.I)
+                       r'position filled|bid (?:closed|cancelled|canceled)|already hired|ya (?:encontre|contrate)|ya no (?:necesito|busco))\b', re.I)
 
 
 def now_iso():
@@ -93,7 +94,7 @@ def date_value(value):
 
 def qualify(item, kind, clock=None):
     clock = clock or datetime.now(UTC)
-    text = item['title'] + ' ' + item.get('summary', '')
+    text = ''.join(c for c in unicodedata.normalize('NFD', item['title'] + ' ' + item.get('summary', '')) if not unicodedata.combining(c))
     if re.search(r'\b(?:Charleston[, ]+(?:WV|West Virginia)|Summerville[, ]+(?:GA|Georgia))\b', text, re.I):
         return None, 'outside_service_area'
     if not SERVICE.search(text): return None, 'unrelated_service'

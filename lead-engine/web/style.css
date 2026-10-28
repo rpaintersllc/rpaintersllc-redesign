@@ -3,3 +3,5 @@ code{display:block;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.9rem;b
 
 /* Approved BUZZIE palette: forest background, pearl lettering. */
 :root{color-scheme:dark}header{background:#163d30;color:#f5f3ed}section,article{background:#1b4839;color:#f5f3ed}input,select,textarea{background:#1b4839;color:#f5f3ed}input::placeholder,textarea::placeholder{color:#c1d0c6;opacity:1}button,.button{background:#f5f3ed;color:#163d30}button:hover,.button:hover{background:#dce8dd}button.secondary{background:transparent;color:#f5f3ed;border:1px solid #8da598}button.secondary:hover{background:#285441}a,header a{color:#f5f3ed}code{background:#204c3c;color:#f5f3ed}:focus-visible{outline:2px solid #f5f3ed;outline-offset:3px}
+
+.record-filters{margin-top:20px;align-items:flex-end}.record-filters label{flex:1;min-width:150px;font-size:.9rem}.record-filters input,.record-filters select{width:100%;margin:7px 0 0}.contact-actions{margin-bottom:18px}.contact-actions a{padding:10px 16px;border:1px solid #8da598;border-radius:7px}.reply-copy{margin:8px 0 18px}

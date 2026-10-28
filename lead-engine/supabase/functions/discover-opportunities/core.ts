@@ -1,7 +1,7 @@
-const SERVICE=/\b(paint(?:er|ers|ing|ed|s)?|repaint(?:ing|ed)?|drywall|sheetrock|cabinet refinishing|popcorn (?:ceiling|removal)|(?:deck|fence) stain(?:ing)?)\b/i;
-const INTENT=/\b(looking for|need(?:ing)?|seeking|recommend(?:ation|ations)?|can anyone|iso|in search of|request(?:ing)? (?:a )?(?:quote|estimate)|who (?:can|does)|wanted|solicit(?:ing)?)\b/i;
-const AD=/\b(we (?:offer|provide|specialize)|our (?:painting|services|company)|call (?:us|today)|free estimates|now hiring|painters? wanted|jobs? available|join our (?:team|crew))\b/i;
-const CLOSED=/\b(no longer (?:need|looking)|found (?:a|our) painter|position filled|bid (?:closed|cancelled|canceled)|already hired)\b/i;
+const SERVICE=/\b(paint(?:er|ers|ing|ed|s)?|repaint(?:ing|ed)?|drywall|sheetrock|cabinet refinishing|pint(?:or(?:es)?|ura|ar)|yeso|popcorn (?:ceiling|removal)|(?:deck|fence) stain(?:ing)?)\b/i;
+const INTENT=/\b(looking for|need(?:ing)?|seeking|recommend(?:ation|ations)?|can anyone|iso|in search of|request(?:ing)? (?:a )?(?:quote|estimate)|who (?:can|does)|wanted|solicit(?:ing)?|busco|buscando|necesito|necesitamos|recomienda(?:n)?|recomendaciones|alguien que)\b/i;
+const AD=/\b(we (?:offer|provide|specialize)|our (?:painting|services|company)|call (?:us|today)|free estimates|now hiring|painters? wanted|jobs? available|join our (?:team|crew)|ofrecemos|nuestros servicios|estimados gratis|presupuestos gratis|se solicita(?:n)? pintor(?:es)?)\b/i;
+const CLOSED=/\b(no longer (?:need|looking)|found (?:a|our) painter|position filled|bid (?:closed|cancelled|canceled)|already hired|ya (?:encontre|contrate)|ya no (?:necesito|busco))\b/i;
 const AREAS=['north charleston','mount pleasant','summerville','charleston','west ashley','goose creek','ladson','hanahan','james island','johns island','daniel island','cane bay','isle of palms',"sullivan's island",'folly beach','moncks corner','kiawah','seabrook'];
 export function originalURL(value,depth=0){
  if(depth>2)throw Error('invalid_original_url');const url=new URL(value);
@@ -18,7 +18,7 @@ export function allowedSource(source){
 }
 function timestamp(value){if(!value||!/(?:Z|[+-]\d\d:?\d\d|GMT|UTC)$/i.test(value.trim()))return null;const time=Date.parse(value);return Number.isFinite(time)?time:null}
 export function qualify(item,kind,clock=Date.now()){
- const text=item.title+' '+(item.summary||'');const service=SERVICE.exec(text);
+ const text=(item.title+' '+(item.summary||'')).normalize('NFD').replace(/[\u0300-\u036f]/g,'');const service=SERVICE.exec(text);
  if(!service)return {reason:'unrelated_service'};
  if(/\b(?:Charleston[, ]+(?:WV|West Virginia)|Summerville[, ]+(?:GA|Georgia))\b/i.test(text))return {reason:'outside_service_area'};
  if(CLOSED.test(text))return {reason:'closed_or_filled'};
