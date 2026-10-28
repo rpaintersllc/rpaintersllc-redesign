@@ -32,7 +32,25 @@ No real account, password, message, visit or customer record was modified.
 Before replacement, live platform-api v13 read-back matched the prior baseline.
 Deploy only this isolated project's platform-api, preserving verify_jwt=false
 because it authenticates requests itself and supports public/guest routes.
-After explicit user authorization, deployment succeeded: platform-api v14 is ACTIVE.\nA fresh get_edge_function read-back matched the tested GitHub source exactly.\nRollback source remains in GitHub at commit\n914bc829f3e9566efe641b5f3e988a18f04dc226 (platform-api/index.ts); the prior\nlive v13 files were also retained in session memory before replacement.\n\nFour genuine post-deploy HTTP checks passed: providers 200, unauthenticated\nhome-projects 401, unauthenticated pro-list 403, foreign Origin providers 403.\nIn the connected Edge browser, the existing authorized contractor session\nsuccessfully refreshed projects (Projects refreshed.) and read the labelled\nOctober 23 test conversation (Conversation up to date.). No message, visit,\nestimate, status, password or customer data was changed.\n\nTurnstile remains off: providers reports intake/auth required=false and blank\npublic keys; native Auth CAPTCHA is visibly disabled. Cloudflare requires a\nfresh user sign-in, so no secret transfer or activation was attempted. Custom\nSMTP is visibly disabled in Supabase; sender and external delivery remain gates.\nThe attempted 390px viewport override did not apply to the contractor tab\n(measured 1528px); it was reset. No new mobile verification is claimed.
+After explicit user authorization, deployment succeeded: platform-api v14 is ACTIVE.
+A fresh get_edge_function read-back matched the tested GitHub source exactly.
+Rollback source remains in GitHub at commit
+914bc829f3e9566efe641b5f3e988a18f04dc226 (platform-api/index.ts); the prior
+live v13 files were also retained in session memory before replacement.
+
+Four genuine post-deploy HTTP checks passed: providers 200, unauthenticated
+home-projects 401, unauthenticated pro-list 403, foreign Origin providers 403.
+In the connected Edge browser, the existing authorized contractor session
+successfully refreshed projects (Projects refreshed.) and read the labelled
+October 23 test conversation (Conversation up to date.). No message, visit,
+estimate, status, password or customer data was changed.
+
+Turnstile remains off: providers reports intake/auth required=false and blank
+public keys; native Auth CAPTCHA is visibly disabled. Cloudflare requires a
+fresh user sign-in, so no secret transfer or activation was attempted. Custom
+SMTP is visibly disabled in Supabase; sender and external delivery remain gates.
+The attempted 390px viewport override did not apply to the contractor tab
+(measured 1528px); it was reset. No new mobile verification is claimed.
 Site files, audience, billing, Turnstile and email settings are unchanged.
 
 A fresh login/logout and revoked-token browser acceptance remain pending. Successful server logout
