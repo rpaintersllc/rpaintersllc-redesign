@@ -1,8 +1,8 @@
 # Server session-revocation gate
 
-## Released October 28, 2026
+## Prepared October 28, 2026 — deployment blocked
 
-The platform-api now verifies the exact bearer with Supabase Auth, checks that
+The tested replacement for platform-api verifies the exact bearer with Supabase Auth, checks that
 its decoded sub matches the verified account, and passes its UUID session_id
 and verified account ID to the existing service-only platform_active_session RPC.
 Both homeowner and contractor authorization share this check per request.
@@ -13,7 +13,7 @@ No user_metadata or client-supplied actor is used for authorization.
 ## Verification
 
 Node 24 verification: 458 passing tests, including 27 new raw-handler tests.
-The new suite fails against the preceding production source (see release run).
+24 of the 27 new checks fail against the preceding production source.
 Older route suites explicitly stub the active-session RPC and use synthetic JWTs;
 the new session-revocation suite uses the raw handler without this bypass.
 Tests cover removed sessions across 14 routes, Auth rejection, foreign subject,
@@ -32,6 +32,10 @@ No real account, password, message, visit or customer record was modified.
 Before replacement, live platform-api v13 read-back matched the prior baseline.
 Deploy only this isolated project's platform-api, preserving verify_jwt=false
 because it authenticates requests itself and supports public/guest routes.
+The automatic approval reviewer rejected deployment because replacing the live API
+changes authentication behavior and it did not recognize explicit authorization
+for that deployment. No workaround was attempted. Live v13 is unchanged and does
+not yet invoke this gate. User approval for that exact replacement is pending.
 Site files, audience, billing, Turnstile and email settings are unchanged.
 
 Real login/logout browser acceptance remains pending. Successful server logout
