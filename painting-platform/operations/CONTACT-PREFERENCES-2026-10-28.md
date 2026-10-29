@@ -20,7 +20,17 @@ This does not add SMS, automated outreach, a call scheduler, verified-phone clai
 
 ## Release status
 
-Database applied; tested API and Site release pending. Do not claim the hosted form is active until deployment and read-back are recorded below.
+Published platform-api v19 is ACTIVE and its retrieved source matches the tested implementation exactly. Its manual authorization/active-session gate and verify_jwt=false are retained. Seven read-only live HTTP checks passed: discovery 200, missing/invalid homeowner bearer 401, missing/invalid contractor bearer 403, foreign origin 403, preflight 204. Intake Turnstile remains required/available; native account CAPTCHA remains off.
+
+The owner-private Site deployed successfully from source commit 5713bf6dbc0f9a31152fbe809229a17043f17e22, deployment appgdep_6ae2a84754e4819196511e1da7d935a9. Owner-only access with zero external visitors was confirmed before release. New selectors, Eastern-time wording and selected-preference consent were observed in the real Edge form.
+
+A genuine, explicitly authorized guest test request used the approved owner contact, label BUZZIE TEST — contact preferences, and project d8ce1fc6-711f-4d1c-ab74-5eb4a31ca86f. The managed Turnstile check completed automatically without an interactive challenge. The receipt displayed saved; read-only SQL confirmed contact_method=email, contact_window=weekday_morning, contact_verified=false and exclusive assignment to the pilot business. The reopened private project rendered Preferred contact: Email · Weekday mornings, 9 AM–noon Eastern. The generic receipt did not name the assigned company. No photo, message, visit or quote was created during this test.
+
+Notification delivery was independently confirmed in owner Gmail, message 1a18563b88e37ec3 at October 28, 2026, 10:01:06 PM Eastern (02:01:06 UTC October 29), with the matching project link. Sender remains the existing Resend development sender; this does not close branded SMTP/external-homeowner Auth delivery gates.
+
+The labelled test request is retained for owner review and is not a customer or conversion. Contractor rendering/contact-link behavior was verified by mocked DOM tests; a new authenticated contractor browser walkthrough for this field is not claimed. No mobile acceptance is claimed.
+
+Follow-up SQL found zero temporary fixture projects, businesses, queued notifications or idle transactions. Post-migration security advisories were unchanged: 17 server-only-table RLS INFO findings and the existing leaked-password-protection WARN, no new ERROR. Screenshot: tests/evidence/contact-preferences-live-2026-10-28.png.
 
 ## Recovery
 

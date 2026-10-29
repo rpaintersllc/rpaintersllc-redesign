@@ -1,3 +1,19 @@
+## Contact preferences published — October 28, 2026
+
+Homeowners can now choose phone/email/either and a preferred Eastern-time window.
+The preferences persist with the request and appear in homeowner/contractor views;
+contractor contact links respect the selected channel. Legacy requests show Not
+provided. This adds preferences, not automated outreach or verified-contact claims.
+
+Verification: 489 mocked tests, 40 rolled-back SQL assertions, seven live access
+checks, platform-api v19 source equality, genuine owner-authorized browser request,
+stored preference display and matching owner Gmail delivery. Native account CAPTCHA,
+branded SMTP/Auth delivery, mobile, structured qualification reasons and source-to-
+outcome reporting remain separate work. Keep the pilot private.
+
+[Release evidence and limits](operations/CONTACT-PREFERENCES-2026-10-28.md).
+Earlier dated sections are historical.
+
 ## Later live journey evidence — October 28, 2026
 
 A genuine authorized desktop test now covers signed-in homeowner request creation,
