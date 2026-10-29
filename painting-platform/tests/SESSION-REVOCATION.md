@@ -1,6 +1,15 @@
 # Server session-revocation gate
 
-## Active October 28, 2026 — platform-api v14
+## Current v18 read-back verified October 28, 2026
+
+The published source is unchanged from the tested session-gate implementation.
+This session repeated 458 mocked tests, 11 rolled-back SQL assertions and seven
+live read-only HTTP checks, plus a real contractor-session workspace refresh.
+No API replacement was necessary. [Current verification](../operations/PILOT-VERIFICATION-2026-10-28.md)
+supersedes the earlier activation/status snapshot below. Intake Turnstile is now
+enabled; native Auth CAPTCHA and branded SMTP remain separate gates.
+
+## Historical activation — platform-api v14
 
 The deployed platform-api verifies the exact bearer with Supabase Auth, checks that
 its decoded sub matches the verified account, and passes its UUID session_id

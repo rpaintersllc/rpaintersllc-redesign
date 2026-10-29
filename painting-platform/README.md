@@ -1,24 +1,22 @@
 # Buzzie: owned painting-services platform pilot
 
-## Session revocation prerequisite applied; API integration pending
+## Current private-pilot status — October 28, 2026
 
-The isolated database now has a narrow server-only active-session lookup,
-preserved in migration 20261023210328_active_account_session_gate.sql.
-Read-back confirmed its definition and EXECUTE restricted to service_role,
-with anon/authenticated denied. It checks session ownership, presence and
-explicit not_after expiry without exposing authentication rows.
+Published platform-api **v18** matches the tested local source exactly and invokes
+the shared Auth-plus-active-session gate. Fresh verification: **458 mocked tests**,
+**11 rolled-back live SQL assertions**, **seven read-only HTTP checks** and a real
+contractor-session workspace refresh. No redeployment was necessary this session.
 
-**This does not yet change application authorization.** Deployed platform-api
-remains v13 and does not call the lookup. The rollback SQL fixture is prepared
-but has no completed result; no passing database journey is claimed.
-The local runtime became unavailable before tested API changes could be
-durably recovered. No API or Site publication was performed for this step.
+Intake Turnstile is enabled. The preceding activation report records a legitimate
+owner-authorized request and received email; this session repeated proof rejection.
+Native account CAPTCHA clients are prepared/published, but shared Auth enforcement
+remains disabled. Real homeowner logout/revocation, company-interest CAPTCHA
+success, expiry/replay, branded SMTP/delivery and complete mobile/browser journeys
+remain open gates. The dated sections below are historical evidence.
 
-Next: restore Node 24 execution, inspect any incomplete fixture transaction,
-complete the shared Auth-plus-session gate and its mocked/rollback tests,
-then save with a branch-head lease before isolated API deployment.
-See [tests/SESSION-REVOCATION.md](tests/SESSION-REVOCATION.md) for evidence,
-exact implementation steps and the remaining signed-URL/capability limits.
+See [current evidence and next steps](operations/PILOT-VERIFICATION-2026-10-28.md),
+[Turnstile acceptance](operations/TURNSTILE-ACTIVATION-2026-10-28.md) and
+[account CAPTCHA compatibility](operations/ACCOUNT-CAPTCHA-COMPATIBILITY-2026-10-28.md).
 
 ## Latest-message summaries published in contractor inbox (October 23 update)
 

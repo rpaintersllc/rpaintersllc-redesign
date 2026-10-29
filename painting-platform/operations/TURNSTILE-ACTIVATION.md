@@ -1,3 +1,12 @@
+# Current activation evidence
+
+The October 23 pending notes below are historical. Intake Turnstile is now active,
+with genuine request/email acceptance documented in
+[October 28 activation](TURNSTILE-ACTIVATION-2026-10-28.md). The
+[latest verification](PILOT-VERIFICATION-2026-10-28.md) repeated missing/invalid
+proof rejection without creating a record. Native account CAPTCHA remains off;
+[client compatibility](ACCOUNT-CAPTCHA-COMPATIBILITY-2026-10-28.md) is published.
+
 # BUZZIE Turnstile activation — October 23, 2026
 
 ## Completed

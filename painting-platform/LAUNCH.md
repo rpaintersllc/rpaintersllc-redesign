@@ -1,3 +1,17 @@
+## Latest verification — October 28, 2026
+
+Published platform-api v18 exactly matches the tested session gate. Fresh checks:
+458 mocked tests, 11 live rollback SQL assertions, seven read-only HTTP checks,
+and a real contractor-session workspace refresh. No redeployment was needed.
+Intake Turnstile is active, with prior genuine project-request/email acceptance
+and repeated proof rejection. Native account CAPTCHA clients are prepared but
+shared enforcement remains off. Real homeowner logout/revocation, genuine
+company-interest acceptance, token expiry/replay, branded SMTP/external delivery
+and full desktop/mobile journeys remain gates. Public release remains unauthorized.
+
+[Current evidence and next steps](operations/PILOT-VERIFICATION-2026-10-28.md).
+Dated progress below is historical evidence.
+
 # Verified progress — October 28, 2026: shared account compatibility
 
 Lead Engine private sign-in now supports the dedicated two-host account widget
