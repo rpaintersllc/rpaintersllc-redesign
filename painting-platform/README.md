@@ -1,3 +1,16 @@
+## Later live journey evidence — October 28, 2026
+
+A genuine authorized desktop test now covers signed-in homeowner request creation,
+automatic account linking, account-only access, messages in both directions, visit
+confirmation/cancellation, private photo upload, private estimate and quoted/won/lost
+statuses. The matching owner alert reached Gmail. Real global sign-out removed the
+owner's sessions and the previously active contractor tab was denied on Refresh.
+The test record ends closed, with its visit cancelled; it is not a customer or sale.
+Exact revoked homeowner-token replay, new login after logout, mobile acceptance,
+native Auth CAPTCHA and branded SMTP/confirmation/recovery remain open.
+
+[Full evidence, scope and limitations](operations/HOMEOWNER-LIVE-JOURNEY-2026-10-28.md). Earlier pending-state paragraphs below are historical.
+
 # Buzzie: owned painting-services platform pilot
 
 ## Current private-pilot status — October 28, 2026
