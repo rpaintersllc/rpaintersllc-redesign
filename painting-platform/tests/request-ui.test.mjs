@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {parseHTML} from 'linkedom';
 import {saveSession,clearSession} from '../web/auth-session.js';
 const project='11111111-1111-4111-8111-111111111111';
-const values={full_name:'Test homeowner',email:'test@example.invalid',phone:'2025550190',service:'Interior painting',property_type:'Home',details:'Paint the living room',city:'Summerville',zip:'29483',timing:'Within a month',budget:''};
+const values={full_name:'Test homeowner',email:'test@example.invalid',phone:'2025550190',service:'Interior painting',property_type:'Home',details:'Paint the living room',city:'Summerville',zip:'29483',timing:'Within a month',budget:'',contact_method:'email',contact_window:'weekday_morning'};
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}}
 async function screen(run,{files=[],signedIn=false,step=2,handle=()=>{}}={}){
  const old=Object.fromEntries(['document','fetch','location','Option','FormData','sessionStorage'].map(k=>[k,globalThis[k]]));
@@ -136,3 +136,6 @@ for(const [change,failed] of [['logout',false],['new-login',false],['new-login',
 test('renewing a token during automatic linking asks for deliberate account confirmation',()=>screen(async({document,submit,calls})=>{
  saveSession({access_token:'expired',refresh_token:'expired-refresh',expires_at:1});await submit();assert.equal(calls.filter(c=>c.action==='claim-project').length,0);assert.match(document.querySelector('#account-link-status').textContent,/could not be completed or confirmed/);
 },{signedIn:true,handle:(action,options)=>{if(!action&&options.body?.includes('expired-refresh'))return Response.json({access_token:'renewed',refresh_token:'renewed-refresh',expires_in:3600})}}));
+
+test('intake submits the selected contact preferences',()=>screen(async({calls,submit})=>{await submit();const payload=JSON.parse(calls.find(c=>c.action==='create').options.body);assert.equal(payload.contact_method,'email');assert.equal(payload.contact_window,'weekday_morning')}));
+test('an unselected contact method blocks final submission and receives focus',()=>screen(async({form,calls,submit,document,active})=>{const method=form.elements.namedItem('contact_method');assert.equal(method.hasAttribute('required'),true);method.checkValidity=()=>false;await submit();assert.equal(active(),method);assert.equal(document.querySelector('[data-step="2"]').hidden,false);assert.equal(calls.some(c=>c.action==='create'),false)}));

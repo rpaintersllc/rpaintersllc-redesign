@@ -30,7 +30,7 @@ begin
  -- Review the exact RPC/trigger implementation before any fixture insertion.
  if exists (
   select 1 from (values
-   ('public.platform_create_project(jsonb)','cabb8d5c2307c81078aad564c578ae5a'),
+   ('public.platform_create_project(jsonb)','8719476dfc1c9ebfedf31da56d88e892'),
    ('public.enqueue_lead_notification()','2820ba6299e3a9e11705b04671d22465'),
    ('public.platform_lead_event()','e9b236a9afa67579d4c7c7c21af8e1ba')
   ) as expected(signature,body_hash)
