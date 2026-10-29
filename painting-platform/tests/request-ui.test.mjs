@@ -48,7 +48,7 @@ test('a failed create can be retried using the same idempotency and private keys
 });
 test('a request without photos stays confirmed and can link to its account',()=>screen(async({document,calls,submit})=>{
  await submit();assert.match(document.querySelector('#upload-status').textContent,/add photos later/);assert.match(document.querySelector('#account-link-status').textContent,/Project linked/);assert.equal(calls.filter(c=>c.action==='upload').length,0);assert.equal(calls.filter(c=>c.action==='claim-project').length,1);
- const create=JSON.parse(calls.find(c=>c.action==='create').options.body);assert.equal(create.contact_consent,true);assert.match(document.querySelector('#receipt-link').textContent,new RegExp(create.access_token));assert.match(document.querySelector('#request-receipt').textContent,/R Painters/);
+ const create=JSON.parse(calls.find(c=>c.action==='create').options.body);assert.equal(create.contact_consent,true);assert.match(document.querySelector('#receipt-link').textContent,new RegExp(create.access_token));assert.match(document.querySelector('#request-receipt').textContent,/participating local painting company/);assert.doesNotMatch(document.querySelector('#request-receipt').textContent,/R Painters/);
 },{signedIn:true}));
 test('protected request sends a fresh widget token after a rejected attempt',async()=>{
  const oldWindow=globalThis.window;let config,creates=0;globalThis.window={turnstile:{render:(node,options)=>{config=options;return 'widget'},reset:()=>{}}};
