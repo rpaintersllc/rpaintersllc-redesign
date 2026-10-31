@@ -1,0 +1,17 @@
+{
+  "description": "Public opportunity source registry. Review each site's terms before automating.",
+  "sources": [
+    {
+      "name": "SAM.gov Contract Opportunities",
+      "url": "https://sam.gov/content/opportunities",
+      "mode": "manual_review",
+      "category": "government"
+    },
+    {
+      "name": "South Carolina Business Opportunities",
+      "url": "https://scbo.sc.gov/",
+      "mode": "manual_review",
+      "category": "state_procurement"
+    }
+  ]
+}

@@ -1,0 +1,228 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {parseHTML} from 'linkedom';
+import {clearSession,saveSession} from '../web/auth-session.js';
+const id='11111111-1111-4111-8111-111111111111',key='a'.repeat(64);
+const file=()=>({type:'image/jpeg',size:20});
+const photo=n=>({id:String(n),url:'https://images.invalid/'+n+'.jpg'});
+function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}}
+async function screen(run,{handle=()=>{},photos=[],account=false}={}){
+ const old=Object.fromEntries(['document','location','fetch','sessionStorage'].map(k=>[k,globalThis[k]]));
+ const {document}=parseHTML(await readFile(new URL('../web/project.html',import.meta.url),'utf8'));globalThis.document=document;globalThis.location=new URL('https://r-painters-projects.jessicuriel27.chatgpt.site/project.html'+(account?'?project='+id:'#project='+id+'&key='+key));
+ const storage=new Map();globalThis.sessionStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};clearSession();if(account)saveSession({access_token:'mock-session',refresh_token:'mock-refresh',expires_in:3600});
+ const model={photos:[...photos]},calls=[];
+ globalThis.fetch=async(url,options={})=>{
+  const action=new URL(url).searchParams.get('action');calls.push({action,options});const custom=await handle(action,model,options);if(custom)return custom;
+  if(action==='conversation')return Response.json({messages:[],visits:[]});
+  if(action==='lookup')return Response.json({project:{lead:{service:'Interior painting',status:'new',city:'Summerville',zip:'29483',details:'Test project',full_name:'Homeowner',email:'test@example.invalid',phone:'2025550190'},business:{phone:'2025550100',website:'https://contractor.invalid'},property_type:'Home',timing:'Within a month',events:[],photos:model.photos}});
+  return Response.json({ok:true});
+ };
+ try{await import('../web/project.js?test='+crypto.randomUUID());const form=document.querySelector('#photo-form'),input=document.querySelector('#photo-input');input.files=[];const claim=[...document.querySelectorAll('button')].find(button=>button.textContent==='Save project to my account');await run({document,input,form,calls,model,claim,submit:()=>form.onsubmit({preventDefault(){},target:form})})}finally{clearSession();Object.assign(globalThis,old)}
+}
+test('partial uploads continue, refresh the gallery and clear the full selection',()=>{
+ let uploads=0;
+ return screen(async({document,input,calls,submit})=>{
+  input.files=[file(),file(),file()];await submit();assert.equal(uploads,3);assert.equal(document.querySelectorAll('#photos img').length,2);assert.equal(input.value,'');assert.equal(input.disabled,false);assert.match(document.querySelector('#photo-message').textContent,/2 photo\(s\) confirmed.*1 could not be confirmed/);assert.equal(calls.filter(c=>c.action==='lookup').length,2);
+  input.files=[];await submit();assert.equal(uploads,3);assert.match(document.querySelector('#photo-message').textContent,/Choose at least one/);
+ },{handle:(action,model)=>{if(action==='upload'){uploads++;if(uploads===2)return Response.json({error:'Failed'},{status:502});model.photos.push(photo(uploads))}}});
+});
+test('a photo saved despite a lost response is visible before a manual retry',()=>screen(async({document,input,submit})=>{
+ input.files=[file()];await submit();assert.equal(document.querySelectorAll('#photos img').length,1);assert.match(document.querySelector('#photo-message').textContent,/0 photo\(s\) confirmed.*1 could not be confirmed.*only missing ones/);
+},{handle:(action,model)=>{if(action==='upload'){model.photos.push(photo(1));throw Error('Connection lost')}}}));
+test('a failed gallery refresh preserves project access but blocks further uploads',()=>{
+ let lookups=0,fail=true;
+ return screen(async({document,input,form,calls,submit})=>{
+  input.files=[file()];await submit();assert.equal(document.querySelector('#project-content').hidden,false);assert.equal(document.querySelector('#missing').hidden,true);assert.equal(form.hidden,true);assert.match(document.querySelector('#private-link').textContent,new RegExp(key));assert.match(document.querySelector('#photo-message').textContent,/gallery could not refresh/);
+  input.files=[file()];await submit();assert.equal(calls.filter(c=>c.action==='upload').length,1);fail=false;await document.querySelector('#refresh').onclick();assert.equal(form.hidden,false);await submit();assert.equal(calls.filter(c=>c.action==='upload').length,2);
+ },{handle:action=>{if(action==='lookup'&&++lookups>1&&fail)throw Error('Network unavailable')}});
+});
+test('an authorization failure never presents stale project data as current access',()=>{
+ let lookups=0;
+ return screen(async({document,input,submit})=>{input.files=[file()];await submit();assert.equal(document.querySelector('#project-content').hidden,true);assert.equal(document.querySelector('#missing').hidden,false)},{handle:action=>action==='lookup'&&++lookups>1?Response.json({error:'Project not found'},{status:404}):undefined});
+});
+test('duplicate upload clicks cannot replay a batch while it is running',async()=>{
+ const reply=deferred(),started=deferred();
+ await screen(async({document,input,calls,submit})=>{input.files=[file()];const first=submit();await started.promise;assert.equal(input.disabled,true);assert.equal(document.querySelector('#photo-form button').disabled,true);await submit();assert.equal(calls.filter(c=>c.action==='upload').length,1);reply.resolve(Response.json({ok:true}));await first;assert.equal(input.disabled,false)},{handle:action=>{if(action==='upload'){started.resolve();return reply.promise}}});
+});
+test('invalid selections and the five-photo limit reject before any upload',()=>screen(async({input,calls,submit,document})=>{
+ input.files=[{type:'image/jpeg',size:5242881}];await submit();assert.match(document.querySelector('#photo-message').textContent,/5 MB/);input.files=[file(),file()];await submit();assert.match(document.querySelector('#photo-message').textContent,/total of five/);assert.equal(calls.filter(c=>c.action==='upload').length,0);
+},{photos:[photo(1),photo(2),photo(3),photo(4)]}));
+test('account-owned uploads retain bearer access without a guest private key',()=>screen(async({input,calls,submit})=>{
+ input.files=[file()];await submit();const upload=calls.find(c=>c.action==='upload');assert.equal(upload.options.headers.authorization,'Bearer mock-session');assert.equal(upload.options.headers['x-project-token'],undefined);assert.equal(upload.options.headers['x-project-id'],id);
+},{account:true}));
+
+for(const stale of ['success','denied','server error'])test('latest project refresh wins over stale '+stale,async()=>{
+ const reply=deferred(),started=deferred();let lookups=0;
+ await screen(async({document})=>{
+  const first=document.querySelector('#refresh').onclick();await started.promise;
+  await document.querySelector('#refresh').onclick();
+  if(stale==='success')reply.resolve(Response.json({project:{lead:{service:'Old project state',status:'new'},business:{phone:'2025550100',website:'https://contractor.invalid'},events:[],photos:[]}}));
+  else reply.resolve(Response.json({error:'Old refresh failure'},{status:stale==='denied'?403:502}));
+  await first;
+  assert.equal(document.querySelector('#project-content').hidden,false);
+  assert.equal(document.querySelector('#project-title').textContent,'Interior painting');
+  assert.equal(document.querySelector('#photo-form').hidden,false);
+  assert.match(document.querySelector('#message').textContent,/Your project is saved/);
+ },{handle:action=>{if(action==='lookup'&&++lookups===2){started.resolve();return reply.promise}}});
+});
+test('a stale successful lookup cannot reopen the project after a newer access denial',async()=>{
+ const reply=deferred(),started=deferred();let lookups=0;
+ await screen(async({document})=>{
+  const first=document.querySelector('#refresh').onclick();await started.promise;
+  await document.querySelector('#refresh').onclick();
+  reply.resolve(Response.json({project:{lead:{service:'Old project state',status:'new'},business:{phone:'2025550100',website:'https://contractor.invalid'},events:[],photos:[]}}));await first;
+  assert.equal(document.querySelector('#project-content').hidden,true);
+  assert.equal(document.querySelector('#photo-form').hidden,true);
+  assert.match(document.querySelector('#message').textContent,/Access denied/);
+ },{handle:action=>{if(action!=='lookup')return;if(++lookups===2){started.resolve();return reply.promise}if(lookups===3)return Response.json({error:'Access denied'},{status:403})}});
+});
+test('uploads wait for an in-flight project refresh to confirm the current gallery',async()=>{
+ const reply=deferred(),started=deferred();let lookups=0;
+ await screen(async({document,input,calls,submit})=>{
+  const pending=document.querySelector('#refresh').onclick();await started.promise;
+  input.files=[file()];await submit();assert.equal(calls.filter(c=>c.action==='upload').length,0);
+  assert.match(document.querySelector('#photo-message').textContent,/Refresh the project/);
+  reply.resolve(Response.json({error:'Try later'},{status:502}));await pending;
+ },{handle:action=>{if(action==='lookup'&&++lookups===2){started.resolve();return reply.promise}}});
+});
+
+for(const status of [401,403,404])test('access rejection '+status+' retires cached account project data through a later network failure',async()=>{
+ let lookups=0;
+ await screen(async({document,input,calls,submit})=>{
+  document.querySelector('.message-thread').textContent='Previously loaded private conversation';input.value='private-photo.jpg';
+  await document.querySelector('#refresh').onclick();
+  assert.equal(document.querySelector('#project-content').hidden,true);
+  await document.querySelector('#refresh').onclick();
+  assert.equal(document.querySelector('#project-content').hidden,true);assert.equal(document.querySelector('#missing').hidden,false);
+  for(const id of ['contact-details','project-scope','private-link','photos','timeline'])assert.equal(document.querySelector('#'+id).textContent,'');
+  assert.equal(document.querySelector('#photos').children.length,0);
+  assert.equal(document.querySelector('#business-phone').hasAttribute('href'),false);assert.equal(input.value,'');
+  assert.equal(document.querySelector('.message-thread'),null);
+  input.files=[file()];await submit();assert.equal(calls.filter(c=>c.action==='upload').length,0);
+ },{account:true,photos:[photo(1)],handle:action=>{if(action!=='lookup')return;if(++lookups===2)return Response.json({error:'Access rejected'},{status});if(lookups>2)throw Error('Network unavailable')}});
+});
+test('a fresh authorized lookup restores the project with a newly loaded conversation after rejection',async()=>{
+ let lookups=0;
+ await screen(async({document,calls})=>{
+  document.querySelector('.message-thread').textContent='Old private conversation';
+  await document.querySelector('#refresh').onclick();assert.equal(document.querySelector('#project-content').hidden,true);
+  await document.querySelector('#refresh').onclick();assert.equal(document.querySelector('#project-content').hidden,false);
+  assert.equal(calls.filter(c=>c.action==='conversation').length,2);assert.doesNotMatch(document.querySelector('#project-content').textContent,/Old private conversation/);
+ },{handle:action=>action==='lookup'&&++lookups===2?Response.json({error:'Access rejected'},{status:403}):undefined});
+});
+test('account project recovery links to My account without manufacturing a guest key',()=>screen(async({document,calls})=>{
+ const missing=document.querySelector('#missing');assert.match(missing.querySelector('p').textContent,/Sign in to your homeowner account/);
+ assert.equal(missing.querySelector('a').getAttribute('href'),'account.html');
+ const lookup=calls.find(c=>c.action==='lookup');assert.equal(lookup.options.headers.authorization,'Bearer mock-session');assert.equal(JSON.parse(lookup.options.body).access_token,'');
+},{account:true}));
+
+
+test('manual project linking uses the current valid account and preserves private access',()=>screen(async({document,claim,calls})=>{
+ saveSession({access_token:'manual-account',refresh_token:'manual-refresh',expires_in:3600});await claim.onclick();assert.equal(calls.filter(c=>c.action==='claim-project').length,1);assert.equal(calls.find(c=>c.action==='claim-project').options.headers.authorization,'Bearer manual-account');assert.match(document.querySelector('#save-message').textContent,/Project linked/);assert.equal(claim.disabled,false);
+}));
+test('pending manual project link rejects repeat handler events',()=>{
+ const reply=deferred(),started=deferred();return screen(async({claim,calls})=>{
+  saveSession({access_token:'manual-account',refresh_token:'manual-refresh',expires_in:3600});const pending=claim.onclick();await started.promise;const duplicate=claim.onclick();reply.resolve(Response.json({linked:true}));await Promise.all([pending,duplicate]);assert.equal(calls.filter(c=>c.action==='claim-project').length,1);assert.equal(claim.disabled,false);
+ },{handle:action=>{if(action==='claim-project'){started.resolve();return reply.promise}}});
+});
+for(const change of ['logout','new-login'])test('manual link success after '+change+' does not assert current account ownership',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,claim})=>{
+  saveSession({access_token:'manual-account',refresh_token:'manual-refresh',expires_in:3600});const pending=claim.onclick();await started.promise;if(change==='logout')clearSession();else saveSession({access_token:'later-account',refresh_token:'later-refresh',expires_in:3600});reply.resolve(Response.json({linked:true}));await pending;
+  assert.match(document.querySelector('#save-message').textContent,/session changed/);assert.doesNotMatch(document.querySelector('#save-message').textContent,/Project linked/);assert.equal(document.querySelector('#project-content').hidden,false);assert.equal(claim.disabled,false);
+ },{handle:action=>{if(action==='claim-project'){started.resolve();return reply.promise}}});
+});
+test('manual link failure after a newer login keeps session-change recovery guidance',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,claim})=>{
+  saveSession({access_token:'manual-account',refresh_token:'manual-refresh',expires_in:3600});const pending=claim.onclick();await started.promise;saveSession({access_token:'later-account',refresh_token:'later-refresh',expires_in:3600});reply.resolve(Response.json({error:'Old account failure'},{status:503}));await pending;assert.match(document.querySelector('#save-message').textContent,/session changed/);assert.doesNotMatch(document.querySelector('#save-message').textContent,/Old account failure/);
+ },{handle:action=>{if(action==='claim-project'){started.resolve();return reply.promise}}});
+});
+test('logout at token acquisition prevents a manual claim dispatch',()=>screen(async({document,claim,calls})=>{
+ saveSession({access_token:'manual-account',refresh_token:'manual-refresh',expires_in:3600});const pending=claim.onclick();clearSession();await pending;assert.equal(calls.filter(c=>c.action==='claim-project').length,0);assert.match(document.querySelector('#save-message').textContent,/Sign in/);
+}));
+test('logout after snapshot acquisition but before dispatch prevents a manual claim',()=>screen(async({document,claim,calls})=>{
+ saveSession({access_token:'manual-account',refresh_token:'manual-refresh',expires_in:3600});const pending=claim.onclick();queueMicrotask(()=>clearSession());await pending;assert.equal(calls.filter(c=>c.action==='claim-project').length,0);assert.match(document.querySelector('#save-message').textContent,/session changed|Sign in/);
+}));
+test('deliberate manual linking permits a normal token renewal before dispatch',()=>screen(async({document,claim,calls})=>{
+ saveSession({access_token:'expired-manual',refresh_token:'expired-refresh',expires_at:1});await claim.onclick();const claims=calls.filter(c=>c.action==='claim-project');assert.equal(claims.length,1);assert.equal(claims[0].options.headers.authorization,'Bearer renewed-manual');assert.match(document.querySelector('#save-message').textContent,/Project linked/);
+},{handle:(action,model,options)=>{if(!action&&options.body?.includes('expired-refresh'))return Response.json({access_token:'renewed-manual',refresh_token:'renewed-refresh',expires_in:3600})}}));
+
+
+for(const change of ['logout','new-login'])for(const outcome of ['success','network failure'])test('account lookup '+outcome+' after '+change+' cannot expose cached private data',()=>{
+ const reply=deferred(),started=deferred();let reads=0;return screen(async({document})=>{
+  const pending=document.querySelector('#refresh').onclick();await started.promise;
+  if(change==='logout')clearSession();else saveSession({access_token:'new-reader',refresh_token:'new-reader-refresh',expires_in:3600});
+  reply.resolve(outcome==='success'?Response.json({project:{lead:{service:'Old private result',status:'new',details:'Old private scope'},business:{phone:'2025550149',website:'https://example.invalid'},events:[],photos:[photo(9)]}}):Response.json({error:'Old network failure'},{status:503}));await pending;
+  assert.equal(document.querySelector('#project-content').hidden,true);assert.equal(document.querySelector('#photos').children.length,0);assert.equal(document.querySelector('#contact-details').textContent,'');assert.equal(document.querySelector('#project-scope').textContent,'');assert.match(document.querySelector('#message').textContent,/account session changed|Sign in/);
+ },{account:true,handle:action=>{if(action==='lookup'&&++reads===2){started.resolve();return reply.promise}}});
+});
+test('a new account refresh retires the prior account view before its lookup finishes',()=>{
+ const reply=deferred(),started=deferred();let reads=0;return screen(async({document})=>{
+  saveSession({access_token:'new-reader',refresh_token:'new-reader-refresh',expires_in:3600});const pending=document.querySelector('#refresh').onclick();await started.promise;
+  const hidden=document.querySelector('#project-content').hidden,contact=document.querySelector('#contact-details').textContent;
+  reply.resolve(Response.json({error:'Synthetic network failure'},{status:503}));await pending;assert.equal(hidden,true);assert.equal(contact,'');assert.equal(document.querySelector('#project-content').hidden,true);
+ },{account:true,handle:action=>{if(action==='lookup'&&++reads===2){started.resolve();return reply.promise}}});
+});
+for(const boundary of ['token','snapshot'])test('account lookup logout at '+boundary+' acquisition cannot dispatch a stale bearer read',()=>screen(async({document,calls})=>{
+ const pending=document.querySelector('#refresh').onclick();if(boundary==='token')clearSession();else queueMicrotask(()=>clearSession());await pending;
+ assert.equal(calls.filter(c=>c.action==='lookup').length,1);assert.equal(document.querySelector('#project-content').hidden,true);
+},{account:true}));
+test('capability lookup remains authorized independently of a changed homeowner login',()=>{
+ const reply=deferred(),started=deferred();let reads=0;return screen(async({document})=>{
+  saveSession({access_token:'optional-reader',refresh_token:'optional-refresh',expires_in:3600});const pending=document.querySelector('#refresh').onclick();await started.promise;clearSession();reply.resolve(Response.json({project:{lead:{service:'Capability-authorized project',status:'new'},business:{phone:'2025550149',website:'https://example.invalid'},events:[],photos:[]}}));await pending;assert.equal(document.querySelector('#project-content').hidden,false);assert.equal(document.querySelector('#project-title').textContent,'Capability-authorized project');
+ },{handle:action=>{if(action==='lookup'&&++reads===2){started.resolve();return reply.promise}}});
+});
+test('account lookup supports normal token renewal with the renewed bearer',()=>screen(async({document,calls})=>{
+ saveSession({access_token:'expired-read',refresh_token:'expired-read-refresh',expires_at:1});await document.querySelector('#refresh').onclick();const reads=calls.filter(c=>c.action==='lookup');assert.equal(reads.length,2);assert.equal(reads[1].options.headers.authorization,'Bearer renewed-read');assert.equal(document.querySelector('#project-content').hidden,false);
+},{account:true,handle:(action,model,options)=>{if(!action&&options.body?.includes('expired-read-refresh'))return Response.json({access_token:'renewed-read',refresh_token:'renewed-read-refresh',expires_in:3600})}}));
+test('a fresh authorized account lookup restores a retired project and conversation',()=>{
+ const reply=deferred(),started=deferred();let reads=0;return screen(async({document,calls})=>{
+  const pending=document.querySelector('#refresh').onclick();await started.promise;clearSession();reply.resolve(Response.json({error:'Synthetic old-session failure'},{status:503}));await pending;const retired=document.querySelector('#project-content').hidden;
+  saveSession({access_token:'recovery-reader',refresh_token:'recovery-refresh',expires_in:3600});await document.querySelector('#refresh').onclick();assert.equal(retired,true);assert.equal(document.querySelector('#project-content').hidden,false);assert.equal(document.querySelector('#photo-form').hidden,false);assert.equal(calls.filter(c=>c.action==='conversation').length,2);
+ },{account:true,handle:action=>{if(action==='lookup'&&++reads===2){started.resolve();return reply.promise}}});
+});
+test('a same-session account refresh failure keeps its prior view but blocks uploads',()=>{
+ let reads=0;return screen(async({document})=>{
+  await document.querySelector('#refresh').onclick();assert.equal(document.querySelector('#project-content').hidden,false);assert.equal(document.querySelector('#photo-form').hidden,true);assert.match(document.querySelector('#message').textContent,/last loaded project/);
+ },{account:true,handle:action=>action==='lookup'&&++reads===2?Response.json({error:'Synthetic temporary failure'},{status:503}):undefined});
+});
+
+
+for(const change of ['logout','new-login'])test('account photo batch stops after '+change+' while the first upload is pending',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,input,submit,calls})=>{
+  input.files=[file(),file()];const pending=submit();await started.promise;if(change==='logout')clearSession();else saveSession({access_token:'other-uploader',refresh_token:'other-refresh',expires_in:3600});reply.resolve(Response.json({ok:true}));await pending;
+  assert.equal(calls.filter(c=>c.action==='upload').length,1);assert.equal(calls.filter(c=>c.action==='lookup').length,1);assert.equal(document.querySelector('#project-content').hidden,true);assert.equal(input.value,'');assert.equal(input.disabled,false);assert.match(document.querySelector('#photo-message').textContent,/already sent may have completed/);
+ },{account:true,handle:action=>{if(action==='upload'){started.resolve();return reply.promise}}});
+});
+test('an old upload failure after another login cannot continue the batch',()=>{
+ const reply=deferred(),started=deferred();return screen(async({document,input,submit,calls})=>{
+  input.files=[file(),file()];const pending=submit();await started.promise;saveSession({access_token:'other-uploader',refresh_token:'other-refresh',expires_in:3600});reply.resolve(Response.json({error:'Old upload failure'},{status:503}));await pending;
+  assert.equal(calls.filter(c=>c.action==='upload').length,1);assert.equal(document.querySelector('#project-content').hidden,true);assert.match(document.querySelector('#photo-message').textContent,/Photo uploads stopped/);
+ },{account:true,handle:action=>{if(action==='upload'){started.resolve();return reply.promise}}});
+});
+for(const boundary of ['token','snapshot'])test('account upload logout at '+boundary+' acquisition stops before any upload',()=>screen(async({document,input,submit,calls})=>{
+ input.files=[file()];const pending=submit();if(boundary==='token')clearSession();else queueMicrotask(()=>clearSession());await pending;assert.equal(calls.filter(c=>c.action==='upload').length,0);assert.equal(document.querySelector('#project-content').hidden,true);
+},{account:true}));
+test('a batch cannot start from another account previous gallery',()=>screen(async({document,input,submit,calls})=>{
+ saveSession({access_token:'other-uploader',refresh_token:'other-refresh',expires_in:3600});input.files=[file()];await submit();assert.equal(calls.filter(c=>c.action==='upload').length,0);assert.equal(document.querySelector('#project-content').hidden,true);
+},{account:true}));
+test('private-capability batch remains independent of homeowner login changes',()=>{
+ const reply=deferred(),started=deferred();let uploads=0;return screen(async({document,input,submit,calls})=>{
+  saveSession({access_token:'optional-uploader',refresh_token:'optional-refresh',expires_in:3600});input.files=[file(),file()];const pending=submit();await started.promise;clearSession();reply.resolve(Response.json({ok:true}));await pending;assert.equal(calls.filter(c=>c.action==='upload').length,2);assert.equal(document.querySelector('#project-content').hidden,false);assert.match(document.querySelector('#photo-message').textContent,/2 photo\(s\) confirmed/);
+ },{handle:action=>{if(action==='upload'&&++uploads===1){started.resolve();return reply.promise}}});
+});
+test('unchanged account batch pins both photos to its acquired bearer',()=>screen(async({document,input,submit,calls})=>{
+ input.files=[file(),file()];await submit();const uploads=calls.filter(c=>c.action==='upload');assert.equal(uploads.length,2);assert.deepEqual(uploads.map(c=>c.options.headers.authorization),['Bearer mock-session','Bearer mock-session']);assert.match(document.querySelector('#photo-message').textContent,/2 photo\(s\) confirmed/);
+},{account:true}));
+test('session change during post-upload gallery read cannot show old confirmation feedback',()=>{
+ const reply=deferred(),started=deferred();let reads=0;return screen(async({document,input,submit,calls})=>{
+  input.files=[file()];const pending=submit();await started.promise;clearSession();reply.resolve(Response.json({error:'Old gallery result'},{status:503}));await pending;assert.equal(calls.filter(c=>c.action==='upload').length,1);assert.equal(document.querySelector('#project-content').hidden,true);assert.match(document.querySelector('#photo-message').textContent,/Photo uploads stopped/);assert.doesNotMatch(document.querySelector('#photo-message').textContent,/1 photo\(s\) confirmed/);
+ },{account:true,handle:action=>{if(action==='lookup'&&++reads===2){started.resolve();return reply.promise}}});
+});
+test('account batch can renew its original expired token before acquiring the batch snapshot',()=>screen(async({document,input,submit,calls})=>{
+ const originalNow=Date.now;Date.now=()=>originalNow()+3601000;
+ try{input.files=[file(),file()];await submit();const uploads=calls.filter(c=>c.action==='upload');assert.equal(uploads.length,2);assert.deepEqual(uploads.map(c=>c.options.headers.authorization),['Bearer renewed-batch','Bearer renewed-batch']);assert.match(document.querySelector('#photo-message').textContent,/2 photo\(s\) confirmed/)}finally{Date.now=originalNow}
+},{account:true,handle:(action,model,options)=>{if(!action&&options.body?.includes('mock-refresh'))return Response.json({access_token:'renewed-batch',refresh_token:'renewed-batch-refresh',expires_in:3600})}}));
+
+test('homeowner sees stored preferences rather than an inferred contact method',()=>screen(async({document})=>{assert.match(document.querySelector('#contact-preference').textContent,/Email.*5–7 PM Eastern/);},{handle:action=>action==='lookup'?Response.json({project:{lead:{service:'Interior painting',status:'new'},business:{},property_type:'Home',timing:'Just planning',contact_method:'email',contact_window:'weekday_evening',events:[],photos:[]}}):undefined}));
+test('legacy homeowner preference is explicit and is cleared after access denial',()=>{let loads=0;return screen(async({document})=>{assert.equal(document.querySelector('#contact-preference').textContent,'Contact preference: Not provided.');await document.querySelector('#refresh').onclick();assert.equal(document.querySelector('#contact-preference').textContent,'');},{handle:action=>action==='lookup'&&++loads>1?Response.json({error:'Project not found'},{status:404}):undefined});});
