@@ -3,6 +3,7 @@ import {authCall,prepareAuthCheck,authPayload} from './auth-session.js';
 import {mountConversation} from './conversation.js';
 import {createContractorSession} from './contractor-session.js';
 import {mountEstimate} from './estimates.js';
+import {pipelineSummary,renderPipeline} from './pipeline-summary.js';
 import {contactPreference} from './contact-preferences.js';
 const QUALIFICATION={unreviewed:'Needs review',qualified:'Qualified by your team',not_fit:'Not a fit'};
 let authCheck,signingIn=false;$('#signin button').disabled=true;
@@ -29,7 +30,7 @@ function clear(){
  interestPanel.replaceChildren();interestPanel.hidden=true;$('#project-search').value='';
  $('#linked-request').hidden=true;$('#result-count').textContent='';metrics();$('#signin').reset();
 }
-function metrics(){for(const [id,count]of [['total',projects.length],['new-count',projects.filter(p=>p.lead.status==='new').length],['review-count',projects.filter(p=>p.review.qualification==='unreviewed').length],['won-count',projects.filter(p=>p.lead.status==='won').length]])$('#'+id).textContent=count}
+function metrics(){const real=pipelineSummary(projects).projects;for(const [id,count]of [['total',real.length],['new-count',real.filter(p=>p.lead.status==='new').length],['review-count',real.filter(p=>p.review.qualification==='unreviewed').length],['won-count',real.filter(p=>p.lead.status==='won').length]])$('#'+id).textContent=count;renderPipeline($('#pipeline-summary'),projects,el)}
 function renderCoverage(){
  const target=$('#coverage-panel');target.replaceChildren();el('h3','Your request coverage',target);if(!coverage)return;
  el('p',coverage.cities.join(', ')+' · '+coverage.state+' · ZIP prefix '+coverage.zip_prefix,target,'small');
@@ -75,17 +76,23 @@ function render(){
    finally{savingStatus=false;select.disabled=false;select.removeAttribute('aria-busy')}
   };
   const estimateGeneration=generation;mountEstimate(card,{access,estimate:project.estimate,call,isCurrent:()=>estimateGeneration===generation&&workspace===access.business_id&&contractorSession.hasSession(),onSaved:value=>{project.estimate=value}});
-  const details=el('details',undefined,card,'review-details');el('summary','Private contractor review',details);el('p','Visible only to your business team. Qualification is your assessment, not independent verification or a guarantee of a booked job. Before marking a lead qualified, confirm a two-way reply, authority to arrange the work, scope, coverage and timing. A security check does not verify contact details.',details,'small');const form=el('form',undefined,details),qualLabel=el('label','Lead review',form),qual=el('select',undefined,qualLabel);for(const [value,text]of Object.entries(QUALIFICATION)){const option=new Option(text,value);option.selected=value===project.review.qualification;qual.append(option)}const noteLabel=el('label','Internal notes',form),note=el('textarea',undefined,noteLabel);note.maxLength=4000;note.value=project.review.notes;note.placeholder='Scope check, follow-up details, or why this request is a fit.';const button=el('button','Save private review',form);const saved=el('p',project.review.updated_at?'Last saved '+new Date(project.review.updated_at).toLocaleString('en-US'):'Not reviewed yet.',details,'small');saved.setAttribute('role','status');
+  const details=el('details',undefined,card,'review-details');el('summary','Private contractor review',details);el('p','Visible only to your business team. Qualification is your assessment, not independent verification or a guarantee of a booked job. Before marking a lead qualified, confirm a two-way reply, authority to arrange the work, scope, coverage and timing. A security check does not verify contact details. Saved assessments keep an internal revision history. Earlier assessments without these checks need a fresh review.',details,'small');const form=el('form',undefined,details),qualLabel=el('label','Lead review',form),qual=el('select',undefined,qualLabel);for(const [value,text]of Object.entries(QUALIFICATION)){const option=new Option(text,value);option.selected=value===project.review.qualification;qual.append(option)}const noteLabel=el('label','Internal notes',form),note=el('textarea',undefined,noteLabel);note.maxLength=4000;note.value=project.review.notes;note.placeholder='Scope check, follow-up details, or why this request is a fit.';const checksBox=el('fieldset',undefined,form);el('legend','Confirm before qualifying',checksBox);const checks={};for(const [key,label]of Object.entries({two_way:'I received a two-way reply from the requester',authority:'The requester can authorize or arrange this work',scope:'The painting scope is understood',coverage:'The property is within our service coverage',timing:'The timing is workable for our team'})){const labelEl=el('label',label,checksBox,'check');const input=el('input',undefined,labelEl);input.type='checkbox';input.checked=project.review.qualification_checks?.[key]===true;checks[key]=input;}
+  const reasonLabel=el('label','Reason this request is not a fit',form),reason=el('select',undefined,reasonLabel);for(const [value,label]of Object.entries({'':'Choose a reason',no_response:'No response after follow-up',outside_coverage:'Outside coverage',service_not_offered:'Service not offered',timing:'Timing does not work',budget:'Budget does not fit',not_authorized:'Requester cannot authorize the work',duplicate:'Duplicate request',invalid_contact:'Invalid contact information',customer_cancelled:'Customer cancelled',other:'Other — explain in notes'})){const option=new Option(label,value);option.selected=value===(project.review.disposition_reason||'');reason.append(option)}
+  const refreshReviewFields=()=>{checksBox.hidden=qual.value!=='qualified';reasonLabel.hidden=qual.value!=='not_fit'};qual.onchange=refreshReviewFields;refreshReviewFields();
+  const button=el('button','Save private review',form);const saved=el('p',project.review.updated_at?'Last saved '+new Date(project.review.updated_at).toLocaleString('en-US'):'Not reviewed yet.',details,'small');saved.setAttribute('role','status');
   let savingReview=false;const reviewGeneration=generation;
   const currentReview=()=>reviewGeneration===generation&&workspace===access.business_id&&card.isConnected&&contractorSession.hasSession();
   form.onsubmit=async event=>{
    event.preventDefault();if(savingReview||!currentReview())return;
-   const draft={qualification:qual.value,notes:note.value};savingReview=true;button.disabled=true;form.setAttribute('aria-busy','true');
+   const draft={qualification:qual.value,notes:note.value,qualification_checks:qual.value==='qualified'?Object.fromEntries(Object.entries(checks).map(([key,input])=>[key,input.checked===true])):null,disposition_reason:qual.value==='not_fit'?reason.value:null};
+   if(draft.qualification==='qualified'&&Object.values(draft.qualification_checks).some(v=>!v)){saved.textContent='Confirm all five checks before marking this request qualified.';return}
+   if(draft.qualification==='not_fit'&&(!draft.disposition_reason||(draft.disposition_reason==='other'&&!draft.notes.trim()))){saved.textContent='Choose a reason. For Other, explain it in internal notes.';return}
+   savingReview=true;button.disabled=true;form.setAttribute('aria-busy','true');
    try{
     const result=await call('pro-review',{...access,expected_revision:project.review.revision,...draft});
     if(!currentReview())return;
     project.review=result;metrics();
-    const edited=qual.value!==draft.qualification||note.value!==draft.notes;
+    const edited=qual.value!==draft.qualification||note.value!==draft.notes||(draft.qualification==='not_fit'&&reason.value!==draft.disposition_reason)||(draft.qualification==='qualified'&&Object.entries(checks).some(([key,input])=>input.checked!==draft.qualification_checks[key]));
     saved.textContent='Private review saved '+new Date(result.updated_at).toLocaleString('en-US')+(edited?'. Your newer changes are not saved yet.':'');
    }catch(e){if(currentReview())saved.textContent=e.message+' Your unsaved text is still here.'}
    finally{savingReview=false;button.disabled=false;form.removeAttribute('aria-busy')}

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {parseHTML} from 'linkedom';
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}}
+const formReason=document=>document.querySelector('.review-details form').querySelectorAll('select')[1];
 const result=(notes='Initial notes')=>({qualification:'qualified',notes,revision:1,updated_at:'2026-10-21T20:00:00Z'});
 async function screen(run,{handle=()=>{}}={}){
  const old=Object.fromEntries(['document','fetch','Option','FormData'].map(k=>[k,globalThis[k]]));
@@ -35,8 +36,8 @@ test('a pending private review rejects duplicate submits even with a changed dra
 });
 test('saved feedback distinguishes the submitted review from newer unsaved edits',async()=>{
  const reply=deferred(),started=deferred();let writes=0;
- await screen(async({note,qual,saved,calls,submit})=>{
-  const pending=submit();await started.promise;note.value='Newer notes';qual.value='not_fit';reply.resolve(Response.json(result()));await pending;
+ await screen(async({document,note,qual,saved,calls,submit})=>{
+  const pending=submit();await started.promise;note.value='Newer notes';qual.value='not_fit';formReason(document).value='timing';reply.resolve(Response.json(result()));await pending;
   assert.equal(note.value,'Newer notes');assert.equal(qual.value,'not_fit');assert.match(saved.textContent,/newer changes are not saved yet/);
   await submit();const write=calls.filter(c=>c.action==='pro-review').at(-1);assert.equal(write.body.notes,'Newer notes');assert.equal(write.body.expected_revision,1);
  },{handle:action=>{if(action==='pro-review'&&++writes===1){started.resolve();return reply.promise}}});
@@ -60,3 +61,6 @@ test('a response to a detached review cannot change the newly rendered form revi
 test('a detached private review cannot issue a new write after the panel is replaced',()=>screen(async({document,submit,calls})=>{
  document.querySelector('#project-search').oninput();await submit();assert.equal(calls.filter(c=>c.action==='pro-review').length,0);
 }));
+test('qualification needs every checklist item and an incomplete draft never dispatches',()=>screen(async({document,qual,saved,calls,submit})=>{qual.value='qualified';await submit();assert.match(saved.textContent,/all five checks/);assert.equal(calls.filter(c=>c.action==='pro-review').length,0);for(const input of document.querySelectorAll('.review-details input[type=checkbox]'))input.checked=true;await submit();assert.deepEqual(calls.find(c=>c.action==='pro-review').body.qualification_checks,{two_way:true,authority:true,scope:true,coverage:true,timing:true})}));
+test('not-fit requires a reason and Other requires notes without discarding the draft',()=>screen(async({document,qual,note,saved,calls,submit})=>{qual.value='not_fit';note.value='';await submit();assert.equal(calls.filter(c=>c.action==='pro-review').length,0);formReason(document).value='other';await submit();assert.equal(calls.filter(c=>c.action==='pro-review').length,0);note.value='Owner changed plans';await submit();assert.equal(calls.find(c=>c.action==='pro-review').body.disposition_reason,'other');assert.match(saved.textContent,/Private review saved/)}));
+test('newer checklist edits remain unsaved after the original assessment succeeds',async()=>{const reply=deferred(),started=deferred();await screen(async({document,qual,saved,submit})=>{qual.value='qualified';const checks=[...document.querySelectorAll('.review-details input[type=checkbox]')];for(const input of checks)input.checked=true;const pending=submit();await started.promise;checks[0].checked=false;reply.resolve(Response.json(result()));await pending;assert.equal(checks[0].checked,false);assert.match(saved.textContent,/newer changes are not saved yet/);},{handle:action=>{if(action==='pro-review'){started.resolve();return reply.promise}}})});
