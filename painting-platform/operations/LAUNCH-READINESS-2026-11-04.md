@@ -16,7 +16,12 @@
 - Connected owner Edge browser: both the Supabase settings tab and BUZZIE contractor tab failed on CDP focus setup. No account setting or credential was changed through these tabs. Owner was given connection-recovery instructions.
 
 ## Deployment evidence
-Record final API source read-back, access smoke and owner-private Site deployment below after publication.
+- GitHub implementation saved on feature/lead-engine-mvp at f8c110c9f7c3e53c741eeef751cb25b742b0c2be. PR remains a draft; main is untouched.
+- platform-api v20 ACTIVE; exact read-back equals the tested source. verify_jwt:false is preserved intentionally for public/guest endpoints with the existing manual Auth/session/membership gates.
+- Seven genuine read-only HTTP smoke checks passed at 2026-11-04T12:42:10Z: provider discovery 200, missing/invalid homeowner bearer 401, missing/invalid contractor bearer 403, foreign origin 403 and OPTIONS 204. Intake challenge required/available remain true; discovery account challenge flag remains false. This flag is not a read-back of native Auth settings.
+- Owner-private Site publication succeeded: deployment appgdep_6aeb284800e48191898dd0d897eb1eec, source commit 0a7229149890bf4bd4ab347e8dbe88cd49160f51, version appgprj_6ad381533a388191952df8df6da8f1e4~appgver_8e59d9824b748191958fe353183ddc75.
+- Review https://r-painters-projects.jessicuriel27.chatgpt.site/pro — sign in, open Private contractor review on a labelled test request, select Qualified to see required checks, or Not a fit for reasons. Changes save to the business-only review; they do not send a homeowner notification or change the project status. Owner authentication is needed; this new UI has not been accepted with a real session in this run.
+- Synthetic Chromium layout also checked at 320px: document/scroll widths both 305px (320px minus scrollbar), not-fit reason selector renders. These fixtures are in a separate directory and were not packaged or published. No real account/lead/email/message was created this session.
 
 ## Recovery
 - Previous API v19 source: GitHub feature/lead-engine-mvp commit 1189435cfa1d858085a8f55bd15bbd802eb0dea8, painting-platform/supabase/functions/platform-api/index.ts.

@@ -1,3 +1,14 @@
+## November 4, 2026 — structured qualification and honest pipeline counts
+
+Private contractor reviews now require explicit qualification checks or a not-fit
+reason, with an internal revision history. Source/outcome and headline counts
+exclude labelled system tests. The report covers the latest 100 loaded projects,
+not traffic conversion or a complete acquisition cohort. Verification: 508 mocked
+tests and 23 rollback SQL assertions. Native Auth configuration/live acceptance
+is blocked by the owner Edge connection; branded email is deferred by the owner.
+See [current evidence and remaining gates](operations/LAUNCH-READINESS-2026-11-04.md).
+Earlier dated sections below are historical.
+
 ## Contact preferences published — October 28, 2026
 
 Homeowners can now choose phone/email/either and a preferred Eastern-time window.
