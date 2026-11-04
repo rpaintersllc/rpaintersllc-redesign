@@ -1,0 +1,39 @@
+{
+  "checked_at": "2026-10-29T00:51:01.467Z",
+  "checks": [
+    {
+      "name": "provider discovery",
+      "status": 200
+    },
+    {
+      "name": "homeowner without bearer",
+      "status": 401
+    },
+    {
+      "name": "contractor without bearer",
+      "status": 403
+    },
+    {
+      "name": "homeowner invalid bearer",
+      "status": 401
+    },
+    {
+      "name": "contractor invalid bearer",
+      "status": 403
+    },
+    {
+      "name": "unapproved origin",
+      "status": 403
+    },
+    {
+      "name": "preflight",
+      "status": 204
+    }
+  ],
+  "intake_challenge": {
+    "required": true,
+    "available": true
+  },
+  "auth_challenge_required": false,
+  "limits": "No real homeowner login/logout, CAPTCHA success, email, writes or mobile journey tested."
+}

@@ -1,0 +1,26 @@
+export const API='https://ocmgrgvzhuhyigaddhue.supabase.co/functions/v1/platform-api';
+export const AUTH='https://ocmgrgvzhuhyigaddhue.supabase.co';
+export const PUBLISHABLE='sb_publishable_sUzZc6Nktk_wqQh4xTTMhw_nsF_-jki';
+export const STATUS={new:'Request received',contacted:'Conversation started',visit_scheduled:'Site visit planned',quoted:'Estimate provided',won:'Project booked',lost:'Project closed'};
+export const $=s=>document.querySelector(s);
+export function el(tag,text,parent,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;if(parent)parent.append(node);return node}
+export async function api(action,body,token){const response=await fetch(API+'?action='+action,{method:body===undefined?'GET':'POST',headers:{apikey:PUBLISHABLE,'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(30000)});const data=await response.json();if(!response.ok){const error=Error(data.error||'Please try again.');error.status=response.status;throw error}return data}
+export function credentials(){const params=new URLSearchParams(location.hash.slice(1));return {project_id:params.get('project')||new URLSearchParams(location.search).get('project')||'',access_token:params.get('key')||''}}
+export function projectLink(id,key){return new URL('project.html',location.href).href+(key?'#project='+encodeURIComponent(id)+'&key='+encodeURIComponent(key):'?project='+encodeURIComponent(id))}
+export function randomKey(){return [...crypto.getRandomValues(new Uint8Array(32))].map(v=>v.toString(16).padStart(2,'0')).join('')}
+export function attribution(){try{const p=new URLSearchParams(location.search);for(const key of ['utm_source','utm_campaign'])if(p.has(key))sessionStorage.setItem('painting.'+key,p.get(key).slice(0,200));return Object.fromEntries(['utm_source','utm_campaign'].map(key=>[key,sessionStorage.getItem('painting.'+key)||'']))}catch{return {}}}
+export async function uploadPhoto(file,access,token){const response=await fetch(API+'?action=upload',{method:'POST',headers:{apikey:PUBLISHABLE,'content-type':file.type,'x-project-id':access.project_id,...(access.access_token?{'x-project-token':access.access_token}:{}),...(token?{authorization:'Bearer '+token}:{})},body:file,signal:AbortSignal.timeout(40000)});const result=await response.json();if(!response.ok)throw Error(result.error||'Photo was not saved.');return result}
+export function validatePhotos(files){if(files.length>5)throw Error('Choose up to five photos.');for(const file of files)if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5242880)throw Error('Photos must be JPEG, PNG or WebP and no larger than 5 MB each.')}
+export function savedProjects(){try{return JSON.parse(localStorage.getItem('painting.saved')||'[]').filter(x=>typeof x.project_id==='string'&&typeof x.access_token==='string').slice(0,20)}catch{return []}}
+export function remember(access){const saved=savedProjects().filter(x=>x.project_id!==access.project_id);saved.unshift(access);localStorage.setItem('painting.saved',JSON.stringify(saved.slice(0,20)))}
+export function drawPhotos(photos,target){
+ target.replaceChildren();
+ for(const [index,photo]of (photos||[]).entries()){
+  const number=index+1;
+  const unavailable=()=>{const notice=el('p','Photo '+number+' could not load. Refresh this workspace to try again.',undefined,'small');notice.setAttribute('role','status');return notice};
+  if(!photo.url){target.append(unavailable());continue}
+  const image=document.createElement('img');image.alt='Private project photo '+number;image.loading='lazy';
+  image.onerror=()=>{if(image.parentNode!==target)return;image.onerror=null;image.replaceWith(unavailable())};
+  image.src=photo.url;target.append(image);
+ }
+}
