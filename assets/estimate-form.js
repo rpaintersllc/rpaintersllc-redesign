@@ -45,7 +45,7 @@
       window.location.assign('/thank-you.html?submitted=1');
     };
     window.setTimeout(redirect, 1500);
-    track('generate_lead', { service_type: selectedServices().join(', '), project_type: form.elements.project_type.value });
+    track('generate_lead', { send_to: 'G-W2RCFRQ3H2', service_type: selectedServices().join(', '), project_type: form.elements.project_type.value });
     track('conversion', {
       send_to: 'AW-16484428857/xJsICK_A0aYcELnYsbQ9',
       transaction_id: window.crypto.randomUUID(),
