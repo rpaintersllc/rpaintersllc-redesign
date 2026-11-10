@@ -1,0 +1,22 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {parseHTML} from 'linkedom';
+import {estimateCents,mountEstimate} from '../web/estimates.js';
+const access={project_id:'synthetic-project',business_id:'synthetic-business'};
+function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}}
+async function screen(run,{estimate=null,handle=async(action,body)=>({...body,currency:'USD',revision:body.expected_revision+1}),current=()=>true}={}){
+ const previous=globalThis.document;const {document}=parseHTML('<html><body><section id="target"></section></body></html>');globalThis.document=document;const calls=[],saved=[];
+ try{const target=document.querySelector('#target'),details=mountEstimate(target,{access,estimate,isCurrent:current,call:async(action,body)=>{calls.push({action,body});return handle(action,body)},onSaved:value=>saved.push(value)});
+ const form=details.querySelector('form'),input=form.querySelector('input'),button=form.querySelector('button'),status=details.querySelector('[role=status]');
+ await run({target,details,form,input,button,status,calls,saved,submit:()=>form.onsubmit({preventDefault(){}})});
+ }finally{globalThis.document=previous}
+}
+test('estimate parsing stores exact cents and both boundaries',()=>{for(const [value,cents] of [['0.01',1],['2500.01',250001],[' 2500 ',250000],['9999999.99',999999999],['0002.5',250]])assert.equal(estimateCents(value),cents)});
+test('estimate parsing rejects zero, negative, exponent, currency symbols and excessive precision',()=>{for(const value of ['','0','0.00','-1','1e3','$2500','2,500','3.141','10000000','Infinity','NaN'])assert.equal(estimateCents(value),null)});
+test('existing estimate is shown with its private tracking limits',()=>screen(async({input,status,details})=>{assert.equal(input.value,'2500.01');assert.match(status.textContent,/\$2,500.01/);assert.match(details.textContent,/does not send a quote/);assert.match(details.textContent,/latest saved amount/)},{estimate:{amount_cents:250001,currency:'USD',revision:2}}));
+test('invalid amount makes no write',()=>screen(async({input,status,calls,submit})=>{input.value='2.001';await submit();assert.equal(calls.length,0);assert.match(status.textContent,/two decimal places/)}));
+test('saved estimate advances the expected revision on a deliberate next save',()=>screen(async({input,calls,saved,submit,status})=>{input.value='2500.01';await submit();input.value='3000';await submit();assert.deepEqual(calls.map(x=>x.body.expected_revision),[0,1]);assert.deepEqual(calls.map(x=>x.body.amount_cents),[250001,300000]);assert.equal(saved.length,2);assert.match(status.textContent,/\$3,000.00/)}));
+test('busy estimate blocks duplicate submits and preserves a newer amount',()=>{const reply=deferred();return screen(async({input,button,form,status,calls,submit})=>{input.value='2500';const pending=submit();input.value='2600';await submit();assert.equal(calls.length,1);assert.equal(button.disabled,true);assert.equal(form.getAttribute('aria-busy'),'true');reply.resolve({amount_cents:250000,currency:'USD',revision:1});await pending;assert.equal(input.value,'2600');assert.match(status.textContent,/newer amount is not saved/);assert.equal(button.disabled,false);assert.equal(form.hasAttribute('aria-busy'),false)},{handle:()=>reply.promise})});
+for(const code of [409,503])test('estimate error '+code+' retains amount and requires a refresh before retry',()=>screen(async({input,status,button,calls,submit})=>{input.value='2500';await submit();assert.equal(input.value,'2500');assert.equal(button.disabled,true);assert.match(status.textContent,/Refresh the workspace/);await submit();assert.equal(calls.length,1)},{handle:async()=>{throw Object.assign(Error('Synthetic failure'),{status:code})}}));
+for(const mode of ['detach','session'])test(mode+' during save suppresses stale estimate results',()=>{let valid=true;const reply=deferred();return screen(async({target,input,saved,submit,status})=>{input.value='2500';const pending=submit();if(mode==='detach')target.remove();else valid=false;reply.resolve({amount_cents:250000,currency:'USD',revision:1});await pending;assert.equal(saved.length,0);assert.doesNotMatch(status.textContent,/Private estimate saved/)},{current:()=>valid,handle:()=>reply.promise})});
+test('retired estimate form cannot dispatch a write',()=>screen(async({target,input,calls,submit})=>{input.value='2500';target.remove();await submit();assert.equal(calls.length,0)}));
