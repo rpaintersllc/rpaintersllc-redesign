@@ -35,3 +35,18 @@ Review the existing private /pro.html route using the approved business email an
 BUZZIE password. Refresh before signing in to load this release. An existing tab
 loaded before deployment retains its old JavaScript until refreshed. The owner
 must complete password entry; never request it in chat.
+
+## Publication and browser evidence
+
+Owner-private Site deployment succeeded: appgdep_6af723ae38b881918bd83c626457da3e,
+source 677e37e4b1ddd5aa1b74c94af0283919ef01ac9c, saved version
+appgprj_6ad381533a388191952df8df6da8f1e4~appgver_16a99ec373248191ac4ec3b4097b7c49.
+Implementation commit 75f1af17d8ef3cf3ace896f6fc769fd951fc121d is saved on the
+existing feature branch/PR #30; no merge, backend change or public audience change.
+
+Synthetic browser acceptance showed Your lead inbox with its opportunity card and
+Homeowner requests & projects below after one sign-in. Source/filter controls are
+collapsed and no second sign-in is displayed. At 390px the frame document and
+scroll widths were 375px. This is simulated contractor data, not a real owner login.
+The preview is kept separate from production assets and was not packaged.
+
