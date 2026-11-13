@@ -35,7 +35,7 @@ proof of acquisition. Consenting homeowner requests remain a separate workflow.
   authorization. Leases prevent concurrent double sends; manual retry uses the
   same reference/snapshot, backs off for one minute and stops at five attempts.
   Each attempt and outcome is retained. No automatic scheduler was added.
-- Dedicated `buzzie-intake` CRM receiver, scoped hashed credential, no browser CORS.
+- Dedicated `buzzie-opportunity-receiver` CRM receiver, scoped hashed credential, no browser CORS.
   It preserves source/date/scope and creates a cold prospect without fabricating a
   customer, email, phone, consent, quote, booking or revenue. The dedicated key is
   encrypted in the BUZZIE Vault; CRM stores its hash. Existing website keys,
@@ -49,11 +49,11 @@ proof of acquisition. Consenting homeowner requests remain a separate workflow.
 
 ## Verification so far
 
-- Node 24: 540 mocked Node/DOM tests, including auth/session/owner rejection,
+- Node 24: 541 mocked Node/DOM tests, including auth/session/owner rejection,
   explicit send authorization, receipt identity matching, timeout handling,
   stale/unverified approval, filters, drafts, UI cleanup and receiver credential
   hashing. All browser modules statically link. These are simulated requests.
-- 22 BUZZIE workflow assertions and 14 CRM receiver assertions passed against real
+- 22 BUZZIE workflow assertions and 15 CRM receiver assertions passed against real
   databases using rollback-only synthetic records and service_role RPC execution.
   Covers scopes, frozen snapshots, backoff, attempt history, duplicate reference,
   conflicting payload, dry-run/no-persistence, no fabricated contact and grants/RLS.
@@ -100,9 +100,48 @@ Keep existing records/receipts for idempotency. Roll back Site source to
 0a7229149890bf4bd4ab347e8dbe88cd49160f51 if needed. New functions are isolated;
 platform-api v20 and the legacy Lead Engine functions are unchanged.
 
+The first real catalog candidate is saved as opportunity
+75b287cc-5431-4699-8994-c1c991577ceb, unreviewed and not transferred. The original
+SCBO page was opened through web retrieval as well as the catalog parser.
+
+A naming collision occurred with a concurrent CRM deployment of `buzzie-intake`.
+This branch's initial deployment replaced that newly created function. The bridge
+was isolated immediately as `buzzie-opportunity-receiver`; the CRM's independently
+prepared `buzzie-management` function is now ACTIVE v1. No key was reused or
+rotated from the concurrent feature. Its canonical import registry is preserved.
+Do not deploy this branch's receiver to `buzzie-intake` again.
+
+Live dedicated receiver validation returned HTTP 200, validated=true,
+persisted=false and the expected synthetic reference. This validates configured
+credential/receiver/database access, not an owner-authorized end-to-end lead write.
+
+Local Chromium at 390px verified synthetic sign-in, manual review/approval and a
+mocked CRM receipt/attempt display with the send button disabled afterward. The
+frame document/scroll widths were both 375px. At 320px the sign-in document/scroll
+widths were both 305px. Physical-phone acceptance and real sign-in remain separate.
+
 No actual approved opportunity has been transferred in this session. Real owner
 sign-in, physical phone testing and the first owner-approved business transfer
 must be distinguished from mocks and SQL rollback evidence. More permitted B2B/
 property-manager sources need an actual hiring request, not a list of names.
 Branded email/native Auth CAPTCHA remain separate older launch gates. No public
 launch, spending, new subscriptions or automatic outreach is authorized.
+
+## Latest deployed evidence
+
+- Source API buzzie-opportunities v2 and CRM buzzie-opportunity-receiver v1
+  read-back exactly match tested code. Eight real HTTP rejection/preflight checks
+  passed at 2026-11-13T14:30:52Z, plus the successful dry validation described above.
+- Owner-private Site deployment succeeded: appgdep_6af71f47a4788191a4dc937d47bd22ce,
+  source 4d7ad8b6b3d80089af951b3b3fbebb392f4ef511. A final UI correction hides labelled
+  system tests by default; its publication evidence will supersede this source.
+- During the concurrent CRM work a labelled synthetic approval-flow fixture also
+  reached the CRM: source 19680001-0000-4000-8000-000000000003, CRM lead
+  87bf2268-aab3-4ebe-bba8-4dc9eda0d650. Independently read matching BUZZIE sent/
+  confirmed state and CRM receipt at 2026-11-13T14:28:11Z. This is a synthetic
+  cross-system receipt, not a customer, booked work or proof of an owner browser
+  session. Do not delete concurrent test data or count it as acquisition. Labelled
+  tests are hidden by default with an explicit Show labelled system tests option.
+- Manual transfers are enabled; automation remains absent/off. The real SCBO
+  candidate remains unreviewed and has not been sent. No real customer prospect
+  was contacted or transferred by this task.

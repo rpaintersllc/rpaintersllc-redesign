@@ -1,5 +1,5 @@
 const ORIGIN='https://r-painters-projects.jessicuriel27.chatgpt.site';
-const CRM='https://fkhwyhodmjuwegupajtb.supabase.co/functions/v1/buzzie-intake';
+const CRM='https://fkhwyhodmjuwegupajtb.supabase.co/functions/v1/buzzie-opportunity-receiver';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 export const AREAS=['Charleston','Summerville','Mount Pleasant','James Island','Johns Island','Kiawah Island','Seabrook Island','North Charleston','West Ashley','Daniel Island','Goose Creek','Ladson','Hanahan','Cane Bay','Moncks Corner','Isle of Palms',"Sullivan's Island",'Folly Beach'];
 export function sourceURL(value){const u=new URL(value);if(u.protocol!=='https:'||u.username||u.password||u.port||u.href.length>1000||!/[a-z]\.[a-z]/i.test(u.hostname)||/^(localhost\.|.*\.(?:local|internal)$)/i.test(u.hostname))throw Error('invalid');for(const k of [...u.searchParams.keys()])if(/^utm_|^(fbclid|gclid)$/i.test(k))u.searchParams.delete(k);u.searchParams.sort();u.hash='';return u.href}

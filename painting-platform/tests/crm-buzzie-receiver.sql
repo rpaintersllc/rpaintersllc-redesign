@@ -15,6 +15,7 @@ do $$ declare org uuid:=gen_random_uuid();p uuid:=gen_random_uuid();r jsonb;firs
  assert (select count(*)=1 from public.leads where organization_id=org),'duplicate lead';
  assert (select customer_id is null and source='BUZZIE' and stage='cold_leads' and buzzie_metadata->>'source_url'='https://example.invalid/buzzie-rollback' from public.leads where id=first_id),'provenance retained, no customer fabricated';
  assert not exists(select 1 from public.customers where organization_id=org),'invented customer';
+ assert (select buzzie_metadata->>'original_description'='Synthetic transactional receiver test' and buzzie_metadata->>'source_platform'='Rollback fixture' and buzzie_metadata->>'verification_status'='source_verified' from public.leads where id=first_id),'canonical CRM display fields';
  update public.crm_buzzie_integrations set enabled=false where organization_id=org;
  r:=public.crm_receive_buzzie(repeat('a',64),payload);assert r->>'error'='unauthorized','disabled credential';
  assert not has_function_privilege('authenticated','public.crm_receive_buzzie(text,jsonb,boolean)','execute'),'client RPC';
@@ -22,4 +23,4 @@ do $$ declare org uuid:=gen_random_uuid();p uuid:=gen_random_uuid();r jsonb;firs
  assert (select relrowsecurity from pg_class where oid='public.crm_buzzie_receipts'::regclass),'receipt RLS';
 end $$;
 rollback;
-select 14 as assertions_passed,(select count(*) from public.organizations where name='BUZZIE ROLLBACK RECEIVER TEST') as fixture_orgs_remaining;
+select 15 as assertions_passed,(select count(*) from public.organizations where name='BUZZIE ROLLBACK RECEIVER TEST') as fixture_orgs_remaining;
