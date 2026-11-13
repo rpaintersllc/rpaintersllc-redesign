@@ -117,7 +117,7 @@ credential/receiver/database access, not an owner-authorized end-to-end lead wri
 
 Local Chromium at 390px verified synthetic sign-in, manual review/approval and a
 mocked CRM receipt/attempt display with the send button disabled afterward. The
-frame document/scroll widths were both 375px. At 320px the sign-in document/scroll
+frame document/scroll widths were both 375px. At 320px the loaded workspace document/scroll
 widths were both 305px. Physical-phone acceptance and real sign-in remain separate.
 
 No actual approved opportunity has been transferred in this session. Real owner
@@ -132,9 +132,12 @@ launch, spending, new subscriptions or automatic outreach is authorized.
 - Source API buzzie-opportunities v2 and CRM buzzie-opportunity-receiver v1
   read-back exactly match tested code. Eight real HTTP rejection/preflight checks
   passed at 2026-11-13T14:30:52Z, plus the successful dry validation described above.
-- Owner-private Site deployment succeeded: appgdep_6af71f47a4788191a4dc937d47bd22ce,
-  source 4d7ad8b6b3d80089af951b3b3fbebb392f4ef511. A final UI correction hides labelled
-  system tests by default; its publication evidence will supersede this source.
+- Final owner-private Site deployment succeeded: appgdep_6af7200045548191a84ca8b094b20ce6,
+  source a324110bf795400ef85b64b7a5de61659088ee6c, saved version
+  appgprj_6ad381533a388191952df8df6da8f1e4~appgver_f6c10016fa788191aba86a69b20b7922.
+  Labelled system tests are hidden by default. Draft PR #30 is stacked on the
+  pilot branch: https://github.com/rpaintersllc/rpaintersllc-redesign/pull/30.
+  No PR was merged and main/public R Painters pages remain unchanged.
 - During the concurrent CRM work a labelled synthetic approval-flow fixture also
   reached the CRM: source 19680001-0000-4000-8000-000000000003, CRM lead
   87bf2268-aab3-4ebe-bba8-4dc9eda0d650. Independently read matching BUZZIE sent/
@@ -145,3 +148,4 @@ launch, spending, new subscriptions or automatic outreach is authorized.
 - Manual transfers are enabled; automation remains absent/off. The real SCBO
   candidate remains unreviewed and has not been sent. No real customer prospect
   was contacted or transferred by this task.
+
