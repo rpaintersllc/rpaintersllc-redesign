@@ -4,10 +4,13 @@ import {mountConversation} from './conversation.js';
 import {createContractorSession} from './contractor-session.js';
 import {mountEstimate} from './estimates.js';
 import {pipelineSummary,renderPipeline} from './pipeline-summary.js';
+import {mountOpportunityDesk} from './opportunities.js';
 import {contactPreference} from './contact-preferences.js';
 const QUALIFICATION={unreviewed:'Needs review',qualified:'Qualified by your team',not_fit:'Not a fit'};
 let authCheck,signingIn=false;$('#signin button').disabled=true;
-let workspace='',projects=[],coverage=null,role='',generation=0;
+let workspace='',projects=[],coverage=null,role='',generation=0;let opportunityDesk;
+function retireLeadInbox(){opportunityDesk?.clear();$('#contractor-opportunity-inbox').hidden=true}
+
 const linkedId=new URLSearchParams(globalThis.location?.search||'').get('project')||'';
 let linkedProject=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(linkedId)?linkedId:'';
 const contractorSession=createContractorSession(body=>authCall('token?grant_type=refresh_token',body),clear);
@@ -24,7 +27,7 @@ const call=async(action,body)=>{
  }
 };
 function clear(){
- generation++;contractorSession.clear();workspace='';projects=[];coverage=null;role='';
+ generation++;contractorSession.clear();retireLeadInbox();workspace='';projects=[];coverage=null;role='';
  $('#workspace').hidden=true;$('#login').hidden=false;$('#projects').replaceChildren();
  $('#coverage-panel').replaceChildren();$('#business-select').replaceChildren();$('#business-title').textContent='';
  interestPanel.replaceChildren();interestPanel.hidden=true;$('#project-search').value='';
@@ -100,7 +103,7 @@ function render(){
  }
 }
 async function load(){
- const version=++generation;let result;
+ retireLeadInbox();const version=++generation;let result;
  try{result=await call('pro-list'+(workspace?'&business_id='+workspace:''))}
  catch(error){if(version!==generation||!contractorSession.hasSession())return false;throw error}
  if(version!==generation||!contractorSession.hasSession())return false;
@@ -108,7 +111,13 @@ async function load(){
  projects=result.projects.map(p=>({...p,review:p.review||{qualification:'unreviewed',notes:'',revision:0}}));
  $('#login').hidden=true;$('#workspace').hidden=false;$('#business-title').textContent=result.business.name;$('#business-select').replaceChildren();
  for(const m of result.memberships){const option=new Option(m.name,m.business_id);option.selected=m.business_id===workspace;$('#business-select').append(option)}
- metrics();renderCoverage();render();interestPanel.replaceChildren();interestPanel.hidden=!result.can_review_interest;
+ metrics();renderCoverage();render();
+ if(role==='owner'&&result.business.slug==='r-painters-llc'){
+  opportunityDesk ||= mountOpportunityDesk({sharedSession:contractorSession,onAccessLost:()=>{clear();$('#message').textContent='Sign in again to verify access to your lead inbox.'}});$('#contractor-opportunity-inbox').hidden=false;
+  try{await opportunityDesk.refresh()}catch(e){if(version===generation&&contractorSession.hasSession())$('#op-message').textContent=e.message}
+  if(version!==generation||!contractorSession.hasSession())return false;
+ }
+ interestPanel.replaceChildren();interestPanel.hidden=!result.can_review_interest;
  if(result.can_review_interest){
   try{
    const data=await call('interest-list');if(version!==generation||!contractorSession.hasSession())return false;
