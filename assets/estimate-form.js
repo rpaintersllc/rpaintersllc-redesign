@@ -163,6 +163,11 @@
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (submitting || !validateStep()) return;
+    // Enter on an early step must advance, never submit an incomplete request.
+    if (currentStep < steps.length - 1) {
+      nextButton.click();
+      return;
+    }
     if (!endpoint) {
       showError('The estimate form is temporarily unavailable. Please call 843-475-9927 and we will help you directly.');
       return;

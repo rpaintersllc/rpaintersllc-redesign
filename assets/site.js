@@ -1,6 +1,6 @@
 const toggle=document.querySelector('.menu-toggle');
 const menu=document.querySelector('.nav-menu');
-if(toggle&&menu){toggle.addEventListener('click',()=>{const open=menu.classList.toggle('open');toggle.setAttribute('aria-expanded',String(open));});menu.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{menu.classList.remove('open');toggle.setAttribute('aria-expanded','false');}));}
+if(toggle&&menu){toggle.addEventListener('click',()=>{const open=menu.classList.toggle('open');toggle.setAttribute('aria-expanded',String(open));toggle.setAttribute('aria-label',open?'Close navigation':'Open navigation');});menu.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{menu.classList.remove('open');toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','Open navigation');}));}
 document.querySelectorAll('[data-year]').forEach(node=>{node.textContent=String(new Date().getFullYear());});
 
 // Keep legacy page markup safe during rollout while preserving the explicit backup link.
@@ -77,3 +77,5 @@ if (!document.querySelector('main.estimate-page')) {
   leadBar.innerHTML='<a class="mobile-lead-call" href="tel:+18434759927">Call Now</a><a class="mobile-lead-estimate" href="/request-estimate.html">Free Estimate</a>';
   document.body.appendChild(leadBar);
 }
+
+if(toggle&&menu){document.addEventListener('keydown',event=>{if(event.key==='Escape'&&menu.classList.contains('open')){menu.classList.remove('open');toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','Open navigation');toggle.focus();}});}
