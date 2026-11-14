@@ -1,0 +1,26 @@
+begin;
+set local statement_timeout='15s';set local lock_timeout='2s';
+do $$ declare org uuid:=gen_random_uuid();p uuid:=gen_random_uuid();r jsonb;first_id uuid;payload jsonb;begin
+ insert into public.organizations(id,name) values(org,'BUZZIE ROLLBACK RECEIVER TEST');
+ insert into public.crm_buzzie_integrations(organization_id,token_hash,enabled) values(org,repeat('a',64),true);
+ execute 'set local role service_role';
+ payload:=jsonb_build_object('reference','buzzie:'||p,'title','Synthetic opportunity, not a customer','source_name','Rollback fixture','source_url','https://example.invalid/buzzie-rollback','description','Synthetic transactional receiver test','city','Summerville','reason','Synthetic approval, not customer consent','relationship','direct','priority','high','verification','owner_checked_original','contact_consent',false,'published_at',now());
+ r:=public.crm_receive_buzzie(repeat('b',64),payload);assert r->>'error'='unauthorized','wrong token hash';
+ r:=public.crm_receive_buzzie(repeat('a',64),payload,true);assert r->>'validated'='true' and r->>'persisted'='false','dry run';
+ assert not exists(select 1 from public.leads where organization_id=org),'dry run wrote lead';
+ r:=public.crm_receive_buzzie(repeat('a',64),payload||'{"contact_consent":true}');assert r->>'error'='invalid','fabricated consent';
+ r:=public.crm_receive_buzzie(repeat('a',64),payload);assert r->>'saved'='true' and r->>'duplicate'='false','first save';first_id:=(r->>'lead_id')::uuid;
+ r:=public.crm_receive_buzzie(repeat('a',64),payload);assert r->>'duplicate'='true' and (r->>'lead_id')::uuid=first_id,'idempotent retry';
+ r:=public.crm_receive_buzzie(repeat('a',64),payload||'{"title":"Changed retry content"}');assert r->>'error'='reference_conflict','snapshot conflict';
+ assert (select count(*)=1 from public.leads where organization_id=org),'duplicate lead';
+ assert (select customer_id is null and source='BUZZIE' and stage='cold_leads' and buzzie_metadata->>'source_url'='https://example.invalid/buzzie-rollback' from public.leads where id=first_id),'provenance retained, no customer fabricated';
+ assert not exists(select 1 from public.customers where organization_id=org),'invented customer';
+ assert (select buzzie_metadata->>'original_description'='Synthetic transactional receiver test' and buzzie_metadata->>'source_platform'='Rollback fixture' and buzzie_metadata->>'verification_status'='source_verified' from public.leads where id=first_id),'canonical CRM display fields';
+ update public.crm_buzzie_integrations set enabled=false where organization_id=org;
+ r:=public.crm_receive_buzzie(repeat('a',64),payload);assert r->>'error'='unauthorized','disabled credential';
+ assert not has_function_privilege('authenticated','public.crm_receive_buzzie(text,jsonb,boolean)','execute'),'client RPC';
+ assert not has_table_privilege('anon','public.crm_buzzie_receipts','select'),'public receipt';
+ assert (select relrowsecurity from pg_class where oid='public.crm_buzzie_receipts'::regclass),'receipt RLS';
+end $$;
+rollback;
+select 15 as assertions_passed,(select count(*) from public.organizations where name='BUZZIE ROLLBACK RECEIVER TEST') as fixture_orgs_remaining;
