@@ -8,9 +8,24 @@
   <link rel="canonical" href="https://rpaintersllc.com/blog.html"><link rel="icon" href="/logo/logo.ico" type="image/x-icon"><link rel="stylesheet" href="/assets/site.css?v=20261113">
   <meta property="og:type" content="website"><meta property="og:title" content="Painting Tips & Local Guides | R Painters LLC"><meta property="og:description" content="Helpful painting advice for Charleston and Lowcountry homeowners."><meta property="og:url" content="https://rpaintersllc.com/blog.html"><meta property="og:image" content="https://rpaintersllc.com/images/optimized/15.webp">
   <script>
-    if (new URLSearchParams(window.location.search).get('post') === 'licensed-painting-contractor-charleston') {
+    const retiredPost = 'licensed-painting-contractor-charleston';
+    if (new URLSearchParams(window.location.search).get('post') === retiredPost) {
       window.location.replace('/blog.html');
     }
+    window.addEventListener('DOMContentLoaded', () => {
+      const blog = document.getElementById('soro-blog');
+      if (!blog) return;
+      const removeRetiredCard = () => {
+        const card = blog.querySelector(`.soro-blog-card[data-slug="${retiredPost}"]`);
+        if (!card) return false;
+        card.remove();
+        return true;
+      };
+      const observer = new MutationObserver(() => {
+        if (removeRetiredCard()) observer.disconnect();
+      });
+      if (!removeRetiredCard()) observer.observe(blog, { childList: true, subtree: true });
+    });
   </script>
   <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16484428857"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-W2RCFRQ3H2');gtag('config','AW-16484428857');</script>
 </head>
