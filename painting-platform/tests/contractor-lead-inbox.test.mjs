@@ -13,3 +13,11 @@ test('contractor logout clears both lead inbox and homeowner data immediately',(
 for(const [name,opts]of [['staff',{role:'staff'}],['other-company owner',{slug:'another-company'}]])test(name+' never opens the R Painters owner opportunity API',()=>screen(async({document,calls,login})=>{await login();assert.equal(calls.some(c=>c.url.includes('/buzzie-opportunities')),false);assert.equal(document.querySelector('#contractor-opportunity-inbox').hidden,true)},opts));
 test('a denied opportunity request retires the whole contractor session',()=>screen(async({document,login})=>{await login();assert.equal(document.querySelector('#workspace').hidden,true);assert.equal(document.querySelector('#projects').textContent,'');assert.equal(document.querySelector('#op-records').textContent,'')},{opResponse:()=>Response.json({error:'Expired session'},{status:401})}));
 test('late opportunity results cannot restore data after contractor logout',async()=>{const started=deferred(),reply=deferred();await screen(async({document,login})=>{const pending=login();await started.promise;await document.querySelector('#signout').onclick();reply.resolve(Response.json({records:[opportunity],scans:[]}));await pending;assert.equal(document.querySelector('#op-records').textContent,'');assert.equal(document.querySelector('#workspace').hidden,true)},{opResponse:()=>{started.resolve();return reply.promise}})});
+
+
+test('homeowner estimate requests precede researched opportunities in the contractor inbox',()=>screen(async({document,login})=>{
+ await login();const order=[...document.querySelector('#workspace').querySelectorAll('#projects,#contractor-opportunity-inbox')].map(x=>x.id);
+ assert.deepEqual(order,['projects','contractor-opportunity-inbox']);
+ assert.match(document.querySelector('#contractor-opportunity-inbox h2').textContent,/Researched opportunities/);
+ assert.equal(document.querySelector('a[href="#homeowner-inbox"]').textContent,'My lead inbox');
+}));
