@@ -74,9 +74,9 @@
 
           <fieldset class="form-step" data-step="2">
             <legend>Project location and services</legend>
-            <p class="step-intro">Tell us your city and what you would like painted. We can confirm the full address later.</p>
+            <p class="step-intro">Tell us where the project is and what you would like painted.</p>
             <div class="form-grid">
-              <label>Street address <small>(optional)</small><input name="address" autocomplete="street-address" maxlength="140"></label>
+              <label>Street address <span>*</span><input name="address" autocomplete="street-address" required pattern=".*\S.*" maxlength="140"></label>
             </div>
             <div class="form-grid two">
               <label>City <span>*</span><input name="city" autocomplete="address-level2" required maxlength="60"></label>
