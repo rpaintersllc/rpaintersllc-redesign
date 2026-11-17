@@ -12,7 +12,7 @@
   const photoInput = document.getElementById('project-photo');
   const photoList = document.getElementById('photo-list');
   const endpoint = form.dataset.endpoint.trim();
-  const stepNames = ['Contact information', 'Project address', 'Project details', 'Scheduling preferences'];
+  const stepNames = ['Contact information', 'Project details', 'Scheduling preferences'];
   let currentStep = 0;
   let formStarted = false;
   let submitting = false;
@@ -82,7 +82,7 @@
       section.hidden = !visible;
       section.querySelectorAll('input, textarea, select').forEach(field => {
         field.disabled = !visible;
-        if (field.matches('textarea, input') && field.name !== 'cabinet_condition') field.required = visible;
+        if (field.matches('textarea, input') && field.name !== 'cabinet_condition') field.required = false;
       });
     });
   };
@@ -94,7 +94,7 @@
       render();
       return false;
     }
-    if (currentStep === 2 && selectedServices().length === 0) {
+    if (currentStep === 1 && selectedServices().length === 0) {
       showError('Please select at least one service requested.');
       form.querySelector('input[name="service_type"]')?.focus();
       return false;
