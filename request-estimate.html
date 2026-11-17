@@ -37,7 +37,7 @@
       <div class="estimate-card">
         <div class="form-progress" aria-label="Form progress">
           <div class="progress-bar"><span id="progress-fill"></span></div>
-          <p><strong id="step-label">Step 1 of 4</strong><span id="step-name">Contact information</span></p>
+          <p><strong id="step-label">Step 1 of 3</strong><span id="step-name">Contact information</span></p>
         </div>
 
         <div id="form-error" class="form-error" hidden role="alert"></div>
@@ -73,21 +73,17 @@
           </fieldset>
 
           <fieldset class="form-step" data-step="2">
-            <legend>Project address</legend>
-            <p class="step-intro">Tell us where the work will take place.</p>
+            <legend>Project location and services</legend>
+            <p class="step-intro">Tell us your city and what you would like painted. We can confirm the full address later.</p>
             <div class="form-grid">
-              <label>Street address <span>*</span><input name="address" autocomplete="street-address" required maxlength="140"></label>
+              <label>Street address <small>(optional)</small><input name="address" autocomplete="street-address" maxlength="140"></label>
             </div>
             <div class="form-grid two">
               <label>City <span>*</span><input name="city" autocomplete="address-level2" required maxlength="60"></label>
-              <label>ZIP code <span>*</span><input name="postal_code" autocomplete="postal-code" required inputmode="numeric" pattern="[0-9]{5}(-[0-9]{4})?" maxlength="10"></label>
+              <label>ZIP code <small>(optional)</small><input name="postal_code" autocomplete="postal-code" inputmode="numeric" pattern="[0-9]{5}(-[0-9]{4})?" maxlength="10"></label>
             </div>
-          </fieldset>
 
-          <fieldset class="form-step" data-step="3">
-            <legend>Service details</legend>
-            <p class="step-intro">Tell us what needs attention so we can prepare for the walkthrough.</p>
-            <div class="form-grid"><label>Is this a home or business? <span>*</span><select name="project_type" required><option value="">Select one</option><option>Residential</option><option>Commercial</option><option>Rental / property management</option></select></label></div>
+            <div class="form-grid"><label>Is this a home or business? <small>(optional)</small><select name="project_type"><option value="">Select one</option><option>Residential</option><option>Commercial</option><option>Rental / property management</option></select></label></div>
             <div class="choice-group services-choice"><span>Service requested <b>*</b> <small>Select all that apply.</small></span><div class="choice-grid">
               <label><input type="checkbox" name="service_type" value="Interior painting" data-service="interior"> Interior painting</label><label><input type="checkbox" name="service_type" value="Exterior painting" data-service="exterior"> Exterior painting</label><label><input type="checkbox" name="service_type" value="Cabinet painting or refinishing" data-service="cabinets"> Cabinet painting or refinishing</label><label><input type="checkbox" name="service_type" value="Drywall repair" data-service="drywall"> Drywall repair</label><label><input type="checkbox" name="service_type" value="Popcorn ceiling removal" data-service="drywall"> Popcorn ceiling removal</label><label><input type="checkbox" name="service_type" value="Light commercial painting" data-service="commercial"> Light commercial painting</label><label><input type="checkbox" name="service_type" value="Rental turnover painting" data-service="rental"> Rental turnover painting</label><label><input type="checkbox" name="service_type" value="Deck or fence staining" data-service="deck-fence"> Deck or fence staining</label><label><input type="checkbox" name="service_type" value="Accent wall or specialty work" data-service="specialty"> Accent wall or specialty work</label><label><input type="checkbox" name="service_type" value="Trim and door painting" data-service="interior"> Trim and door painting</label><label><input type="checkbox" name="service_type" value="Other" data-service="other"> Other service</label>
             </div></div>
@@ -98,18 +94,18 @@
             <div class="conditional-field" data-conditional="commercial rental" hidden><label class="full-label">Property or business details <span>*</span><textarea name="property_details" rows="3" maxlength="800" placeholder="Property type, occupied or vacant, unit count, access requirements"></textarea></label></div>
             <div class="conditional-field" data-conditional="deck-fence" hidden><label class="full-label">Deck or fence details <span>*</span><textarea name="deck_fence_details" rows="3" maxlength="800" placeholder="Approximate dimensions, wood condition and whether it is currently stained or painted"></textarea></label></div>
             <div class="conditional-field" data-conditional="specialty other" hidden><label class="full-label">Specialty or other work <span>*</span><textarea name="specialty_details" rows="3" maxlength="800" placeholder="Describe the finish, feature wall or other service you need"></textarea></label></div>
-            <div class="form-grid"><label>When would you like the work completed? <span>*</span><select name="project_timeline" required><option value="">Select one</option><option>As soon as possible</option><option>Within 2–4 weeks</option><option>Within 1–3 months</option><option>More than 3 months</option><option>Flexible / planning ahead</option></select></label></div>
-            <label class="full-label">Project details or additional comments <span>*</span><textarea name="project_details" required minlength="10" maxlength="2000" rows="5" placeholder="Share any repairs, access details, deadlines, finish preferences or other information that may help."></textarea><small>Minimum 10 characters.</small></label>
+            <div class="form-grid"><label>When would you like the work completed? <small>(optional)</small><select name="project_timeline"><option value="">Select one</option><option>As soon as possible</option><option>Within 2–4 weeks</option><option>Within 1–3 months</option><option>More than 3 months</option><option>Flexible / planning ahead</option></select></label></div>
+            <label class="full-label">Project details or additional comments <small>(optional)</small><textarea name="project_details" maxlength="2000" rows="5" placeholder="Share any repairs, access details, deadlines, finish preferences or other information that may help."></textarea><small>A short description helps us prepare, but is not required.</small></label>
             <label class="full-label">Project photos <small>(optional, up to 3 JPG, PNG, HEIC or WebP files; 5 MB each)</small><input type="file" id="project-photo" accept="image/jpeg,image/png,image/heic,image/heif,image/webp" multiple></label><div id="photo-list" class="file-help" aria-live="polite"></div>
           </fieldset>
 
-          <fieldset class="form-step" data-step="4">
+          <fieldset class="form-step" data-step="3">
             <legend>Scheduling preferences</legend>
-            <p class="step-intro">Share any preferences you have. We will contact you to confirm availability.</p>
+            <p class="step-intro">Optional preferences. We will contact you to confirm availability.</p>
             <div class="form-grid two">
               <label>How did you hear about us? <small>(optional)</small><select name="referral_source"><option value="">Select one</option><option>Google Search / Maps</option><option>ChatGPT / AI search</option><option>Facebook</option><option>Word of Mouth</option><option>Angi</option><option>Yard Sign</option><option>Repeat Customer</option><option>Website</option><option>Google Business Profile</option><option>Instagram</option><option>Phone Call</option><option>Mail</option><option>Yelp</option><option>Other</option></select></label>
               <label>Preferred date <small>(optional)</small><input type="date" name="preferred_date"></label>
-              <label>Preferred contact method <span>*</span><select name="contact_method" required><option value="">Select one</option><option>Phone call</option><option>Text message</option><option>Email</option><option>No preference</option></select></label>
+              <label>Preferred contact method <small>(optional)</small><select name="contact_method"><option value="">Select one</option><option>Phone call</option><option>Text message</option><option>Email</option><option>No preference</option></select></label>
             </div>
             <label class="consent"><input type="checkbox" name="sms_consent" value="Yes"> <span>I agree to receive project-related text messages and appointment reminders from R Painters LLC. Message and data rates may apply. Reply STOP to opt out.</span></label>
             <label class="consent"><input type="checkbox" name="contact_consent" value="Yes" required> <span>I agree that R Painters LLC may contact me about this estimate request. *</span></label>
@@ -134,7 +130,7 @@
 
   <footer class="site-footer"><div class="container"><div class="footer-bottom"><span>© <span data-year></span> R Painters LLC. All rights reserved.</span><span>Insured · Serving Charleston and surrounding communities</span></div></div></footer>
   <script src="/assets/site.js?v=20261113" defer></script>
-  <script src="/assets/estimate-form.js?v=20261109-ga4-1" defer></script>
+  <script src="/assets/estimate-form.js?v=20261117-short-form-1" defer></script>
 </body>
 </html>
 
